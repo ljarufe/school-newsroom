@@ -1,6 +1,6 @@
 # School Newsroom
 
-School Newsroom is the technical repository for the Noticias planning project: a school digital newsroom and editorial CMS built with Django, Wagtail, and PostgreSQL.
+School Newsroom is a school digital newsroom and editorial CMS built with Django, Wagtail, and PostgreSQL.
 
 Current status: base project only. This repository does not yet include news models, SEO workflows, editorial roles, public API, deployment, or final frontend work.
 
@@ -15,20 +15,36 @@ Current status: base project only. This repository does not yet include news mod
 - pytest
 - pre-commit
 
-## Local Environment Decisions
-
-The official local workflow is Docker-first. Do not use a local Python virtual environment as the main runtime for this project.
-
-The Docker Compose project name is `school_newsroom`. The local database name and user are both `school_newsroom`.
-
-Do not use port `5433`; it is reserved for Planka. If PostgreSQL is exposed to the host, this project uses `5434:5432`.
-
 ## Requirements
+
+Install these tools on the host machine:
 
 - Git
 - Docker
 - Docker Compose
 - VS Code, recommended for editing
+
+The official local runtime is Docker-first. A host Python virtual environment is not required to run the project.
+
+## Local Environment
+
+The Docker Compose project name is `school_newsroom`.
+
+Default local services:
+
+| Service | Purpose                    | Local URL / Port                        |
+| ------- | -------------------------- | --------------------------------------- |
+| `web`   | Django/Wagtail application | `http://localhost:8000`                 |
+| `db`    | PostgreSQL database        | host port `5434`, container port `5432` |
+
+Default local database settings:
+
+| Setting                     | Value             |
+| --------------------------- | ----------------- |
+| Database name               | `school_newsroom` |
+| Database user               | `school_newsroom` |
+| Database host inside Docker | `db`              |
+| Database port inside Docker | `5432`            |
 
 ## Local Setup
 
@@ -90,7 +106,23 @@ make format
 make check
 ```
 
-`make check` runs linting and tests.
+Command summary:
+
+| Command                | Description                                   |
+| ---------------------- | --------------------------------------------- |
+| `make build`           | Build Docker images.                          |
+| `make up`              | Start the local web and database services.    |
+| `make down`            | Stop local services.                          |
+| `make logs`            | Show service logs.                            |
+| `make shell`           | Open a Django shell inside the web container. |
+| `make bash`            | Open a Bash shell inside the web container.   |
+| `make migrate`         | Run database migrations.                      |
+| `make makemigrations`  | Create Django migrations.                     |
+| `make createsuperuser` | Create a local Wagtail/Django admin user.     |
+| `make test`            | Run pytest.                                   |
+| `make lint`            | Run Ruff checks.                              |
+| `make format`          | Format code with Ruff.                        |
+| `make check`           | Run linting and tests.                        |
 
 ## Quality Tools
 
@@ -129,41 +161,130 @@ Pre-commit is installed inside the Docker image. This project configures:
 - check-yaml
 - check-toml
 
-## Planka Notes
+To run pre-commit manually inside the container:
 
-Planka remains outside this repository. This project must not touch the Planka installation or use Planka's reserved PostgreSQL port `5433`.
+```bash
+docker compose exec web pre-commit run --all-files
+```
 
-## Codex Workflow
+## Project Structure
 
-Work should proceed ticket by ticket:
+```text
+school-newsroom/
+├── apps/
+│   └── home/
+├── config/
+│   ├── settings/
+│   │   ├── base.py
+│   │   ├── local.py
+│   │   ├── test.py
+│   │   └── production.py
+│   ├── urls.py
+│   └── wsgi.py
+├── docker/
+│   └── web/
+│       └── Dockerfile
+├── docs/
+│   ├── adr/
+│   ├── ops/
+│   ├── process/
+│   └── product/
+├── static/
+├── templates/
+├── docker-compose.yml
+├── Makefile
+├── manage.py
+├── pyproject.toml
+├── pytest.ini
+└── requirements.txt
+```
 
-1. Use the ticket Markdown as the source of truth.
-2. Keep code, filenames, app names, comments, and technical docs in English.
-3. Implement only the scope of the current ticket.
-4. Add a feedback Markdown file after development to document problems, fixes, and recommendations for the next ticket.
-5. Luis reviews, validates, commits, and pushes manually.
+## Environment Variables
 
-## Ready for First Push
+Copy `.env.example` to `.env` for local development.
 
-Do not commit or push until this checklist has been reviewed:
+Important variables:
 
-- `make build` works.
-- `make up` starts `web` and `db`.
-- `make migrate` runs without errors.
-- `make createsuperuser` can create an admin user.
-- `http://localhost:8000/admin/` loads Wagtail Admin.
-- Admin login works with the created superuser.
-- `make test` passes.
-- `make lint` passes.
-- `make format` runs.
-- `make check` passes.
-- `.env` exists only locally and is not tracked.
-- `.env.example` exists and contains no real secrets.
-- `.gitignore` excludes `.env`, `media/`, `__pycache__/`, `.pytest_cache/`, `.ruff_cache/`, and temporary files.
-- No large or generated files were added accidentally.
-- Planka was not touched.
-- Port `5433` was not used.
-- `git status` was reviewed.
-- `git diff` was reviewed.
+| Variable                 | Purpose                                                                    |
+| ------------------------ | -------------------------------------------------------------------------- |
+| `DJANGO_SETTINGS_MODULE` | Django settings module. Defaults to `config.settings.local` locally.       |
+| `DJANGO_SECRET_KEY`      | Local development secret key. Use a real secret outside local development. |
+| `DJANGO_DEBUG`           | Enables/disables debug mode.                                               |
+| `DJANGO_ALLOWED_HOSTS`   | Comma-separated allowed hosts.                                             |
+| `DATABASE_URL`           | PostgreSQL connection URL used by Django.                                  |
+| `POSTGRES_DB`            | PostgreSQL database created by Docker.                                     |
+| `POSTGRES_USER`          | PostgreSQL user created by Docker.                                         |
+| `POSTGRES_PASSWORD`      | PostgreSQL password created by Docker.                                     |
 
-After the checklist passes, Luis can commit and push manually.
+`.env` is local-only and must not be committed.
+
+## Troubleshooting
+
+### Docker daemon permission errors
+
+If Docker commands fail because the current user cannot access the Docker daemon, confirm Docker is running and that your user has permission to run Docker commands.
+
+```bash
+docker ps
+```
+
+### Database is not ready yet
+
+Docker Compose starts services in order, but PostgreSQL may still need a few seconds before accepting connections. The project includes a lightweight readiness check for database-dependent commands. If a command still fails during startup, wait a moment and run it again.
+
+### Wagtail Admin redirects from `/admin/`
+
+Unauthenticated requests to `/admin/` redirect to the login page. This is expected behavior.
+
+Expected local login URL:
+
+```text
+http://localhost:8000/admin/login/?next=/admin/
+```
+
+### VS Code or Pylance cannot resolve Django/Wagtail imports
+
+The project runs inside Docker, so dependencies are installed in the container. If VS Code uses the host Python interpreter, Pylance may show unresolved import warnings even when the application and tests work correctly.
+
+Current options:
+
+- Treat those warnings as editor-only warnings if Docker commands pass.
+- Create a local `.venv` only for editor IntelliSense, not as the official runtime.
+- Add a future `.devcontainer/` setup so VS Code uses the container environment directly.
+
+### Static files warning in tests
+
+A warning like this may appear during tests:
+
+```text
+No directory at: /app/staticfiles/
+```
+
+This is non-blocking in the current local setup. `staticfiles/` is generated output and is ignored.
+
+### Wagtail / Treebeard warnings
+
+Wagtail system checks may report Treebeard compatibility warnings in the current dependency set. These warnings do not block migrations, admin startup, or tests in the current setup.
+
+## Current Scope
+
+Included in the current base setup:
+
+- Django/Wagtail project structure
+- Split settings for local, test, and production
+- Docker Compose with web and PostgreSQL services
+- Makefile workflow
+- Ruff, pytest, and pre-commit configuration
+- Minimal `home` app and smoke tests
+- VS Code recommendations and tasks
+
+Not included yet:
+
+- News/article models
+- SEO assistant or Yoast-like workflow
+- Editorial roles and permissions
+- Public API
+- Redis/Celery workers
+- External media storage
+- Deployment configuration
+- Final public frontend design

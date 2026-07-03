@@ -60,6 +60,7 @@ make check -> Ruff passed, pytest 2 passed
 - Tests initially failed when rendering the Wagtail login page because the test used the database without the `pytest.mark.django_db` marker.
 - The first host-level `curl -I http://localhost:8000/admin/` check failed from the sandbox even though Docker showed the web container running and port `8000` exposed.
 - `.venv/` was not explicitly ignored in the first review pass.
+- `README.md` initially included internal project-management/process notes that do not belong in repository onboarding documentation, including local Planka context, Codex workflow guidance, and a one-time first-push checklist.
 
 ## Failed Attempts Or Retries
 
@@ -89,6 +90,7 @@ make check -> Ruff passed, pytest 2 passed
 - Validated Wagtail Admin from inside the running `web` container.
 - Added explicit ignore coverage for `.venv/`.
 - Clarified in the README that `make createsuperuser` is interactive and uses the running `web` container.
+- Cleaned `README.md` so it focuses on developer onboarding, local setup, project structure, commands, environment variables, and troubleshooting. Removed unrelated local-tool notes, agent workflow notes, and one-time first-push process content.
 
 ## Files And Directories Created
 
@@ -172,6 +174,70 @@ No directory at: /app/staticfiles/
 
 This does not block tests. `staticfiles/` is intentionally generated output and is ignored.
 
+## Documentation Scope Correction
+
+`README.md` should be treated as developer-facing repository documentation, not as a place for internal planning, local infrastructure context, agent workflow instructions, or one-time ticket checklists.
+
+Correction applied/recommended:
+
+- Remove Planka-specific notes from `README.md`; Planka is outside this repository and belongs in project/process context documents only.
+- Remove Codex workflow notes from `README.md`; agent workflow belongs in ticket templates, process docs, or feedback documents.
+- Remove the “Ready for First Push” checklist from `README.md`; it was a one-time ticket validation checklist, not permanent repository documentation.
+- Keep the README focused on what another developer needs to install, configure, run, test, and troubleshoot the project.
+- If a port is documented in the README, document only the port used by this repository, not the reason tied to unrelated local tools.
+
+Future ticket guidance:
+
+- Do not copy ticket acceptance criteria verbatim into the README unless they are permanent developer instructions.
+- Do not include user-specific local environment details in repository docs.
+- Do not include agent-specific workflow instructions in repository docs.
+- Put planning/project-management/tooling context in `docs/process/` or the ticket feedback file instead.
+
+## Technical Debt / Follow-up Items
+
+### DEVX-001 — Add VS Code Dev Container Support
+
+A cleaner future improvement is to add a `.devcontainer/` setup so VS Code can use the Docker-based development environment directly instead of analyzing the project with the host Python interpreter.
+
+Context:
+
+- The project intentionally follows a Docker-first workflow.
+- Dependencies such as Django and Wagtail are installed inside the Docker image/container.
+- VS Code/Pylance may show unresolved import warnings on the host, for example `Import "wagtail.models" could not be resolved` or Django import resolution warnings, even when Docker commands, tests, and runtime are working correctly.
+- A local `.venv` can be used as an editor-only workaround, but it should not become the official runtime path.
+
+Recommended future ticket:
+
+```text
+DEVX-001 — Add VS Code Dev Container for Docker-first development
+```
+
+Suggested scope:
+
+- Add `.devcontainer/devcontainer.json`.
+- Reuse the existing Docker Compose services where possible.
+- Configure VS Code to attach to the `web` service/container.
+- Ensure Python interpreter, Pylance, Ruff, pytest, and terminal commands run inside the container.
+- Keep `make` commands as the official workflow.
+- Document how to open/reopen the repository in the container.
+- Do not add application features, news models, SEO, roles, API, deploy, Redis, Celery, or unrelated tooling.
+- Do not use port `5433`.
+
+Suggested acceptance criteria:
+
+- VS Code can reopen the project in a dev container.
+- Pylance resolves Django and Wagtail imports without requiring a host `.venv`.
+- `make test`, `make lint`, and `make check` work from the integrated terminal.
+- The existing Docker-first workflow remains unchanged for normal CLI usage.
+- README or `docs/process/` explains the dev container workflow.
+- `.devcontainer/` does not introduce secrets or production-only configuration.
+
+Priority:
+
+- Medium.
+- Recommended before the project grows significantly, especially if multiple contributors or Codex/VS Code workflows will be used regularly.
+- Not required to close EPIC2-001 because the runtime and quality checks already pass.
+
 ## Local Ports Used
 
 - Web: `8000:8000`
@@ -225,6 +291,8 @@ chore: create base Django Wagtail project
 - If the next ticket touches Wagtail pages, include acceptance criteria for migrations, admin editing, and public page rendering.
 - Consider pinning exact dependency versions or adding a lock strategy before the project grows.
 - Consider adding a `make status` or `make ps` command if Docker workflow diagnostics become common.
+- Consider creating a dedicated `DEVX-001` ticket for `.devcontainer/` support before or alongside EPIC2-002, so VS Code/Pylance uses the container environment and does not require a host `.venv`.
+- Add a README scope check to the next ticket review: README changes must be useful for developers onboarding to the repository and must not include unrelated local tools, agent workflow, or one-time ticket process checklists.
 
 ## Standard Ticket Template Improvements
 
@@ -236,4 +304,6 @@ Future tickets should include:
 - A "Expected warnings" section to distinguish acceptable dependency warnings from blockers.
 - A "Generated/ignored files" checklist.
 - A "Manual validation" checklist that explicitly covers browser actions and credentials.
+- A "Developer Experience / IDE validation" checklist for Docker-first projects, including whether VS Code/Pylance needs a dev container or editor-only interpreter workaround.
+- A "README/documentation scope" check: permanent repository docs should contain setup, usage, architecture, troubleshooting, and developer onboarding only; ticket process, local external tools, and agent workflow instructions should stay in process docs or feedback files.
 - A "Feedback file requirements" section so the closing report format is consistent across tickets.

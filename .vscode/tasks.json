@@ -1,0 +1,53 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Docker: build",
+      "type": "shell",
+      "command": "make build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: up",
+      "type": "shell",
+      "command": "make up",
+      "problemMatcher": []
+    },
+    {
+      "label": "Django: migrate",
+      "type": "shell",
+      "command": "make migrate",
+      "problemMatcher": []
+    },
+    {
+      "label": "Django: createsuperuser",
+      "type": "shell",
+      "command": "make createsuperuser",
+      "problemMatcher": []
+    },
+    {
+      "label": "Quality: test",
+      "type": "shell",
+      "command": "make test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Quality: lint",
+      "type": "shell",
+      "command": "make lint",
+      "problemMatcher": []
+    },
+    {
+      "label": "Quality: format",
+      "type": "shell",
+      "command": "make format",
+      "problemMatcher": []
+    },
+    {
+      "label": "Quality: check",
+      "type": "shell",
+      "command": "make check",
+      "problemMatcher": []
+    }
+  ]
+}

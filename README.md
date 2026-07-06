@@ -376,16 +376,6 @@ The project runs inside Docker, so dependencies are installed in the container. 
 
 Use `Dev Containers: Reopen in Container` so VS Code uses the Python environment inside the `web` service. A host Python virtual environment is not part of the official local workflow.
 
-### Static files warning in tests
-
-A warning like this may appear during tests:
-
-```text
-No directory at: /app/staticfiles/
-```
-
-This is non-blocking in the current local setup. `staticfiles/` is generated output and is ignored.
-
 ### Wagtail / Treebeard warnings
 
 Wagtail system checks may report Treebeard compatibility warnings in the current dependency set. These warnings do not block migrations, admin startup, or tests in the current setup.

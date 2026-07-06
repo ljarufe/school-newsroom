@@ -10,8 +10,13 @@ from pytest import MonkeyPatch
 
 BASE_SETTINGS_MODULE = "config.settings.base"
 PRODUCTION_SETTINGS_MODULE = "config.settings.production"
+TEST_SETTINGS_MODULE = "config.settings.test"
 SETTINGS_MODULES = (PRODUCTION_SETTINGS_MODULE, BASE_SETTINGS_MODULE)
 TEST_SECRET_KEY = "test-only-production-secret-key"
+TEST_STATICFILES_STORAGE_BACKEND = (
+    "django.contrib.staticfiles.storage.StaticFilesStorage"
+)
+WHITENOISE_MIDDLEWARE = "whitenoise.middleware.WhiteNoiseMiddleware"
 
 
 def skip_read_env(*args: object, **kwargs: object) -> None:
@@ -39,6 +44,25 @@ def isolated_settings_modules(monkeypatch: MonkeyPatch) -> Iterator[None]:
 
 def import_production_settings() -> ModuleType:
     return importlib.import_module(PRODUCTION_SETTINGS_MODULE)
+
+
+def import_test_settings() -> ModuleType:
+    return importlib.import_module(TEST_SETTINGS_MODULE)
+
+
+def test_test_settings_disable_whitenoise_middleware() -> None:
+    test_settings = import_test_settings()
+
+    assert WHITENOISE_MIDDLEWARE not in test_settings.MIDDLEWARE
+
+
+def test_test_settings_use_staticfiles_storage_without_manifest() -> None:
+    test_settings = import_test_settings()
+
+    assert (
+        test_settings.STORAGES["staticfiles"]["BACKEND"]
+        == TEST_STATICFILES_STORAGE_BACKEND
+    )
 
 
 @pytest.mark.usefixtures("isolated_settings_modules")

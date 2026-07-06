@@ -1,7 +1,13 @@
+from django.core.exceptions import ImproperlyConfigured
+
 from .base import *  # noqa: F403
 
 DEBUG = False
 SECRET_KEY = env("DJANGO_SECRET_KEY")  # noqa: F405
+if not SECRET_KEY.strip() or SECRET_KEY.strip() == "change-me":
+    raise ImproperlyConfigured(
+        "DJANGO_SECRET_KEY must be configured for production."
+    )
 ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")  # noqa: F405
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])  # noqa: F405
 

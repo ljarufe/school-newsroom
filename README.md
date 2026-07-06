@@ -88,6 +88,109 @@ Open Wagtail Admin:
 http://localhost:8000/admin/
 ```
 
+## VS Code Dev Container
+
+### Prerequisites
+
+- Docker.
+- Docker Compose.
+- VS Code.
+- VS Code Dev Containers extension.
+
+### Open The Development Environment
+
+1. Open the repository normally in VS Code.
+2. Open the Command Palette.
+3. Run `Dev Containers: Reopen in Container`.
+4. Wait for the container and remote extensions to initialize.
+5. Confirm the lower-left status bar shows `Dev Container: School Newsroom`.
+
+The integrated terminal should open in `/app`. Python dependencies are resolved from the container, and a host `.venv` is not required. Inside the Dev Container, this command should print `/usr/local/bin/python`:
+
+```bash
+python -c "import sys; print(sys.executable)"
+```
+
+### Normal Server
+
+The normal Django/Wagtail development server uses:
+
+```text
+http://localhost:8000/
+```
+
+Wagtail Admin uses:
+
+```text
+http://localhost:8000/admin/
+```
+
+### General Project Validation
+
+Run full repository validation from the integrated terminal:
+
+```bash
+make test
+make lint
+make check
+```
+
+Use `make check` as the general validation command before reviewing a change or preparing a commit.
+
+### Targeted Tests In VS Code
+
+Use the Testing/Test Explorer panel for focused investigation:
+
+1. Open the Testing panel.
+2. Locate the pytest tests.
+3. Run a single test or a test file.
+
+Test Explorer uses `config.settings.test`. It is useful for targeted diagnosis, but it does not replace `make check`.
+
+### Debug A Test
+
+1. Open the test file.
+2. Add a breakpoint to an executable Python line.
+3. Open Test Explorer.
+4. Use `Debug Test`.
+5. Inspect Variables, Watch, Call Stack, and Debug Console.
+
+Use Continue to resume execution, Step Over to run the current line without entering called functions, Step Into to enter the function being called, and Step Out to finish the current function and return to its caller.
+
+### Debug Django/Wagtail
+
+1. Open Run and Debug.
+2. Select `Django/Wagtail: Debug server`.
+3. Press F5.
+
+This starts a separate debug server on:
+
+```text
+http://localhost:8001/
+```
+
+The normal server remains on port `8000`. The debug profile uses `--noreload` so breakpoint behavior remains predictable. Add a breakpoint to the project Python code executed by the behavior being investigated, open port `8001`, and trigger the corresponding action.
+
+### Ports
+
+| Port | Purpose                                  |
+| ---- | ---------------------------------------- |
+| 8000 | Normal Django/Wagtail development server |
+| 8001 | VS Code Django/Wagtail debug server      |
+| 5434 | Host-exposed project PostgreSQL          |
+
+### Troubleshooting
+
+If Python imports appear unresolved, confirm the repository is actually reopened in the Dev Container and that `python -c "import sys; print(sys.executable)"` returns `/usr/local/bin/python`.
+
+If tests do not appear, confirm pytest is enabled after opening the Dev Container and refresh Test Explorer.
+
+For editor diagnostics, check `View -> Problems`. For Python or Pylance details, check `View -> Output` and select the relevant Python or Pylance output channel.
+
+If port `8001` is unavailable, check the VS Code Ports panel while the debug profile is running.
+
+More details are available in `docs/process/devcontainer.md`.
+
 ## Make Commands
 
 ```bash
@@ -246,11 +349,7 @@ http://localhost:8000/admin/login/?next=/admin/
 
 The project runs inside Docker, so dependencies are installed in the container. If VS Code uses the host Python interpreter, Pylance may show unresolved import warnings even when the application and tests work correctly.
 
-Current options:
-
-- Treat those warnings as editor-only warnings if Docker commands pass.
-- Create a local `.venv` only for editor IntelliSense, not as the official runtime.
-- Add a future `.devcontainer/` setup so VS Code uses the container environment directly.
+Use `Dev Containers: Reopen in Container` so VS Code uses the Python environment inside the `web` service. A host Python virtual environment is not part of the official local workflow.
 
 ### Static files warning in tests
 

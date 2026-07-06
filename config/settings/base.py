@@ -3,15 +3,20 @@ from pathlib import Path
 import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+DEFAULT_DATABASE_URL = (
+    "postgresql://school_newsroom:school_newsroom@db:5432/school_newsroom"
+)
 
 env = environ.Env(
+    DJANGO_SECRET_KEY=(str, "change-me"),
     DJANGO_DEBUG=(bool, False),
     DJANGO_ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
+    DATABASE_URL=(str, DEFAULT_DATABASE_URL),
 )
 
 environ.Env.read_env(BASE_DIR / ".env")
 
-SECRET_KEY = env("DJANGO_SECRET_KEY", default="change-me")
+SECRET_KEY = env("DJANGO_SECRET_KEY")
 DEBUG = env("DJANGO_DEBUG")
 ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")
 
@@ -71,10 +76,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES = {
-    "default": env.db(
-        "DATABASE_URL",
-        default="postgresql://school_newsroom:school_newsroom@db:5432/school_newsroom",
-    )
+    "default": env.db("DATABASE_URL")
 }
 
 LANGUAGE_CODE = "en-us"

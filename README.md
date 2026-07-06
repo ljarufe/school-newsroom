@@ -22,6 +22,7 @@ Install these tools on the host machine:
 - Git
 - Docker
 - Docker Compose
+- pipx, recommended for host Git hook tooling
 - VS Code, recommended for editing
 
 The official local runtime is Docker-first. A host Python virtual environment is not required to run the project.
@@ -253,9 +254,25 @@ Run all required checks:
 make check
 ```
 
-## Pre-commit
+## Git Hooks
 
-Pre-commit is installed inside the Docker image. This project configures:
+This project uses `pre-commit` for fast commit-time checks and a pre-push hook that runs the general repository validation command.
+
+If you run Git on the host, install `pre-commit` on the host:
+
+```bash
+pipx install "pre-commit>=4.2,<5.0"
+```
+
+If you run Git inside the Dev Container, `pre-commit` is available from the project Python dependencies.
+
+Install the commit and pre-push hooks where you run Git:
+
+```bash
+pre-commit install
+```
+
+The normal pre-commit stage is intentionally fast and staged-file oriented. It configures:
 
 - Ruff check
 - Ruff format
@@ -264,11 +281,19 @@ Pre-commit is installed inside the Docker image. This project configures:
 - check-yaml
 - check-toml
 
-To run pre-commit manually inside the container:
+Run the commit hooks manually:
 
 ```bash
-docker compose exec web pre-commit run --all-files
+pre-commit run --all-files
 ```
+
+Run the pre-push hook manually without pushing:
+
+```bash
+pre-commit run --hook-stage pre-push --all-files
+```
+
+The pre-push hook runs `make check`. On the host, `make check` delegates to Docker Compose. Inside the Dev Container, it uses the current container runtime directly. Pull requests should use `.github/pull_request_template.md`.
 
 ## Project Structure
 

@@ -1,6 +1,12 @@
 from .base import *  # noqa: F403
 
 DEBUG = False
+BASE_MIDDLEWARE = MIDDLEWARE  # noqa: F405
+MIDDLEWARE = [
+    middleware
+    for middleware in BASE_MIDDLEWARE
+    if middleware != "whitenoise.middleware.WhiteNoiseMiddleware"
+]
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 STORAGES = {

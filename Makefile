@@ -4,7 +4,7 @@ WAIT_FOR_DB = until nc -z db 5432; do sleep 1; done;
 PYTEST_CACHE_DIR = /tmp/school-newsroom-pytest-cache
 RUFF_CACHE_DIR = /tmp/school-newsroom-ruff-cache
 
-.PHONY: build up down logs shell bash migrate makemigrations createsuperuser test lint format check
+.PHONY: build up down logs shell bash migrate makemigrations compilemessages createsuperuser test lint format migration-check check
 
 ifeq ($(IN_CONTAINER),1)
 WEB =
@@ -41,6 +41,9 @@ migrate:
 makemigrations:
 	$(WEB_RUN) python manage.py makemigrations
 
+compilemessages:
+	$(WEB_RUN) python manage.py compilemessages
+
 createsuperuser:
 	$(WEB) python manage.py createsuperuser
 
@@ -53,4 +56,7 @@ lint:
 format:
 	$(WEB_RUN) sh -c "RUFF_CACHE_DIR=$(RUFF_CACHE_DIR) ruff format ."
 
-check: lint test
+migration-check:
+	$(WEB_RUN) python manage.py makemigrations --check --skip-checks
+
+check: lint migration-check test

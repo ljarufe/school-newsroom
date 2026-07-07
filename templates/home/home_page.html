@@ -1,6 +1,6 @@
-{% load static wagtailcore_tags %}
+{% load static wagtailcore_tags wagtailimages_tags %}
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,7 +9,40 @@
   <body>
     <main>
       <h1>{{ page.title }}</h1>
-      <p>School Newsroom base project.</p>
+      <section aria-labelledby="latest-news-heading">
+        <h2 id="latest-news-heading">Últimas noticias</h2>
+        {% if latest_news %}
+          <ol>
+            {% for news in latest_news %}
+              <li>
+                <article>
+                  {% if news.featured_image %}
+                    {% image news.featured_image fill-320x180 alt="" %}
+                  {% endif %}
+                  <h3><a href="{% pageurl news %}">{{ news.title }}</a></h3>
+                  <p>{{ news.summary }}</p>
+                  <dl>
+                    <dt>Fecha de publicación</dt>
+                    <dd>{{ news.publication_date }}</dd>
+                    <dt>Sección</dt>
+                    <dd>{{ news.section }}</dd>
+                    {% if news.school %}
+                      <dt>Colegio</dt>
+                      <dd>{{ news.school }}</dd>
+                    {% endif %}
+                    <dt>Cobertura</dt>
+                    <dd>
+                      {{ news.coverage_province }}{% if news.coverage_district %}, {{ news.coverage_district }}{% endif %}
+                    </dd>
+                  </dl>
+                </article>
+              </li>
+            {% endfor %}
+          </ol>
+        {% else %}
+          <p>Aún no hay noticias publicadas.</p>
+        {% endif %}
+      </section>
     </main>
   </body>
 </html>

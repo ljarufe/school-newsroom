@@ -37,6 +37,14 @@ Expected interpreter path:
 
 The Dev Container config uses the official `common-utils` Feature to provide common developer utilities, Git, an SSH client, sudo support, and a non-root development user. VS Code connects as that non-root user instead of `root`, with UID/GID updates enabled to reduce bind-mount ownership problems on Linux hosts.
 
+The normal Docker Compose `web` service starts through the project entrypoint,
+which detects the owner of the bind-mounted `/app` directory and runs the
+application process with that UID/GID. This keeps host `make` and direct Docker
+Compose writes aligned with the checkout owner without hardcoding UID `1000`.
+Inside the Dev Container, VS Code still connects as the non-root `vscode` user
+with `updateRemoteUserUID` enabled, so files created from the integrated
+terminal follow the developer's host UID/GID after the container is rebuilt.
+
 After rebuilding the Dev Container, verify:
 
 ```bash

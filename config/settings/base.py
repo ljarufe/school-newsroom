@@ -22,6 +22,7 @@ ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")
 
 INSTALLED_APPS = [
     "apps.home",
+    "apps.news",
     "wagtail.contrib.forms",
     "wagtail.contrib.redirects",
     "wagtail.embeds",
@@ -77,7 +78,11 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES = {"default": env.db("DATABASE_URL")}
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "es"
+LANGUAGES = [
+    ("es", "Español"),
+]
+LOCALE_PATHS = [BASE_DIR / "locale"]
 TIME_ZONE = "America/Lima"
 USE_I18N = True
 USE_TZ = True
@@ -101,6 +106,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 WAGTAIL_SITE_NAME = "School Newsroom"
 WAGTAILADMIN_BASE_URL = "http://localhost:8000"
+WAGTAILADMIN_PERMITTED_LANGUAGES = LANGUAGES
+WAGTAIL_CONTENT_LANGUAGES = LANGUAGES
 
 LOGIN_URL = "wagtailadmin_login"
 LOGIN_REDIRECT_URL = "wagtailadmin_home"

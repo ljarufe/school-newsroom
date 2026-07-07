@@ -20,6 +20,18 @@
       "problemMatcher": []
     },
     {
+      "label": "Django: makemigrations",
+      "type": "shell",
+      "command": "make makemigrations",
+      "problemMatcher": []
+    },
+    {
+      "label": "Django: migration check",
+      "type": "shell",
+      "command": "make migration-check",
+      "problemMatcher": []
+    },
+    {
       "label": "Django: createsuperuser",
       "type": "shell",
       "command": "make createsuperuser",

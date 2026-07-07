@@ -1,0 +1,51 @@
+{% load static wagtailcore_tags wagtailimages_tags %}
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page.title }}</title>
+  </head>
+  <body>
+    <main>
+      <article>
+        <header>
+          <h1>{{ page.title }}</h1>
+          <p>{{ page.summary }}</p>
+          <dl>
+            <dt>Fecha de publicación</dt>
+            <dd>{{ page.publication_date }}</dd>
+            <dt>Sección</dt>
+            <dd>{{ page.section }}</dd>
+            {% if page.school %}
+              <dt>Colegio</dt>
+              <dd>{{ page.school }}</dd>
+            {% endif %}
+            <dt>Cobertura</dt>
+            <dd>
+              {{ page.coverage_province }}{% if page.coverage_district %}, {{ page.coverage_district }}{% endif %}
+            </dd>
+          </dl>
+          {% if page.featured_image %}
+            {% image page.featured_image width-960 %}
+          {% endif %}
+        </header>
+
+        {% include_block page.body %}
+
+        {% with tags=page.tags.all %}
+          {% if tags %}
+            <footer>
+              <h2>Etiquetas</h2>
+              <ul>
+                {% for tag in tags %}
+                  <li>{{ tag.name }}</li>
+                {% endfor %}
+              </ul>
+            </footer>
+          {% endif %}
+        {% endwith %}
+      </article>
+    </main>
+  </body>
+</html>

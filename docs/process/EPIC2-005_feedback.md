@@ -1,17 +1,20 @@
-# EPIC2-005 Implementation Feedback
+# EPIC2-005 Closing Draft
 
 ## Ticket
 
 Add automatic Pull Request validation with GitHub Actions for School Newsroom.
 
+Pull Request: PR #4.
+
 ## Implementation Summary
 
-Created the first minimal GitHub Actions workflow for Pull Requests targeting `main`.
-The workflow prepares a local CI environment from `.env.example`, confirms Docker
-Compose is available, and delegates repository validation to `make check`.
+EPIC2-005 added the first minimal GitHub Actions Pull Request validation workflow
+for School Newsroom. The workflow runs on Pull Requests targeting `main`,
+prepares a CI `.env` from `.env.example`, checks Docker Compose availability,
+and delegates repository validation to `make check`.
 
 No deploy workflow, branch protection, cache, version matrix, coverage reporting,
-product feature, or Makefile rewrite was added.
+product feature, Docker Compose change, or Makefile change was added.
 
 ## Files Created Or Modified
 
@@ -22,11 +25,12 @@ product feature, or Makefile rewrite was added.
 
 - Workflow name: `Pull Request Validation`.
 - Job id: `validate`.
-- Job name: `Validate repository`.
+- Job/check name: `Validate repository`.
 - Trigger: `pull_request` against base branch `main`.
 - Trigger types: `opened`, `reopened`, `synchronize`.
 - Runner: `ubuntu-latest`.
 - Checkout action: `actions/checkout@v7`.
+- Checkout credential persistence: `persist-credentials: false`.
 - Declared permissions: `contents: read`.
 - Validation command: `make check`.
 - The workflow does not use `pull_request_target`.
@@ -54,111 +58,188 @@ No production database credentials, real Django secret key, cloud credentials,
 GitHub secrets, personal tokens, Planka credentials, or other production values
 were found or added.
 
-## Clean-Environment Evidence Available To Codex
+## CI UAT Completed Before Review Correction
 
-The real repository state was inspected before editing:
+The real GitHub-hosted runner validated the initial workflow through PR #4.
 
-- Active branch: `EPIC2-005-pr-validation-ci`.
-- Initial `git status --short`: clean.
-- Existing `.github` content: `.github/pull_request_template.md` only; no
-  existing workflows.
-- `docker-compose.yml` defines a `build:` section for the `web` service.
-- `Makefile` defines `make check` as `lint test`, and both targets use
-  `docker compose run --rm web`.
+Observed positive-path evidence:
 
-Codex could not fully reproduce a pristine GitHub-hosted runner because the local
-Docker daemon already had a usable project image. The available local evidence
-showed Docker Compose was available and the Compose configuration was valid.
+- Workflow: `Pull Request Validation`.
+- Job/check: `Validate repository`.
+- The workflow ran from the real Pull Request entry point.
+- The workflow completed green.
+- The observed duration was approximately 45-50 seconds.
+- The clean GitHub-hosted runner reached `make check`.
+- Docker Compose automatically built the `school_newsroom-web` image on the
+  clean runner.
+- No explicit `make build` workflow step was required.
+- No Makefile portability correction was required.
+- Ruff passed.
+- pytest reported `9 passed`.
 
-No `make build` step was added and the Makefile was not modified because no
-actual portability defect or clean-runner failure was demonstrated during this
-implementation pass.
+This real runner evidence proved `make check` is self-sufficient for the current
+clean GitHub-hosted runner path.
 
-## Automated Validation Completed Locally
+## Controlled Negative Path
 
-Required final local validation:
+Luis completed the controlled negative-path validation in PR #4.
+
+A temporary file was introduced:
+
+```text
+apps/home/_ci_ruff_failure.py
+```
+
+with:
+
+```python
+import os
+```
+
+Local Ruff and pre-push validation hooks were selectively skipped only for this
+deliberate remote CI probe so the regression could reach the GitHub Actions gate.
+
+The workflow ran again through the `synchronize` event and failed red in the
+expected validation stage. The observed Ruff failure was:
+
+```text
+F401 [*] `os` imported but unused
+ --> apps/home/_ci_ruff_failure.py:1:8
+  |
+1 | import os
+  |        ^^
+  |
+help: Remove unused import: `os`
+Found 1 error.
+[*] 1 fixable with the `--fix` option.
+make: *** [Makefile:51: lint] Error 1
+Error: Process completed with exit code 2.
+```
+
+This proves a Ruff failure makes the real
+`Pull Request Validation / Validate repository` GitHub check fail.
+
+## Restoration Evidence
+
+The temporary Ruff probe was removed immediately after the negative-path run.
+The restoration commit and push used the normal local hooks again.
+
+Observed restoration evidence:
+
+- `apps/home/_ci_ruff_failure.py` is absent from the final Pull Request delta.
+- GitHub Actions ran again after restoration.
+- The final validation returned green.
+- `make check` passed.
+- Ruff passed.
+- pytest reported `9 passed`.
+
+No temporary validation regression remains in the final repository state.
+
+## Codex Review Finding And Correction
+
+Codex Review was configured to run automatically when PR #4 was opened, so no
+manual `@codex review` comment was needed for the initial review.
+
+Codex Code Review produced one actionable P1 finding on
+`.github/workflows/pr-validation.yml`: disable persisted checkout credentials for
+Pull Request validation.
+
+The finding is valid. This workflow uses the `pull_request` event, checks out
+submitted Pull Request code, and then executes `make check`. A Pull Request can
+modify files that `make check` executes, including the Makefile or tests.
+`actions/checkout@v7` persists credentials for authenticated Git commands by
+default, but this validation job does not need authenticated Git operations after
+checkout.
+
+The checkout step was corrected from:
+
+```yaml
+      - name: Check out repository
+        uses: actions/checkout@v7
+```
+
+to:
+
+```yaml
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+```
+
+No Pull Request event, workflow permission, Makefile, Docker Compose, or
+validation strategy change was made for this review correction.
+
+## Validation After Checkout-Credential Correction
+
+Validation completed locally after adding `persist-credentials: false`:
 
 - `pre-commit run check-yaml --files .github/workflows/pr-validation.yml`
   - Passed.
 - `make check`
   - Passed.
   - Ruff reported `All checks passed!`.
-  - Pytest reported `9 passed`.
+  - pytest reported `9 passed`.
 - `git diff --check`
   - Passed.
 
-Additional local checks:
+GitHub Actions has not yet been observed on the corrected workflow head at the
+time of this feedback update.
 
-- `docker compose version`
-  - Passed.
-- `docker compose config --quiet`
-  - Passed.
-- `docker compose images`
-  - Passed after Docker daemon access was available.
-- `docker compose run --rm web true`
-  - Passed after Docker daemon access was available.
+## Validation Still Required After Correction
+
+Remaining maintainer validation:
+
+- Commit and push the correction through the normal local hooks.
+- Confirm GitHub Actions runs on the corrected workflow head.
+- Confirm the corrected `Pull Request Validation / Validate repository` check is
+  green.
+- Request or review a fresh Codex Review result for the corrected PR head if
+  needed.
+- Resolve the GitHub review thread only after confirming the correction at the
+  PR level.
+
+No commit, push, review-thread resolution, PR reply, merge, or branch protection
+change was performed by Codex.
 
 ## Failed Attempts And Retries
+
+Initial implementation pass:
 
 - `docker compose images`
   - First attempt failed because the Codex sandbox could not access the Docker
     daemon socket.
   - Retried with Docker daemon access and passed.
 
-No workflow YAML validation, `make check`, or `git diff --check` retry was
-needed after the final files were in place.
+Checkout-credential correction pass:
 
-## GitHub Pull Request Validation Deferred To Luis
-
-The real GitHub Actions entry point cannot be proven by local YAML validation
-alone. Luis still needs to validate the real Pull Request integration after
-pushing this branch and opening or updating a Pull Request against `main`.
-
-Positive path still required:
-
-- Open or update the Pull Request against `main`.
-- Confirm the workflow starts automatically.
-- Confirm the visible check corresponds to
-  `Pull Request Validation / Validate repository`.
-- Confirm the logs show `make check`.
-- Confirm Ruff and pytest run inside that validation.
-- Confirm the run finishes green.
-
-Controlled negative path still required:
-
-- Introduce a temporary deterministic Ruff failure in the branch.
-- Push/update the Pull Request.
-- Confirm the same `Validate repository` check turns red because Ruff fails.
-- Restore the temporary failure immediately.
-- Push/update the Pull Request again.
-- Confirm the same check returns green.
-- Confirm no temporary regression remains in the final diff.
-
-Restoration and final green-run validation are therefore deferred to Luis.
+- No workflow YAML validation, `make check`, or `git diff --check` retry was
+  needed after the correction.
 
 ## Warnings And Known Differences
 
 - Local validation proves the workflow file is syntactically valid and the
   repository validation command passes in the available local Docker environment.
-- Local validation does not prove GitHub will trigger the workflow or display the
-  check on the Pull Request.
-- The local Docker environment was not pristine because the project image already
-  existed.
+- The real GitHub-hosted runner proved the initial workflow entry point, clean
+  runner image build, positive path, negative Ruff path, and restoration path.
+- GitHub Actions has not yet been observed on the PR head that includes
+  `persist-credentials: false`.
 - No secrets were added to the workflow or feedback.
 - `staticfiles/` remains generated output and untracked.
 
 ## Reusable Process Learning
 
-- A ticket that adds GitHub Actions must separate local configuration validation
-  from real GitHub-hosted runner validation.
-- `make check` remains the stable repository validation interface; workflow YAML
-  should not duplicate Ruff or pytest internals while that interface exists.
-- Branch protection or GitHub rulesets should be handled as a separate follow-up
-  ticket after the PR validation workflow has real successful-run evidence.
-- If the real GitHub runner later proves that `make check` does not build the
-  service image as needed, the next correction should document the exact runner
-  failure and choose the smallest fix between Makefile portability and a
-  workflow-only `make build` preparation step.
+- Real GitHub Actions entry-point validation proved `make check` works on a
+  clean GitHub-hosted runner and builds the Compose service image automatically.
+- A CI workflow that executes submitted Pull Request code should avoid persisting
+  checkout credentials when authenticated Git commands are unnecessary.
+- Automatic Codex Review may run when a Pull Request is opened in the current
+  repository configuration, so an explicit `@codex review` comment is not always
+  required for the initial review.
+- After a review finding changes the PR head, a fresh review of the corrected
+  head may still be requested explicitly.
+- Branch protection or GitHub rulesets remain a separate follow-up ticket after
+  the workflow is accepted as a PR gate.
 
 ## AGENTS And Process Follow-Up Evaluation
 
@@ -166,8 +247,7 @@ No repository `AGENTS.md` change is needed for this ticket. The current rules
 already cover Docker-first validation, Makefile usage, feedback files, secrets,
 privacy, and leaving commits, pushes, and merges to the maintainer.
 
-The external process source and living ticket guide should not be changed by
-Codex during EPIC2-005. After a real GitHub Actions positive path and controlled
-negative path pass, it would be reasonable to treat CI as a permanent PR gate in
-the external process source. Requiring the check before merge should be tracked
-as a separate branch protection or ruleset ticket, not implemented here.
+After the corrected workflow head receives a green GitHub Actions run, it is
+reasonable to treat CI as a permanent Pull Request gate in the external process
+source. Requiring that check before merge should remain a separate branch
+protection or GitHub ruleset ticket, not part of EPIC2-005.

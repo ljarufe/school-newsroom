@@ -294,6 +294,89 @@ history was rewritten.
   local rows were `Moderadores`, `Editores`, and
   `Aprobación de moderadores`.
 
+## Pull Request Review And CI Evidence
+
+- GitHub Actions Pull Request validation completed successfully on the current
+  PR head.
+- `@codex review` completed with no actionable findings or comments.
+- No code, migration, template, Wagtail Admin, or product behavior changes were
+  required after PR review.
+- Because review produced no findings and there was no implementation delta,
+  local `make check`, diff review, and manual UAT were not repeated merely for
+  ceremony.
+- Deployment validation remains outside EPIC3-001 and was not performed.
+
+## Update the Warnings section
+
+Remove any statement that GitHub Actions or remote CI was not run.
+
+Keep the Treebeard warning and deployment limitation factual.
+
+A suitable final wording is:
+
+## Warnings
+
+- Wagtail/Django system checks still emit the existing Treebeard manager warning
+  for Treebeard 6 compatibility during management commands. This is outside
+  EPIC3-001 scope and was not introduced as a product feature.
+- The fresh SQLite migration validation does not create a default Wagtail Site;
+  the Home normalization is intentionally a no-op when no default Site exists.
+- Additional untranslated strings remain in Wagtail Admin surfaces outside the
+  screens corrected by EPIC3-001. These residual translation gaps are deferred
+  to focused follow-up work and future manual review of changed Admin surfaces.
+- No deployment validation was performed.
+
+## Final manual validation wording
+
+If the file still contains `## Deferred Manual Validation` or says the focused
+Admin delta-UAT is still required, replace that stale section with:
+
+## Final Maintainer Delta-UAT
+
+The maintainer completed the focused browser delta-UAT after the
+maintainer-UAT correction pass.
+
+Validated manually:
+
+- Both `http://localhost:8000/` and `http://localhost:8000` displayed the
+  public Home in the browser; the earlier apparent navigation to `/admin/`
+  was not reproduced after the server-level investigation.
+- The Wagtail Admin sidebar exposed the top-level `Editorial` menu.
+- `Editorial -> Secciones editoriales` was accessible.
+- `Editorial -> Colegios` was accessible and made school management easier to
+  discover than the generic snippets navigation.
+- The Admin screens from the original UAT screenshots displayed the targeted
+  Spanish translation corrections.
+- Known bootstrap group, workflow, and task names displayed as `Moderadores`,
+  `Editores`, and `Aprobación de moderadores`.
+- The visible HomePage type label displayed as `Página de inicio`.
+- Internal technical identifiers such as `home.homepage` and `news.newspage`
+  remained unchanged.
+- The account/preferences surface from the original UAT screenshots displayed
+  the targeted Spanish translation corrections.
+
+The full two-story editorial publishing UAT was not repeated because the
+maintainer-UAT correction delta did not change NewsPage creation, draft/public
+behavior, Home ordering, or public detail rendering.
+
+The maintainer also observed additional English strings in other Wagtail Admin
+surfaces outside the screenshot-driven correction scope. Those residual
+translation gaps do not block EPIC3-001 and are deferred to separate follow-up
+work.
+
+Spanish Admin coverage must continue to be reviewed manually when a ticket
+introduces or changes an editor-visible Admin surface. Missing dependency
+translations discovered in those affected surfaces should be corrected or
+explicitly dispositioned before the ticket closes.
+
+## Add to `New Work Discovered` if not already present
+
+- Future follow-up: complete residual Spanish translation coverage for Wagtail
+  Admin surfaces that remain in English outside the screens corrected by
+  EPIC3-001. Translation gaps should continue to be discovered through focused
+  manual UAT of new or changed Admin surfaces rather than by claiming complete
+  Wagtail translation coverage from this ticket.
+
 ## Failed Attempts, Retries, And Root Causes
 
 - Initial migration history accumulated review corrections as `0003` through

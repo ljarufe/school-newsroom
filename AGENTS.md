@@ -9,6 +9,8 @@ These instructions apply to the whole repository.
 - Codex local in VS Code is the primary implementation agent.
 - The Dev Container is the Python editor, test, and debug environment.
 - The Makefile is the stable validation interface; use `make check` for general repository validation.
+- Repository-writing commands executed through Docker must not leave root/container-owned generated files in the bind-mounted checkout.
+- When introducing a new generator or tooling path, inspect ownership of generated repository files.
 - Inspect the real repository state before editing.
 - Implement only the current ticket scope and avoid unrelated improvements.
 - Keep `README.md` developer-facing.
@@ -24,6 +26,11 @@ These instructions apply to the whole repository.
 - Preserve the Docker-first runtime and the Dev Container workflow.
 - Do not introduce Docker-in-Docker or require the Docker socket inside the Dev Container.
 - Use the existing Makefile targets instead of duplicating command internals.
+- Keep repository technical content and internal identifiers in English, but keep all public application copy and the Wagtail editor/admin experience in Spanish.
+- Custom model/admin labels, help text, panel headings, and editor-visible product terminology must be Spanish.
+- When a change adds or modifies an editor-visible Wagtail Admin workflow, navigation path, field, or editorial behavior, update `docs/editorial/guia_de_uso.md` in the same change. Keep the guide in Spanish and document only behavior that actually exists.
+- Use delta-based validation: run focused checks while editing and reserve `make check` for technical close or when a later delta can invalidate the previous general validation. Do not repeat unchanged validation by routine.
+- Classify failures before retrying. Recurrent failures or workflow friction require root-cause investigation and a durable fix instead of repeated retries or permanent troubleshooting workarounds.
 - Keep pre-commit hooks fast and suitable for staged files.
 - Do not add CI, deploy infrastructure, or product features unless the current ticket explicitly requires them.
 

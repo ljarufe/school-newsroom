@@ -2,7 +2,7 @@
 
 School Newsroom is a school digital newsroom and editorial CMS built with Django, Wagtail, and PostgreSQL.
 
-Current status: base project only. This repository does not yet include news models, SEO workflows, editorial roles, public API, deployment, or final frontend work.
+Current status: initial editorial news core. The project includes Wagtail-managed news pages, editorial sections, schools, tags, featured images, and server-rendered public Home/detail pages. It does not yet include SEO workflows, editorial roles, public API, deployment, or final frontend work.
 
 ## Stack
 
@@ -88,6 +88,47 @@ Open Wagtail Admin:
 ```text
 http://localhost:8000/admin/
 ```
+
+Open the public Home:
+
+```text
+http://localhost:8000/
+```
+
+## Editorial News Flow
+
+The current product language is Spanish. Wagtail Admin and public application copy are Spanish-only.
+
+Start the local services and prepare the database:
+
+```bash
+make up
+make migrate
+```
+
+Create a local Wagtail admin user if one does not already exist:
+
+```bash
+make createsuperuser
+```
+
+Use Wagtail Admin at:
+
+```text
+http://localhost:8000/admin/
+```
+
+Current editorial setup:
+
+- Manage editorial sections through `Editorial` -> `Secciones editoriales`.
+- Manage schools through `Editorial` -> `Colegios`.
+- Create news through `Páginas` -> `Inicio` -> `Añadir página hija` -> `Noticia`.
+- Draft news is not visible on the anonymous public Home.
+- Publishing a news page through Wagtail makes it visible on the public Home.
+- The news title on Home links to the public detail page.
+
+The Spanish editor guide is available at
+[`docs/editorial/guia_de_uso.md`](docs/editorial/guia_de_uso.md).
 
 ## VS Code Dev Container
 
@@ -207,6 +248,7 @@ make createsuperuser
 make test
 make lint
 make format
+make migration-check
 make check
 ```
 
@@ -226,7 +268,8 @@ Command summary:
 | `make test`            | Run pytest.                                   |
 | `make lint`            | Run Ruff checks.                              |
 | `make format`          | Format code with Ruff.                        |
-| `make check`           | Run linting and tests.                        |
+| `make migration-check` | Check for model changes missing migrations.   |
+| `make check`           | Run linting, migration drift, and tests.      |
 
 ## Quality Tools
 
@@ -246,6 +289,24 @@ Format code:
 
 ```bash
 make format
+```
+
+Create migrations after model changes:
+
+```bash
+make makemigrations
+```
+
+Check for missing migrations without writing files:
+
+```bash
+make migration-check
+```
+
+Apply migrations:
+
+```bash
+make migrate
 ```
 
 Run all required checks:
@@ -300,7 +361,8 @@ The pre-push hook runs `make check`. On the host, `make check` delegates to Dock
 ```text
 school-newsroom/
 ├── apps/
-│   └── home/
+│   ├── home/
+│   └── news/
 ├── config/
 │   ├── settings/
 │   │   ├── base.py
@@ -389,12 +451,12 @@ Included in the current base setup:
 - Docker Compose with web and PostgreSQL services
 - Makefile workflow
 - Ruff, pytest, and pre-commit configuration
-- Minimal `home` app and smoke tests
+- Initial editorial news core with Wagtail snippets and pages
+- Minimal `home` app and focused editorial tests
 - VS Code recommendations and tasks
 
 Not included yet:
 
-- News/article models
 - SEO assistant or Yoast-like workflow
 - Editorial roles and permissions
 - Public API

@@ -77,3 +77,9 @@ msgstr "Los atajos de teclado están desactivados; gestiona tu %(account_link)s 
 
 msgid "Keyboard shortcuts are currently enabled; manage your %(account_link)s to disable them."
 msgstr "Los atajos de teclado están activados; gestiona tu %(account_link)s para desactivarlos."
+
+msgid "The page could not be saved due to validation errors."
+msgstr "No se pudo guardar la página debido a errores de validación."
+
+msgid "Go to the first error"
+msgstr "Ir al primer error"

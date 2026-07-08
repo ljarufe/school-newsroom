@@ -8,7 +8,15 @@ from wagtail.images import get_image_model
 from wagtail.models import Page, PageViewRestriction, Site
 
 from apps.home.models import HomePage
-from apps.news.models import NewsPage, NewsSection, School
+from apps.news.models import (
+    ContributorGroup,
+    MinorContributor,
+    NewsPage,
+    NewsPageContributor,
+    NewsPagePublicCredit,
+    NewsSection,
+    School,
+)
 
 GIF_BYTES = (
     b"GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!"
@@ -234,6 +242,58 @@ def test_home_renders_published_news_metadata(public_site, section) -> None:
 
 
 @pytest.mark.django_db
+def test_home_renders_public_credits_without_internal_contributor_data(
+    public_site,
+    section,
+) -> None:
+    school = School.objects.create(
+        name="Fictional School",
+        province="Arequipa",
+        district="Cercado",
+    )
+    group = ContributorGroup.objects.create(
+        name="Fictional Reporting Workshop",
+        school=school,
+    )
+    contributor = MinorContributor.objects.create(
+        full_name="Fictional Contributor One",
+        group=group,
+        age_band=MinorContributor.AgeBand.UNDER_14,
+    )
+    page = create_news_page(
+        public_site,
+        section,
+        title="Public Credit News",
+        slug="public-credit-news",
+        publication_date=dt.date(2026, 7, 1),
+    )
+    NewsPageContributor.objects.create(page=page, contributor=contributor)
+    NewsPagePublicCredit.objects.create(
+        page=page,
+        display_name="Second fictional public credit",
+        sort_order=2,
+    )
+    NewsPagePublicCredit.objects.create(
+        page=page,
+        display_name="First fictional public credit",
+        sort_order=1,
+    )
+
+    response = Client().get("/")
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert content.index("First fictional public credit") < content.index(
+        "Second fictional public credit",
+    )
+    assert "Fictional Contributor One" not in content
+    assert "under_14" not in content
+    assert "contains_identifiable_minors" not in content
+    assert "minor_publication_authorizations_verified" not in content
+    assert "sensitive_content" not in content
+
+
+@pytest.mark.django_db
 def test_news_detail_renders_required_content(public_site, section) -> None:
     school = School.objects.create(
         name="Fictional School",
@@ -269,6 +329,62 @@ def test_news_detail_renders_required_content(public_site, section) -> None:
     assert b"Etiquetas" in response.content
     assert b"student-reporting" in response.content
     assert b"local-news" in response.content
+
+
+@pytest.mark.django_db
+def test_news_detail_renders_public_credits_without_internal_privacy_data(
+    public_site,
+    section,
+) -> None:
+    school = School.objects.create(
+        name="Fictional School",
+        province="Arequipa",
+        district="Cercado",
+    )
+    group = ContributorGroup.objects.create(
+        name="Fictional Reporting Workshop",
+        school=school,
+    )
+    contributor = MinorContributor.objects.create(
+        full_name="Fictional Contributor Two",
+        group=group,
+        age_band=MinorContributor.AgeBand.FROM_14_TO_17,
+    )
+    page = create_news_page(
+        public_site,
+        section,
+        title="Detail Public Credit News",
+        slug="detail-public-credit-news",
+        publication_date=dt.date(2026, 7, 1),
+    )
+    page.contains_identifiable_minors = True
+    page.minor_publication_authorizations_verified = True
+    page.sensitive_content = True
+    page.save()
+    NewsPageContributor.objects.create(page=page, contributor=contributor)
+    NewsPagePublicCredit.objects.create(
+        page=page,
+        display_name="Second fictional detail credit",
+        sort_order=2,
+    )
+    NewsPagePublicCredit.objects.create(
+        page=page,
+        display_name="First fictional detail credit",
+        sort_order=1,
+    )
+
+    response = Client().get(page.url)
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert content.index("First fictional detail credit") < content.index(
+        "Second fictional detail credit",
+    )
+    assert "Fictional Contributor Two" not in content
+    assert "14_to_17" not in content
+    assert "contains_identifiable_minors" not in content
+    assert "minor_publication_authorizations_verified" not in content
+    assert "sensitive_content" not in content
 
 
 @pytest.mark.django_db

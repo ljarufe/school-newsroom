@@ -3,11 +3,17 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.template.loader import render_to_string
 from django.test import Client
-from django.utils.translation import override
+from django.utils.translation import gettext, override
 from wagtail.admin.localization import get_available_admin_languages
 from wagtail.models import Locale
 
-from apps.news.models import NewsPage, NewsSection, School
+from apps.news.models import (
+    ContributorGroup,
+    MinorContributor,
+    NewsPage,
+    NewsSection,
+    School,
+)
 
 
 def test_primary_language_settings_are_spanish_only() -> None:
@@ -19,6 +25,15 @@ def test_primary_language_settings_are_spanish_only() -> None:
     assert "en" not in dict(settings.WAGTAILADMIN_PERMITTED_LANGUAGES)
     assert settings.WAGTAIL_CONTENT_LANGUAGES == [("es", "Español")]
     assert not getattr(settings, "WAGTAIL_I18N_ENABLED", False)
+
+
+def test_wagtail_page_validation_messages_are_spanish() -> None:
+    with override("es"):
+        assert (
+            gettext("The page could not be saved due to validation errors.")
+            == "No se pudo guardar la página debido a errores de validación."
+        )
+        assert gettext("Go to the first error") == "Ir al primer error"
 
 
 @pytest.mark.django_db
@@ -51,6 +66,10 @@ def test_custom_editor_visible_labels_are_spanish() -> None:
     assert NewsSection._meta.verbose_name_plural == "Secciones editoriales"
     assert School._meta.verbose_name == "Colegio"
     assert School._meta.verbose_name_plural == "Colegios"
+    assert ContributorGroup._meta.verbose_name == "Grupo de colaboradores"
+    assert ContributorGroup._meta.verbose_name_plural == "Grupos de colaboradores"
+    assert MinorContributor._meta.verbose_name == "Colaborador menor"
+    assert MinorContributor._meta.verbose_name_plural == "Colaboradores menores"
 
     assert NewsPage._meta.get_field("publication_date").verbose_name == (
         "Fecha de publicación"
@@ -69,6 +88,31 @@ def test_custom_editor_visible_labels_are_spanish() -> None:
         "Imagen destacada"
     )
     assert NewsPage._meta.get_field("tags").verbose_name == "Etiquetas"
+    assert NewsPage._meta.get_field("contains_identifiable_minors").verbose_name == (
+        "Contiene menores identificables"
+    )
+    assert NewsPage._meta.get_field(
+        "minor_publication_authorizations_verified",
+    ).verbose_name == (
+        "Confirmo que se verificaron las autorizaciones requeridas para "
+        "exponer públicamente a los menores identificables de esta noticia"
+    )
+    assert NewsPage._meta.get_field("sensitive_content").verbose_name == (
+        "Contenido sensible"
+    )
+    assert ContributorGroup._meta.get_field("name").verbose_name == "Nombre"
+    assert ContributorGroup._meta.get_field("school").verbose_name == "Colegio"
+    assert MinorContributor._meta.get_field("full_name").verbose_name == (
+        "Nombre interno"
+    )
+    assert MinorContributor._meta.get_field("group").verbose_name == "Grupo"
+    assert MinorContributor._meta.get_field("age_band").verbose_name == (
+        "Franja de edad"
+    )
+    assert MinorContributor.AgeBand.choices == [
+        ("under_14", "Menor de 14 años"),
+        ("14_to_17", "De 14 a 17 años"),
+    ]
 
     body = NewsPage._meta.get_field("body")
     assert body.stream_block.child_blocks["heading"].label == "Subtítulo"

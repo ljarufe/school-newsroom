@@ -20,6 +20,15 @@
                     {% image news.featured_image fill-320x180 alt="" %}
                   {% endif %}
                   <h3><a href="{% pageurl news %}">{{ news.title }}</a></h3>
+                  {% with public_credits=news.public_credits.all %}
+                    {% if public_credits %}
+                      <p>Por
+                        {% for credit in public_credits %}
+                          {{ credit.display_name }}{% if not forloop.last %}; {% endif %}
+                        {% endfor %}
+                      </p>
+                    {% endif %}
+                  {% endwith %}
                   <p>{{ news.summary }}</p>
                   <dl>
                     <dt>Fecha de publicación</dt>

@@ -5,6 +5,7 @@ from django.urls import reverse
 from wagtail.models import Page, Site
 
 from apps.home.models import HomePage
+from apps.news.models import NewsPage
 
 
 @pytest.fixture
@@ -36,6 +37,8 @@ def test_wagtail_dashboard_uses_spanish_search_and_editorial_menu(admin_client):
     assert_contains_text(response, "Editorial")
     assert_contains_text(response, "Secciones editoriales")
     assert_contains_text(response, "Colegios")
+    assert_contains_text(response, "Grupos de colaboradores")
+    assert_contains_text(response, "Colaboradores menores")
     assert_not_contains_text(response, "Search all pages")
 
 
@@ -45,11 +48,60 @@ def test_editorial_snippet_destinations_are_available(admin_client):
         reverse("wagtailsnippets_news_newssection:list"),
     )
     school_response = admin_client.get(reverse("wagtailsnippets_news_school:list"))
+    group_response = admin_client.get(
+        reverse("wagtailsnippets_news_contributorgroup:list"),
+    )
+    contributor_response = admin_client.get(
+        reverse("wagtailsnippets_news_minorcontributor:list"),
+    )
 
     assert section_response.status_code == 200
     assert school_response.status_code == 200
+    assert group_response.status_code == 200
+    assert contributor_response.status_code == 200
     assert_contains_text(section_response, "Secciones editoriales")
     assert_contains_text(school_response, "Colegios")
+    assert_contains_text(group_response, "Grupos de colaboradores")
+    assert_contains_text(contributor_response, "Colaboradores menores")
+
+
+@pytest.mark.django_db
+def test_news_page_create_surface_contains_contributor_and_privacy_copy(
+    admin_client,
+):
+    home = HomePage.objects.first()
+    if home is None:
+        root = Page.get_first_root_node()
+        home = HomePage(title="Inicio", slug="inicio-news-admin")
+        root.add_child(instance=home)
+
+    response = admin_client.get(
+        reverse(
+            "wagtailadmin_pages:add",
+            args=("news", "newspage", home.pk),
+        ),
+    )
+
+    assert response.status_code == 200
+    assert NewsPage._meta.verbose_name == "Noticia"
+    assert_contains_text(response, "Firma pública")
+    assert_contains_text(response, "Colaboradores internos")
+    assert_contains_text(response, "Privacidad de menores")
+    assert_contains_text(response, "Contiene menores identificables")
+    assert_contains_text(
+        response,
+        "Confirmo que se verificaron las autorizaciones requeridas",
+    )
+    assert_contains_text(response, "Contenido sensible")
+    assert_contains_text(response, "Reglamento de la Ley N.º 29733")
+    assert_contains_text(
+        response,
+        'href="https://diariooficial.elperuano.pe/Normas/obtenerDocumento?idNorma=23"',
+    )
+    assert_contains_text(response, 'target="_blank"')
+    assert_contains_text(response, 'rel="noopener noreferrer"')
+    assert_not_contains_text(response, "Public credit")
+    assert_not_contains_text(response, "Internal contributors")
 
 
 @pytest.mark.django_db

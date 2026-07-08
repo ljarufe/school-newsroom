@@ -8,7 +8,15 @@ from wagtail.images import get_image_model
 from wagtail.models import Page
 
 from apps.home.models import HomePage
-from apps.news.models import NewsPage, NewsSection, School
+from apps.news.models import (
+    ContributorGroup,
+    MinorContributor,
+    NewsPage,
+    NewsPageContributor,
+    NewsPagePublicCredit,
+    NewsSection,
+    School,
+)
 
 INITIAL_SECTION_SLUGS = [
     "politica",
@@ -164,6 +172,160 @@ def test_school_is_set_null_when_deleted(home_page, section) -> None:
     news_page.refresh_from_db()
 
     assert news_page.school is None
+
+
+@pytest.mark.django_db
+def test_contributor_group_string_representation_and_school_protection() -> None:
+    school = School.objects.create(
+        name="Fictional School",
+        province="Arequipa",
+        district="Cercado",
+    )
+    group = ContributorGroup.objects.create(
+        name="Fictional Reporting Workshop",
+        school=school,
+    )
+
+    assert str(group) == "Fictional Reporting Workshop (Fictional School)"
+
+    with pytest.raises(ProtectedError):
+        school.delete()
+
+
+@pytest.mark.django_db
+def test_minor_contributor_age_band_and_derived_school() -> None:
+    school = School.objects.create(
+        name="Fictional School",
+        province="Arequipa",
+        district="Cercado",
+    )
+    group = ContributorGroup.objects.create(
+        name="Fictional Reporting Workshop",
+        school=school,
+    )
+    contributor = MinorContributor.objects.create(
+        full_name="Fictional Contributor One",
+        group=group,
+        age_band=MinorContributor.AgeBand.UNDER_14,
+    )
+
+    assert contributor.school == school
+    assert str(contributor) == "Fictional Contributor One"
+    assert MinorContributor.AgeBand.values == ["under_14", "14_to_17"]
+
+
+@pytest.mark.django_db
+def test_minor_contributors_order_by_internal_name() -> None:
+    school = School.objects.create(
+        name="Fictional School",
+        province="Arequipa",
+        district="Cercado",
+    )
+    group = ContributorGroup.objects.create(
+        name="Fictional Reporting Workshop",
+        school=school,
+    )
+    MinorContributor.objects.create(
+        full_name="Fictional Contributor Two",
+        group=group,
+        age_band=MinorContributor.AgeBand.FROM_14_TO_17,
+    )
+    MinorContributor.objects.create(
+        full_name="Fictional Contributor One",
+        group=group,
+        age_band=MinorContributor.AgeBand.UNDER_14,
+    )
+
+    assert list(MinorContributor.objects.values_list("full_name", flat=True)) == [
+        "Fictional Contributor One",
+        "Fictional Contributor Two",
+    ]
+
+
+@pytest.mark.django_db
+def test_news_page_accepts_multiple_internal_contributors(home_page, section) -> None:
+    school = School.objects.create(
+        name="Fictional School",
+        province="Arequipa",
+        district="Cercado",
+    )
+    group = ContributorGroup.objects.create(
+        name="Fictional Reporting Workshop",
+        school=school,
+    )
+    first_contributor = MinorContributor.objects.create(
+        full_name="Fictional Contributor One",
+        group=group,
+        age_band=MinorContributor.AgeBand.UNDER_14,
+    )
+    second_contributor = MinorContributor.objects.create(
+        full_name="Fictional Contributor Two",
+        group=group,
+        age_band=MinorContributor.AgeBand.FROM_14_TO_17,
+    )
+    news_page = create_news_page(home_page, section)
+
+    NewsPageContributor.objects.create(
+        page=news_page,
+        contributor=first_contributor,
+        sort_order=0,
+    )
+    NewsPageContributor.objects.create(
+        page=news_page,
+        contributor=second_contributor,
+        sort_order=1,
+    )
+
+    assert list(
+        news_page.internal_contributors.values_list(
+            "contributor__full_name",
+            flat=True,
+        ),
+    ) == ["Fictional Contributor One", "Fictional Contributor Two"]
+
+
+@pytest.mark.django_db
+def test_news_page_rejects_duplicate_internal_contributor(home_page, section) -> None:
+    school = School.objects.create(
+        name="Fictional School",
+        province="Arequipa",
+        district="Cercado",
+    )
+    group = ContributorGroup.objects.create(
+        name="Fictional Reporting Workshop",
+        school=school,
+    )
+    contributor = MinorContributor.objects.create(
+        full_name="Fictional Contributor One",
+        group=group,
+        age_band=MinorContributor.AgeBand.UNDER_14,
+    )
+    news_page = create_news_page(home_page, section)
+
+    NewsPageContributor.objects.create(page=news_page, contributor=contributor)
+
+    with pytest.raises(IntegrityError):
+        NewsPageContributor.objects.create(page=news_page, contributor=contributor)
+
+
+@pytest.mark.django_db
+def test_public_credits_keep_editorial_order(home_page, section) -> None:
+    news_page = create_news_page(home_page, section)
+    NewsPagePublicCredit.objects.create(
+        page=news_page,
+        display_name="Second public credit",
+        sort_order=2,
+    )
+    NewsPagePublicCredit.objects.create(
+        page=news_page,
+        display_name="First public credit",
+        sort_order=1,
+    )
+
+    assert list(news_page.public_credits.values_list("display_name", flat=True)) == [
+        "First public credit",
+        "Second public credit",
+    ]
 
 
 @pytest.mark.django_db

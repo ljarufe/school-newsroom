@@ -1,4 +1,5 @@
 import importlib
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -12,8 +13,11 @@ from wagtail.models import Page as RuntimePage
 from wagtail.models import Revision, Site
 from wagtail.users.models import UserProfile
 
+from apps.home.models import HomePage as RuntimeHomePage
+
 NEWS_0001 = ("news", "0001_initial")
 NEWS_0002 = ("news", "0002_bootstrap_editorial_data")
+NEWS_0003 = ("news", "0003_newspage_contains_identifiable_minors_and_more")
 HOME_0001 = ("home", "0001_initial")
 BEFORE_NEWS_0002 = [HOME_0001, NEWS_0001]
 
@@ -274,6 +278,114 @@ def test_bootstrap_admin_name_normalization_fails_on_target_conflict():
                 "DELETE FROM auth_group WHERE name IN (%s, %s)",
                 ["Moderators", "Moderadores"],
             )
+        migrate_to_latest()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_epic3_002_migration_preserves_existing_news_without_fabricated_data():
+    page_id = None
+    try:
+        apps = migrate_to(NEWS_0002)
+        db_alias = connection.alias
+        ContentType = apps.get_model("contenttypes", "ContentType")
+        NewsSection = apps.get_model("news", "NewsSection")
+        Page = apps.get_model("wagtailcore", "Page")
+        SiteModel = apps.get_model("wagtailcore", "Site")
+
+        if not Site.objects.db_manager(db_alias).filter(is_default_site=True).exists():
+            RuntimeLocale.objects.db_manager(db_alias).get_or_create(
+                language_code="es",
+            )
+            root = RuntimePage.get_first_root_node()
+            if root is None:
+                root = RuntimePage.add_root(
+                    instance=RuntimePage(title="Root", slug="root"),
+                )
+            home_page = RuntimeHomePage(title="Inicio", slug="inicio-migration-test")
+            root.add_child(instance=home_page)
+            Site.objects.db_manager(db_alias).create(
+                hostname="testserver",
+                port=80,
+                site_name="School Newsroom",
+                root_page=home_page,
+                is_default_site=True,
+            )
+
+        site = SiteModel.objects.using(db_alias).get(is_default_site=True)
+        home = RuntimePage.objects.get(pk=site.root_page_id)
+        base_child = RuntimePage(
+            title="Historical Fictional News",
+            slug="historical-news",
+        )
+        home.add_child(instance=base_child)
+        page_id = base_child.pk
+
+        news_page_content_type, _ = ContentType.objects.db_manager(
+            db_alias,
+        ).get_or_create(app_label="news", model="newspage")
+        Page._base_manager.using(db_alias).filter(pk=page_id).update(
+            content_type_id=news_page_content_type.pk,
+        )
+        section, _ = NewsSection.objects.using(db_alias).get_or_create(
+            slug="politica",
+            defaults={"name": "Política", "sort_order": 10},
+        )
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO news_newspage (
+                    page_ptr_id,
+                    publication_date,
+                    summary,
+                    body,
+                    coverage_province,
+                    coverage_district,
+                    featured_image_id,
+                    section_id,
+                    school_id
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                [
+                    page_id,
+                    timezone.datetime(2026, 7, 1).date(),
+                    "Historical fictional summary.",
+                    json.dumps(
+                        [
+                            {
+                                "type": "heading",
+                                "value": "Historical context",
+                                "id": "11111111-1111-4111-8111-111111111111",
+                            },
+                        ],
+                    ),
+                    "Arequipa",
+                    "Cercado",
+                    None,
+                    section.pk,
+                    None,
+                ],
+            )
+
+        apps = migrate_to(NEWS_0003)
+        MigratedNewsPage = apps.get_model("news", "NewsPage")
+        NewsPagePublicCredit = apps.get_model("news", "NewsPagePublicCredit")
+        NewsPageContributor = apps.get_model("news", "NewsPageContributor")
+
+        migrated_page = MigratedNewsPage.objects.using(db_alias).get(pk=page_id)
+
+        assert migrated_page.contains_identifiable_minors is False
+        assert migrated_page.minor_publication_authorizations_verified is False
+        assert migrated_page.sensitive_content is False
+        assert (
+            NewsPagePublicCredit.objects.using(db_alias).filter(page_id=page_id).count()
+            == 0
+        )
+        assert (
+            NewsPageContributor.objects.using(db_alias).filter(page_id=page_id).count()
+            == 0
+        )
+    finally:
         migrate_to_latest()
 
 

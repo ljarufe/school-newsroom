@@ -63,7 +63,7 @@ def create_news_page(
         publication_date=publication_date,
         summary="A concise public summary for a fictional news item.",
         body=[
-            ("heading", "Reported context"),
+            ("paragraph", "<p>Reported context</p>"),
             ("paragraph", "<p>Structured body paragraph.</p>"),
         ],
         section=section,

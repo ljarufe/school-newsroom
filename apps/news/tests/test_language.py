@@ -5,6 +5,7 @@ from django.template.loader import render_to_string
 from django.test import Client
 from django.utils.translation import gettext, override
 from wagtail.admin.localization import get_available_admin_languages
+from wagtail.admin.panels import FieldPanel, HelpPanel, InlinePanel
 from wagtail.models import Locale
 
 from apps.news.models import (
@@ -115,8 +116,38 @@ def test_custom_editor_visible_labels_are_spanish() -> None:
     ]
 
     body = NewsPage._meta.get_field("body")
-    assert body.stream_block.child_blocks["heading"].label == "Subtítulo"
     assert body.stream_block.child_blocks["paragraph"].label == "Párrafo"
+    assert body.stream_block.child_blocks["article_image"].label == "Imagen"
+    assert body.stream_block.child_blocks["youtube"].label == "Video de YouTube"
+    assert body.stream_block.child_blocks["spotify"].label == (
+        "Audio o pódcast de Spotify"
+    )
+
+
+def test_news_admin_panels_explain_content_authoring_and_public_credit() -> None:
+    body_panel_index = next(
+        index
+        for index, panel in enumerate(NewsPage.content_panels)
+        if isinstance(panel, FieldPanel) and panel.field_name == "body"
+    )
+    content_help = NewsPage.content_panels[body_panel_index - 1]
+    public_credit_panel = next(
+        panel
+        for panel in NewsPage.content_panels
+        if isinstance(panel, InlinePanel) and panel.relation_name == "public_credits"
+    )
+
+    assert isinstance(content_help, HelpPanel)
+    assert "Cómo editar el contenido" in content_help.content
+    assert "Selecciona texto" in content_help.content
+    assert 'Pulsa "/"' in content_help.content
+    assert "tipo Markdown" in content_help.content
+    assert "Draftail" not in content_help.content
+    assert "StreamBlock" not in content_help.content
+    assert public_credit_panel.help_text == (
+        "Obligatoria para publicar. Puedes dejarla vacía mientras trabajas en un "
+        "borrador."
+    )
 
 
 def test_tag_help_text_resolves_to_spanish() -> None:

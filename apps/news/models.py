@@ -12,6 +12,12 @@ from wagtail.admin.panels import (
 from wagtail.fields import StreamField
 from wagtail.models import Orderable, Page
 
+from .blocks import (
+    PARAGRAPH_FEATURES,
+    ArticleImageBlock,
+    SpotifyEmbedBlock,
+    YouTubeEmbedBlock,
+)
 from .forms import NewsPageAdminForm
 
 MINOR_PRIVACY_NOTICE = """
@@ -32,6 +38,19 @@ MINOR_PRIVACY_NOTICE = """
      target="_blank" rel="noopener noreferrer">Reglamento de la Ley N.º 29733</a>.
 </p>
 """
+
+CONTENT_AUTHORING_HELP = """
+<h2>Cómo editar el contenido</h2>
+<p>
+  Selecciona texto para mostrar la barra de formato y usa el pin para mantenerla
+  visible. Pulsa "/" para insertar o dividir bloques. El editor admite atajos de
+  escritura tipo Markdown para los formatos disponibles.
+</p>
+"""
+
+PUBLIC_CREDIT_HELP = (
+    "Obligatoria para publicar. Puedes dejarla vacía mientras trabajas en un borrador."
+)
 
 
 class NewsSection(models.Model):
@@ -167,14 +186,15 @@ class NewsPage(Page):
     body = StreamField(
         [
             (
-                "heading",
-                blocks.CharBlock(
-                    label="Subtítulo",
-                    form_classname="title",
-                    template="news/blocks/heading.html",
+                "paragraph",
+                blocks.RichTextBlock(
+                    label="Párrafo",
+                    features=PARAGRAPH_FEATURES,
                 ),
             ),
-            ("paragraph", blocks.RichTextBlock(label="Párrafo")),
+            ("article_image", ArticleImageBlock()),
+            ("youtube", YouTubeEmbedBlock()),
+            ("spotify", SpotifyEmbedBlock()),
         ],
         verbose_name="Contenido",
         blank=False,
@@ -242,8 +262,13 @@ class NewsPage(Page):
     content_panels = Page.content_panels + [
         FieldPanel("publication_date"),
         FieldPanel("summary"),
+        HelpPanel(content=CONTENT_AUTHORING_HELP),
         FieldPanel("body"),
-        InlinePanel("public_credits", label="Firma pública"),
+        InlinePanel(
+            "public_credits",
+            label="Firma pública",
+            help_text=PUBLIC_CREDIT_HELP,
+        ),
         InlinePanel("internal_contributors", label="Colaboradores internos"),
         FieldPanel("section"),
         FieldPanel("school"),

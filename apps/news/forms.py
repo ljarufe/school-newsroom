@@ -1,8 +1,10 @@
 from django import forms
 from wagtail.admin.forms import WagtailAdminPageForm
+from wagtail.blocks.stream_block import StreamBlockValidationError
 
 
 class NewsPageAdminForm(WagtailAdminPageForm):
+    BODY_BLOCK_ERROR = "Revisa los bloques marcados con errores."
     PUBLIC_CREDIT_REQUIRED_ERROR = (
         "Añade al menos una firma pública antes de publicar la noticia."
     )
@@ -10,6 +12,11 @@ class NewsPageAdminForm(WagtailAdminPageForm):
         "Confirma que se verificaron las autorizaciones requeridas para los "
         "menores identificables antes de publicar la noticia."
     )
+
+    def add_error(self, field, error):
+        if field == "body" and isinstance(error, StreamBlockValidationError):
+            error.message = self.BODY_BLOCK_ERROR
+        super().add_error(field, error)
 
     def clean(self):
         cleaned_data = super().clean()

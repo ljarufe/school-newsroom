@@ -394,6 +394,7 @@ def test_epic3_002_migration_preserves_existing_news_without_fabricated_data():
 @pytest.mark.django_db(transaction=True)
 def test_epic3_003_body_migrations_preserve_then_convert_historical_content():
     page_id = None
+    revision_ids = []
     historical_body = [
         {
             "type": "heading",
@@ -404,6 +405,45 @@ def test_epic3_003_body_migrations_preserve_then_convert_historical_content():
             "type": "paragraph",
             "value": "<p>Historical rich text paragraph.</p>",
             "id": "22222222-2222-4222-8222-222222222222",
+        },
+    ]
+    heading_revision_body = [
+        {
+            "type": "heading",
+            "value": "Draft <context> & evidence",
+            "id": "33333333-3333-4333-8333-333333333333",
+            "custom_item_key": "preserved",
+        },
+    ]
+    mixed_revision_body = [
+        {
+            "type": "paragraph",
+            "value": "<p>Existing revision paragraph.</p>",
+            "id": "44444444-4444-4444-8444-444444444444",
+        },
+        {
+            "type": "heading",
+            "value": "Scheduled heading",
+            "id": "55555555-5555-4555-8555-555555555555",
+        },
+        {
+            "type": "paragraph",
+            "value": "<p>Following revision paragraph.</p>",
+            "id": "66666666-6666-4666-8666-666666666666",
+        },
+    ]
+    no_heading_revision_body = [
+        {
+            "type": "paragraph",
+            "value": "<p>Already compatible.</p>",
+            "id": "77777777-7777-4777-8777-777777777777",
+        },
+    ]
+    unrelated_revision_body = [
+        {
+            "type": "heading",
+            "value": "Not a NewsPage heading",
+            "id": "88888888-8888-4888-8888-888888888888",
         },
     ]
 
@@ -492,7 +532,10 @@ def test_epic3_003_body_migrations_preserve_then_convert_historical_content():
             )
 
         apps = migrate_to(NEWS_0004)
+        ContentType = apps.get_model("contenttypes", "ContentType")
         MigratedNewsPage = apps.get_model("news", "NewsPage")
+        Page = apps.get_model("wagtailcore", "Page")
+        RevisionModel = apps.get_model("wagtailcore", "Revision")
         migrated_page = MigratedNewsPage.objects.using(db_alias).get(pk=page_id)
 
         migrated_body = list(migrated_page.body.raw_data)
@@ -503,8 +546,93 @@ def test_epic3_003_body_migrations_preserve_then_convert_historical_content():
             "paragraph",
         }
 
+        news_page_content_type = ContentType.objects.using(db_alias).get(
+            app_label="news",
+            model="newspage",
+        )
+        page_content_type = ContentType.objects.using(db_alias).get(
+            app_label="wagtailcore",
+            model="page",
+        )
+        revision_created_at = timezone.now()
+        scheduled_at = revision_created_at + timezone.timedelta(days=2)
+        heading_revision_content = {
+            "pk": page_id,
+            "title": "Historical Structured News",
+            "slug": "historical-structured-news",
+            "body": json.dumps(heading_revision_body),
+            "custom_top_level_key": {"preserved": True},
+        }
+        mixed_revision_content = {
+            "pk": page_id,
+            "title": "Scheduled Historical Structured News",
+            "slug": "historical-structured-news",
+            "body": json.dumps(mixed_revision_body),
+            "custom_top_level_key": ["preserved", 2],
+        }
+        no_heading_revision_content = {
+            "pk": page_id,
+            "title": "Compatible Historical Structured News",
+            "slug": "historical-structured-news",
+            "body": json.dumps(no_heading_revision_body),
+            "custom_top_level_key": "unchanged",
+        }
+        unrelated_revision_content = {
+            "pk": home.pk,
+            "title": "Inicio",
+            "slug": home.slug,
+            "body": json.dumps(unrelated_revision_body),
+            "custom_top_level_key": "unrelated",
+        }
+
+        heading_revision = RevisionModel.objects.using(db_alias).create(
+            content_type_id=news_page_content_type.pk,
+            base_content_type_id=page_content_type.pk,
+            object_id=str(page_id),
+            created_at=revision_created_at,
+            object_str="Historical Structured News",
+            content=heading_revision_content,
+        )
+        mixed_revision = RevisionModel.objects.using(db_alias).create(
+            content_type_id=news_page_content_type.pk,
+            base_content_type_id=page_content_type.pk,
+            object_id=str(page_id),
+            created_at=revision_created_at,
+            object_str="Scheduled Historical Structured News",
+            content=mixed_revision_content,
+            approved_go_live_at=scheduled_at,
+        )
+        no_heading_revision = RevisionModel.objects.using(db_alias).create(
+            content_type_id=news_page_content_type.pk,
+            base_content_type_id=page_content_type.pk,
+            object_id=str(page_id),
+            created_at=revision_created_at,
+            object_str="Compatible Historical Structured News",
+            content=no_heading_revision_content,
+        )
+        unrelated_revision = RevisionModel.objects.using(db_alias).create(
+            content_type_id=page_content_type.pk,
+            base_content_type_id=page_content_type.pk,
+            object_id=str(home.pk),
+            created_at=revision_created_at,
+            object_str="Inicio",
+            content=unrelated_revision_content,
+        )
+        revision_ids = [
+            heading_revision.pk,
+            mixed_revision.pk,
+            no_heading_revision.pk,
+            unrelated_revision.pk,
+        ]
+        Page._base_manager.using(db_alias).filter(pk=page_id).update(
+            latest_revision_id=mixed_revision.pk,
+            latest_revision_created_at=revision_created_at,
+        )
+
         apps = migrate_to(NEWS_0005)
         FinalNewsPage = apps.get_model("news", "NewsPage")
+        FinalPage = apps.get_model("wagtailcore", "Page")
+        FinalRevision = apps.get_model("wagtailcore", "Revision")
         final_page = FinalNewsPage.objects.using(db_alias).get(pk=page_id)
         final_body = list(final_page.body.raw_data)
 
@@ -516,6 +644,61 @@ def test_epic3_003_body_migrations_preserve_then_convert_historical_content():
             },
             historical_body[1],
         ]
+        final_heading_revision = FinalRevision.objects.using(db_alias).get(
+            pk=heading_revision.pk,
+        )
+        final_mixed_revision = FinalRevision.objects.using(db_alias).get(
+            pk=mixed_revision.pk,
+        )
+        final_no_heading_revision = FinalRevision.objects.using(db_alias).get(
+            pk=no_heading_revision.pk,
+        )
+        final_unrelated_revision = FinalRevision.objects.using(db_alias).get(
+            pk=unrelated_revision.pk,
+        )
+
+        assert json.loads(final_heading_revision.content["body"]) == [
+            {
+                "type": "paragraph",
+                "value": "<h2>Draft &lt;context&gt; &amp; evidence</h2>",
+                "id": "33333333-3333-4333-8333-333333333333",
+                "custom_item_key": "preserved",
+            },
+        ]
+        assert json.loads(final_mixed_revision.content["body"]) == [
+            mixed_revision_body[0],
+            {
+                "type": "paragraph",
+                "value": "<h2>Scheduled heading</h2>",
+                "id": "55555555-5555-4555-8555-555555555555",
+            },
+            mixed_revision_body[2],
+        ]
+        assert {
+            key: value
+            for key, value in final_heading_revision.content.items()
+            if key != "body"
+        } == {
+            key: value
+            for key, value in heading_revision_content.items()
+            if key != "body"
+        }
+        assert {
+            key: value
+            for key, value in final_mixed_revision.content.items()
+            if key != "body"
+        } == {
+            key: value for key, value in mixed_revision_content.items() if key != "body"
+        }
+        assert final_no_heading_revision.content == no_heading_revision_content
+        assert final_unrelated_revision.content == unrelated_revision_content
+        assert final_heading_revision.created_at == heading_revision.created_at
+        assert final_mixed_revision.approved_go_live_at == scheduled_at
+        assert final_mixed_revision.object_id == str(page_id)
+        assert (
+            FinalPage._base_manager.using(db_alias).get(pk=page_id).latest_revision_id
+            == mixed_revision.pk
+        )
         assert list(final_page.body.stream_block.child_blocks) == [
             "paragraph",
             "article_image",
@@ -535,7 +718,15 @@ def test_epic3_003_body_migrations_preserve_then_convert_historical_content():
             "hr",
             "document-link",
         ]
+
+        reconstructed_page = Revision.objects.get(pk=mixed_revision.pk).as_object()
+        reconstructed_body = list(reconstructed_page.body.raw_data)
+
+        assert reconstructed_body == json.loads(final_mixed_revision.content["body"])
+        assert all(item.get("type") != "heading" for item in reconstructed_body)
     finally:
+        if revision_ids:
+            Revision.objects.filter(pk__in=revision_ids).delete()
         migrate_to_latest()
 
 

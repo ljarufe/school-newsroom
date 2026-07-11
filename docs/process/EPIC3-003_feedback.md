@@ -1,17 +1,16 @@
-# EPIC3-003 Implementation Closing Draft
+# EPIC3-003 Closing Feedback Final
 
 ## Status
 
-Implementation Closing Draft. Maintainer delta browser UAT is complete. Commit,
-push, pull request, review, CI, merge, and post-merge evidence do not exist and
-remain maintainer-owned.
+Closing Feedback Final. Implementation, migrations, maintainer delta browser
+UAT, and the two known PR review corrections are complete in the current
+checkout. Only the final operational actions listed below remain maintainer-owned.
 
 ## Checkout Evidence
 
 - Branch before editing: `EPIC3-003-structured-news-body-media`.
 - The branch matches EPIC3-003.
-- The checkout was already dirty with the in-progress EPIC3-003 implementation.
-- Untracked `tmp/` review notes were treated as unrelated and left untouched.
+- The checkout was clean before the final malformed-provider-URL correction.
 
 ## Final Product Implementation
 
@@ -88,10 +87,13 @@ New migration `news.0005_alter_newspage_body` runs operations in this order:
 
 1. Iterate the historical `NewsPage` model under the `0004` field state.
 2. Convert each raw `heading` item to `paragraph` with an H2 rich-text value.
-3. HTML-escape the original CharBlock text before interpolation.
-4. Preserve list order, the existing item dictionary, and its `id` where
-   present; leave every non-heading item unchanged.
-5. Alter the field state to remove `heading` and apply the final paragraph
+3. Select every historical Wagtail revision whose ContentType relation identifies
+   `news.NewsPage`, and apply the same conversion to its independently serialized
+   `content["body"]` before the block is removed.
+4. HTML-escape the original CharBlock text before interpolation.
+5. Preserve list order, item IDs, unrelated item keys, unrelated revision content,
+   and revision metadata; leave non-heading items and unrelated revisions unchanged.
+6. Alter the field state to remove `heading` and apply the final paragraph
    feature list and child order.
 
 The reverse operation is intentionally a no-op. A safe reverse migration cannot
@@ -101,7 +103,43 @@ document, contributor, credit, or privacy metadata is fabricated.
 
 Automated migration evidence compares normalized `StreamValue.raw_data` at
 `0004` and `0005`, including escaped heading text, stable item ID and ordering,
-an unchanged paragraph item, and the final migration-state block configuration.
+an unchanged paragraph item, matching and unrelated revisions, preserved
+revision content and metadata, the final migration-state block configuration,
+and reconstruction through Wagtail's real `Revision.as_object()` boundary.
+
+## PR Review Findings
+
+### Finding 1: saved Wagtail revisions
+
+PR review correctly identified that converting only the persisted
+`NewsPage.body` column was insufficient. Wagtail revisions retain independent
+serialized page content, so old `heading` items in unpublished, scheduled, or
+historical revisions would remain incompatible after the final StreamField
+schema removed that block.
+
+Migration `0005` now converts both persisted `NewsPage.body` values and every
+saved revision selected through the historical ContentType relation for
+`news.NewsPage`. It preserves revision IDs, block order and IDs, unrelated body
+items, top-level revision content, scheduling and other metadata, object
+relations, and latest-revision pointers. Revisions for other content types are
+not changed. Migration tests exercise multiple saved revision shapes and real
+post-migration reconstruction. Reverse conversion remains intentionally a no-op
+because a migrated H2 cannot be distinguished safely from an editor-authored H2.
+
+### Finding 2: malformed provider URLs
+
+PR review correctly identified that provider parsing ran before Wagtail's base
+URL validation. An adversarial malformed URL could raise `ValueError` while
+`urllib.parse` evaluated the hostname and escape the normal block-validation
+boundary.
+
+`ProviderEmbedBlock.clean()` now catches only that expected parser `ValueError`
+and raises the block's existing provider-specific Spanish `ValidationError`,
+preserving the original exception as its cause. Malformed YouTube and Spotify
+inputs exercise the real parser failure boundary. Provider allowlists, normal
+delegation to Wagtail's base validation, valid-provider behavior, fallbacks, and
+propagation of unexpected rendering exceptions remain unchanged. No broad
+exception handling was introduced.
 
 ## Admin And Validation Behavior
 
@@ -148,7 +186,7 @@ inline-style, and horizontal-rule input maps: `## `, `### `, `#### `, `* `,
 
 ## Automated Validation
 
-Current evidence during this refactor:
+Historical evidence during this refactor:
 
 - Affected focused suite, first run: 49 passed and 11 failed.
   - Classification: all failures shared one test-fixture root cause. The fixture
@@ -158,19 +196,25 @@ Current evidence during this refactor:
     ContentState value.
 - Focused form suite after correction: 13 passed.
 - Full affected focused suite after correction: 60 passed.
+- Earlier `make check`: passed with 91 tests before the final review corrections.
+
+Focused coverage includes final native paragraph features and widget options,
+absence of the legacy adapter/script/helpers, article-image validation and
+deferred drafts, caption-to-alt media registration, malformed same-provider and
+parser-failure URLs, provider fallbacks, unexpected render exceptions, Spanish
+admin help, public-credit publication behavior, body summary plus nested error
+objects, migration and revision conversion, H2 rendering, body order, and public
+privacy boundaries.
+
+Final validation in this closing run:
+
+- Focused affected block suite: 16 passed.
 - `make check`: passed.
   - Ruff: passed.
   - Migration drift (`makemigrations --check --skip-checks`): no changes
     detected.
-  - Full pytest suite: 91 passed.
+  - Full pytest suite: 93 passed.
 - `git diff --check`: passed with no output.
-
-Focused coverage includes final native paragraph features and widget options,
-absence of the legacy adapter/script/helpers, article-image validation and
-deferred drafts, caption-to-alt media registration, malformed same-provider
-URLs, provider fallbacks, unexpected render exceptions, Spanish admin help,
-public-credit publication behavior, body summary plus nested error objects,
-migration conversion, H2 rendering, body order, and public privacy boundaries.
 
 ## Manual Validation
 
@@ -182,8 +226,11 @@ media/public rendering paths.
 
 No new browser UAT was performed by the implementation agent.
 
-The maintainer completed the requested delta browser UAT and all cases passed:
+The maintainer completed the full requested delta browser UAT and all cases
+passed:
 
+- Migrations `news.0004_alter_newspage_body` and
+  `news.0005_alter_newspage_body` were applied successfully.
 - `make migrate` successfully applied `news.0005_alter_newspage_body`.
 - The Spanish `Cómo editar el contenido` help appears before `Contenido`.
 - Final paragraph authoring controls include bold, italic, link, H2, H3, H4,
@@ -205,15 +252,21 @@ The maintainer completed the requested delta browser UAT and all cases passed:
 No maintainer browser UAT remains pending for EPIC3-003. The full original
 EPIC3-003 UAT did not need to be repeated.
 
-## Delivery Evidence Pending
+## Operational Status
 
-The following evidence does not exist yet and remains pending:
+Only these final operational actions remain:
 
-- real commit / pre-commit evidence;
-- real push / pre-push evidence;
-- Pull Request and CI evidence;
-- PR review evidence;
-- merge and post-merge evidence.
+- final commit and pre-commit;
+- final push and pre-push;
+- final CI and re-review confirmation;
+- squash merge;
+- local `main` synchronization and branch cleanup.
+
+The final correction has not been claimed as pushed, final CI has not been
+claimed as passed, the last GitHub conversation has not been claimed as
+resolved, and the PR has not been claimed as merged. This feedback does not
+require another edit if the remaining deterministic operations pass without a
+new failure or review finding.
 
 ## Failed Attempts And Root Causes
 
@@ -335,23 +388,22 @@ The following evidence does not exist yet and remains pending:
 12. Wagtail `StreamBlockValidationError.message` can be specialized at a page
     form's `add_error` boundary without replacing the object or losing nested
     `block_errors` JSON.
+13. Custom provider/parser validation that runs before framework field
+    validation must translate expected parser failures into normal field or
+    block validation errors.
+14. Malformed adversarial input must be tested explicitly whenever custom
+    parsing precedes framework validation.
+15. Feedback should be updated once at the stable review-complete boundary, not
+    for every status transition.
+16. Deterministic closing steps should be delivered as one continuous workflow,
+    interrupted only by failure or unexpected delta.
+17. GitHub human operations should be documented through the GitHub interface
+    rather than GitHub CLI unless the maintainer requests CLI instructions.
 
 ## Final Git Status
 
 ```text
- M apps/news/forms.py
- M apps/news/models.py
- M apps/news/tests/test_forms.py
- M apps/news/tests/test_language.py
- M apps/news/tests/test_migrations.py
- M apps/news/tests/test_models.py
- M apps/news/tests/test_public_rendering.py
- M docs/editorial/guia_de_uso.md
-?? apps/news/blocks.py
-?? apps/news/migrations/0004_alter_newspage_body.py
-?? apps/news/migrations/0005_alter_newspage_body.py
-?? apps/news/tests/test_blocks.py
-?? docs/process/EPIC3-003_feedback.md
-?? static/news/
-?? templates/news/blocks/article_image.html
+ M apps/news/blocks.py
+ M apps/news/tests/test_blocks.py
+ M docs/process/EPIC3-003_feedback.md
 ```

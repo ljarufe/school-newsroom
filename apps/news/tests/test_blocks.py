@@ -263,6 +263,36 @@ def test_spotify_block_rejects_same_provider_url_without_content_id() -> None:
         block.clean(value)
 
 
+@pytest.mark.parametrize(
+    ("block", "malformed_url", "expected_message"),
+    [
+        (
+            YouTubeEmbedBlock(),
+            "https://[www.youtube.com]/watch?v=x",
+            "Ingresa una URL válida de YouTube.",
+        ),
+        (
+            SpotifyEmbedBlock(),
+            "https://[open.spotify.com]/episode/x",
+            "Ingresa una URL válida de Spotify.",
+        ),
+    ],
+    ids=["youtube", "spotify"],
+)
+def test_provider_block_translates_malformed_parser_url_to_validation_error(
+    block,
+    malformed_url,
+    expected_message,
+) -> None:
+    value = block.value_from_form(malformed_url)
+
+    with pytest.raises(ValidationError) as exc_info:
+        block.clean(value)
+
+    assert exc_info.value.messages == [expected_message]
+    assert isinstance(exc_info.value.__cause__, ValueError)
+
+
 def test_provider_embed_unexpected_rendering_exception_is_not_fallback(
     monkeypatch,
 ) -> None:

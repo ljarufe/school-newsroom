@@ -65,7 +65,11 @@ class ProviderEmbedBlock(EmbedBlock):
     def clean(self, value):
         if value:
             url = value.url if hasattr(value, "url") else str(value)
-            if not self.is_allowed_url(url):
+            try:
+                is_allowed = self.is_allowed_url(url)
+            except ValueError as exc:
+                raise ValidationError(self.invalid_provider_message) from exc
+            if not is_allowed:
                 raise ValidationError(self.invalid_provider_message)
         return super().clean(value)
 

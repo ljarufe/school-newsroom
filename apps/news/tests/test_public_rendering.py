@@ -4,6 +4,7 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, RequestFactory
 from django.utils import timezone
+from wagtail.embeds.exceptions import EmbedNotFoundException
 from wagtail.images import get_image_model
 from wagtail.models import Page, PageViewRestriction, Site
 
@@ -58,6 +59,7 @@ def create_news_page(
     first_published_at=None,
     school=None,
     featured_image=None,
+    body=None,
     tags=None,
 ):
     page = NewsPage(
@@ -66,9 +68,12 @@ def create_news_page(
         live=live,
         publication_date=publication_date,
         summary=f"Summary for {title}.",
-        body=[
-            ("heading", "Story background"),
-            ("paragraph", "<p>Detailed public body text.</p>"),
+        body=body
+        or [
+            (
+                "paragraph",
+                "<h2>Story background</h2><p>Detailed public body text.</p>",
+            ),
         ],
         section=section,
         school=school,
@@ -324,7 +329,7 @@ def test_news_detail_renders_required_content(public_site, section) -> None:
     assert b"Fictional School" in response.content
     assert b"Colegio" in response.content
     assert b"Cobertura" in response.content
-    assert b"Story background" in response.content
+    assert b"<h2>Story background</h2>" in response.content
     assert b"Detailed public body text." in response.content
     assert b"Etiquetas" in response.content
     assert b"student-reporting" in response.content
@@ -428,6 +433,144 @@ def test_news_detail_renders_featured_image_with_default_alt(
     assert response.status_code == 200
     assert b"<img" in response.content
     assert 'alt="Descripción significativa de imagen"'.encode() in response.content
+
+
+@pytest.mark.django_db
+def test_news_detail_renders_article_image_semantically(
+    public_site,
+    section,
+    settings,
+    tmp_path,
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    image = create_uploaded_image()
+    page = create_news_page(
+        public_site,
+        section,
+        title="Article Image News",
+        slug="article-image-news",
+        publication_date=dt.date(2026, 7, 1),
+        body=[
+            ("paragraph", "<h2>Preparación</h2><p>Antes de la imagen.</p>"),
+            (
+                "article_image",
+                {
+                    "image": image,
+                    "caption": "Estudiantes ficticios preparan una entrevista.",
+                    "alt_text": "Mesa con materiales de entrevista escolar.",
+                    "credit": "Archivo escolar ficticio",
+                },
+            ),
+            ("paragraph", "<p>Después de la imagen.</p>"),
+        ],
+    )
+
+    response = Client().get(page.url)
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "<figure>" in content
+    assert 'alt="Mesa con materiales de entrevista escolar."' in content
+    assert "Estudiantes ficticios preparan una entrevista." in content
+    assert "Crédito: Archivo escolar ficticio" in content
+    assert "Mesa con materiales de entrevista escolar.</figcaption>" not in content
+    assert "<h2>Preparación</h2>" in content
+    assert content.index("Antes de la imagen.") < content.index("<figure>")
+    assert content.index("<figure>") < content.index("Después de la imagen.")
+
+
+@pytest.mark.django_db
+def test_news_detail_omits_article_image_credit_when_blank(
+    public_site,
+    section,
+    settings,
+    tmp_path,
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    image = create_uploaded_image()
+    page = create_news_page(
+        public_site,
+        section,
+        title="Article Image Without Credit",
+        slug="article-image-without-credit",
+        publication_date=dt.date(2026, 7, 1),
+        body=[
+            (
+                "article_image",
+                {
+                    "image": image,
+                    "caption": "Imagen genérica de trabajo editorial.",
+                    "alt_text": "Cuaderno y grabadora sobre una mesa.",
+                    "credit": "",
+                },
+            ),
+        ],
+    )
+
+    response = Client().get(page.url)
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "Imagen genérica de trabajo editorial." in content
+    assert "Crédito:" not in content
+
+
+@pytest.mark.django_db
+def test_news_detail_youtube_fallback_preserves_original_url(
+    public_site,
+    section,
+    monkeypatch,
+) -> None:
+    original_url = "https://www.youtube.com/watch?v=fictionalVideo01"
+
+    def fail_embed_lookup(url, max_width=None, max_height=None):
+        raise EmbedNotFoundException("controlled test failure")
+
+    monkeypatch.setattr("wagtail.embeds.embeds.get_embed", fail_embed_lookup)
+    page = create_news_page(
+        public_site,
+        section,
+        title="YouTube Fallback News",
+        slug="youtube-fallback-news",
+        publication_date=dt.date(2026, 7, 1),
+        body=[("youtube", original_url)],
+    )
+
+    response = Client().get(page.url)
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "Ver contenido en YouTube" in content
+    assert f'href="{original_url}"' in content
+
+
+@pytest.mark.django_db
+def test_news_detail_spotify_fallback_preserves_original_url(
+    public_site,
+    section,
+    monkeypatch,
+) -> None:
+    original_url = "https://open.spotify.com/episode/fictionalEpisode01"
+
+    def fail_embed_lookup(url, max_width=None, max_height=None):
+        raise EmbedNotFoundException("controlled test failure")
+
+    monkeypatch.setattr("wagtail.embeds.embeds.get_embed", fail_embed_lookup)
+    page = create_news_page(
+        public_site,
+        section,
+        title="Spotify Fallback News",
+        slug="spotify-fallback-news",
+        publication_date=dt.date(2026, 7, 1),
+        body=[("spotify", original_url)],
+    )
+
+    response = Client().get(page.url)
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "Escuchar en Spotify" in content
+    assert f'href="{original_url}"' in content
 
 
 @pytest.mark.django_db

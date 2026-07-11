@@ -1,0 +1,11 @@
+{% load wagtailimages_tags %}
+<figure>
+  {% image value.image width-960 as rendition %}
+  <img src="{{ rendition.url }}" width="{{ rendition.width }}" height="{{ rendition.height }}" alt="{{ value.alt_text }}">
+  <figcaption>
+    {{ value.caption }}
+    {% if value.credit %}
+      <span>Crédito: {{ value.credit }}</span>
+    {% endif %}
+  </figcaption>
+</figure>

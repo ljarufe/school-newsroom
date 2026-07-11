@@ -1,6 +1,11 @@
 import datetime as dt
+import json
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
+from wagtail.blocks.stream_block import StreamBlockValidationError
+from wagtail.blocks.struct_block import StructBlockValidationError
+from wagtail.images import get_image_model
 from wagtail.models import Page
 
 from apps.home.models import HomePage
@@ -12,6 +17,29 @@ from apps.news.models import (
     NewsPagePublicCredit,
     NewsSection,
     School,
+)
+
+GIF_BYTES = (
+    b"GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!"
+    b"\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01"
+    b"\x00\x00\x02\x02D\x01\x00;"
+)
+
+PARAGRAPH_CONTENTSTATE = json.dumps(
+    {
+        "blocks": [
+            {
+                "key": "reported",
+                "type": "unstyled",
+                "text": "Reported context",
+                "depth": 0,
+                "inlineStyleRanges": [],
+                "entityRanges": [],
+                "data": {},
+            },
+        ],
+        "entityMap": {},
+    },
 )
 
 
@@ -39,13 +67,25 @@ def create_news_page(home_page, section, *, slug="form-news-existing"):
         live=False,
         publication_date=dt.date(2026, 7, 1),
         summary="A concise public summary for a fictional news item.",
-        body=[("heading", "Reported context")],
+        body=[("paragraph", "<p>Reported context</p>")],
         section=section,
         coverage_province="Arequipa",
         coverage_district="Cercado",
     )
     home_page.add_child(instance=page)
     return page
+
+
+def create_uploaded_image():
+    image_model = get_image_model()
+    return image_model.objects.create(
+        title="Imagen editorial genérica",
+        file=SimpleUploadedFile(
+            "admin-body.gif",
+            GIF_BYTES,
+            content_type="image/gif",
+        ),
+    )
 
 
 def admin_form_data(
@@ -59,10 +99,15 @@ def admin_form_data(
     contains_identifiable_minors=False,
     authorizations_verified=False,
     sensitive_content=False,
+    body_block=None,
 ):
     public_credits = public_credits or []
     deleted_credit_ids = deleted_credit_ids or []
     internal_contributor_ids = internal_contributor_ids or []
+    body_block = body_block or {
+        "type": "paragraph",
+        "value": PARAGRAPH_CONTENTSTATE,
+    }
     data = {
         "title": title,
         "slug": slug,
@@ -71,8 +116,7 @@ def admin_form_data(
         "body-count": "1",
         "body-0-deleted": "",
         "body-0-order": "0",
-        "body-0-type": "heading",
-        "body-0-value": "Reported context",
+        "body-0-type": body_block["type"],
         "body-0-id": "11111111-1111-4111-8111-111111111111",
         "section": str(section.pk),
         "school": "",
@@ -96,6 +140,18 @@ def admin_form_data(
         "internal_contributors-MIN_NUM_FORMS": "0",
         "internal_contributors-MAX_NUM_FORMS": "1000",
     }
+
+    if body_block["type"] == "article_image":
+        data.update(
+            {
+                "body-0-value-image": body_block.get("image", ""),
+                "body-0-value-caption": body_block.get("caption", ""),
+                "body-0-value-alt_text": body_block.get("alt_text", ""),
+                "body-0-value-credit": body_block.get("credit", ""),
+            },
+        )
+    else:
+        data["body-0-value"] = body_block["value"]
 
     if contains_identifiable_minors:
         data["contains_identifiable_minors"] = "on"
@@ -144,6 +200,65 @@ def test_draft_validation_allows_missing_public_credit(home_page, section) -> No
 
     assert form.is_valid()
     assert form.is_deferred_validation
+
+
+@pytest.mark.django_db
+def test_draft_validation_allows_incomplete_article_image_block(
+    home_page,
+    section,
+) -> None:
+    form = make_admin_form(
+        home_page,
+        section,
+        slug="draft-with-incomplete-article-image",
+        body_block={
+            "type": "article_image",
+            "image": "",
+            "caption": "",
+            "alt_text": "",
+            "credit": "",
+        },
+    )
+
+    form.defer_required_fields()
+
+    assert form.is_valid()
+    assert form.is_deferred_validation
+
+
+@pytest.mark.django_db
+def test_full_validation_requires_article_image_caption_and_alt(
+    home_page,
+    section,
+    settings,
+    tmp_path,
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    image = create_uploaded_image()
+    form = make_admin_form(
+        home_page,
+        section,
+        slug="full-with-incomplete-article-image",
+        public_credits=["Fictional school newsroom team"],
+        body_block={
+            "type": "article_image",
+            "image": str(image.pk),
+            "caption": "   ",
+            "alt_text": "   ",
+            "credit": "",
+        },
+    )
+
+    assert not form.is_valid()
+    assert "body" in form.errors
+    assert NewsPageAdminForm.BODY_BLOCK_ERROR in str(form.errors["body"])
+    assert "StreamBlock" not in str(form.errors["body"])
+
+    body_error = form.errors.as_data()["body"][0]
+    assert isinstance(body_error, StreamBlockValidationError)
+    article_image_error = body_error.block_errors[0]
+    assert isinstance(article_image_error, StructBlockValidationError)
+    assert set(article_image_error.block_errors) == {"caption", "alt_text"}
 
 
 @pytest.mark.django_db

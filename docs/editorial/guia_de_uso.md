@@ -187,10 +187,22 @@ El campo Contenido acepta estos bloques:
 - Video de YouTube
 - Audio o pódcast de Spotify
 
-`Párrafo` permite escribir prosa larga con varios párrafos dentro del mismo
-bloque. También permite negrita, cursiva, enlaces, encabezados H2, H3 y H4,
-listas numeradas, listas con viñetas, citas, líneas horizontales y enlaces a
-documentos del CMS.
+`Párrafo` permite escribir o pegar una noticia completa dentro de un solo bloque
+RichText. No hace falta crear un bloque de StreamField por cada párrafo. Dentro
+del mismo bloque pueden convivir varios párrafos, encabezados H2, H3 y H4,
+negrita, cursiva, enlaces, listas numeradas, listas con viñetas, citas, líneas
+horizontales y enlaces a documentos del CMS.
+
+H2, H3 y H4 son formatos de párrafo completo, no estilos aplicados sólo a una
+selección de palabras. Coloca el cursor en un párrafo independiente que contenga
+únicamente el subtítulo y elige H2, H3 o H4. Separa párrafos y subtítulos con
+saltos reales creados con `Enter`.
+
+`Shift+Enter` crea un salto suave dentro del mismo párrafo. Algunos textos
+pegados desde otras aplicaciones también pueden conservar saltos suaves. En
+esos casos, varias líneas siguen siendo un único párrafo y aplicar H2, H3 o H4
+puede transformar todas esas líneas. Si ocurre, reemplaza los saltos suaves por
+saltos de párrafo con `Enter` antes de aplicar el formato.
 
 Selecciona texto para mostrar la barra contextual de formato. El pin de esa
 barra permite mantenerla visible; Wagtail recuerda la preferencia en ese
@@ -218,6 +230,11 @@ negrita y cursiva, escribe también el marcador de cierre.
 Los enlaces normales y los enlaces a documentos se insertan desde la barra de
 formato. Las imágenes y el contenido multimedia externo no se insertan desde
 esa barra.
+
+El editor actual no ofrece un control para anidar listas y `Tab` desplaza el
+foco. La autoría de listas anidadas no aplica en esta interfaz. El análisis
+mantiene soporte defensivo para HTML anidado importado, pegado, histórico o
+generado fuera del Admin, sin añadir atajos propios.
 
 El bloque `Imagen` inserta una imagen dentro del cuerpo de la noticia, distinta
 de la `Imagen destacada`. Se usa este bloque separado para que cada uso tenga un
@@ -270,6 +287,207 @@ Cuando `Contenido` tiene un error, el resumen de la página indica que se deben
 revisar los bloques marcados. El bloque afectado muestra el detalle específico,
 por ejemplo qué campo falta en una imagen.
 
+## Asistente SEO
+
+Cada noticia muestra las pestañas visibles `Contenido` y `Asistente SEO`. La
+configuración de página de Wagtail permanece en sus herramientas laterales; no
+existe una tercera pestaña visible llamada `Propiedades`.
+
+La pestaña `Asistente SEO` reutiliza los
+campos nativos de Wagtail para la URL, el título SEO y la descripción meta, y
+añade herramientas editoriales para revisar la noticia antes de publicarla.
+
+El Asistente SEO es una ayuda formativa. Sus recomendaciones y su semáforo no
+bloquean el guardado, la programación, el envío a workflow ni la publicación.
+Después de guardar correctamente un borrador o una actualización desde esta
+pestaña, la página de edición vuelve a abrir `Asistente SEO`. Si hay errores de
+validación, Wagtail conserva su comportamiento normal y abre la superficie que
+corresponda al error.
+
+### Configuración SEO
+
+Los campos principales son:
+
+- `Slug de la URL`: parte final de la dirección pública de la noticia.
+- `Título SEO`: texto usado en la etiqueta `<title>` y como título de buscador.
+- `Descripción meta`: resumen preparado para buscadores.
+- `Frase clave objetivo`: frase exacta principal que se quiere trabajar.
+
+La frase clave puede quedar vacía en un borrador. Mientras falte, el análisis
+aparece incompleto. La versión actual compara la frase exacta sin distinguir
+mayúsculas, espacios repetidos ni tildes. No reconoce sinónimos, plurales,
+variantes gramaticales ni frases relacionadas.
+
+El contador del título SEO usa estos rangos orientativos:
+
+- 30 a 60 caracteres: bueno.
+- 1 a 29 o 61 a 70: necesita revisión.
+- vacío o más de 70: problema.
+
+El contador de la descripción meta usa estos rangos:
+
+- 120 a 160 caracteres: bueno.
+- 1 a 119 o 161 a 180: necesita revisión.
+- vacía o más de 180: problema.
+
+Los rangos se basan en caracteres y son una aproximación editorial. La vista
+previa no reproduce exactamente el ancho que puede usar un buscador real.
+
+### Vista previa en buscador
+
+La vista previa muestra:
+
+- el título SEO o, como fallback, el título de la noticia;
+- la URL canonical disponible o una representación del slug;
+- la descripción meta o, como fallback, el resumen.
+
+Los fallbacks permiten que una noticia antigua siga generando metadata pública,
+pero el checklist sigue recomendando completar el título SEO y la descripción
+meta de forma explícita.
+
+El título, la descripción, el slug y la URL canonical actualizan esta vista
+previa mientras se editan. El análisis completo del cuerpo se recalcula en el
+servidor después de guardar o volver a abrir la noticia. Esto incluye los
+cálculos SEO y de legibilidad del texto escrito o pegado en RichText.
+
+### Configuración y vista previa social
+
+Los campos sociales son:
+
+- `Título para redes sociales`;
+- `Descripción para redes sociales`;
+- `Imagen para redes sociales`.
+
+Si quedan vacíos, se aplican estos fallbacks:
+
+```text
+Título social
+→ título SEO
+→ título de la noticia
+
+Descripción social
+→ descripción meta
+→ resumen
+
+Imagen social
+→ imagen destacada
+```
+
+La vista previa es conceptual. No representa exactamente la interfaz de una red
+social ni publica contenido automáticamente. Los cambios de texto se actualizan
+en la vista previa durante la edición; la imagen elegida queda reflejada de
+forma autoritativa después de guardar o recargar.
+
+### Análisis SEO
+
+El análisis revisa de forma determinística:
+
+- presencia de la frase clave objetivo;
+- frase clave en título SEO, slug, descripción meta, resumen o introducción,
+  subtítulos y cuerpo;
+- repetición evidente de la frase clave;
+- longitud del título SEO y de la descripción meta;
+- extensión del cuerpo;
+- presencia de imagen destacada;
+- texto alternativo de imágenes del cuerpo;
+- presencia de enlaces internos y externos.
+
+Un artículo de 300 palabras o más obtiene el resultado recomendado de extensión.
+Entre 150 y 299 palabras aparece una advertencia; con menos de 150 aparece un
+problema. No tener enlaces se muestra como recomendación, no como obligación de
+añadir enlaces irrelevantes.
+
+Cuando no hay subtítulos, imágenes del cuerpo o texto suficiente para una
+comprobación, el resultado puede mostrarse como `No aplica`.
+
+### Legibilidad en español
+
+La primera versión de legibilidad usa heurísticas conservadoras:
+
+- confirma que exista prosa;
+- advierte por párrafos de más de 150 palabras y marca como problema los de más
+  de 250;
+- considera larga una oración de más de 30 palabras;
+- recomienda subtítulos en artículos de 300 palabras o más;
+- advierte cuando una sección continua supera 300 palabras y marca como
+  problema una sección de más de 500.
+
+La separación automática de oraciones puede no interpretar perfectamente
+abreviaturas o puntuación inusual. Los resultados son recomendaciones
+editoriales, no una certificación lingüística ni una fórmula definitiva de
+calidad en español.
+
+### Estado general
+
+El semáforo tiene tres estados:
+
+- `Bueno`: todas las comprobaciones aplicables están bien.
+- `Necesita mejoras`: los datos básicos existen, pero quedan advertencias o
+  problemas.
+- `Incompleto`: falta la frase clave, el título SEO, la descripción meta o el
+  texto del artículo.
+
+El semáforo no garantiza posicionamiento ni elegibilidad para resultados
+enriquecidos.
+
+### Indexación y URL canonical
+
+`Excluir de los resultados de búsqueda` añade una directiva pública
+`noindex, follow` a esa noticia. La página sigue siendo accesible y los
+buscadores pueden rastrearla para leer la directiva. Una noticia noindex no se
+incluye en el sitemap.
+
+El entorno completo también puede estar configurado con noindex. Cuando ese
+modo conservador está activo, tanto la Home como todas las noticias emiten
+noindex y quedan fuera del sitemap, aunque la marca individual de una noticia
+esté desactivada.
+
+`URL canonical` indica la versión principal de la noticia:
+
+- vacía: usa la propia URL pública;
+- igual a la URL pública: canonical propia;
+- diferente: publica la URL configurada como canonical y omite la URL local del
+  sitemap.
+
+No uses canonical para ocultar contenido privado ni como sustituto de noindex.
+Debe ser una URL HTTP o HTTPS completa y no puede contener un fragmento `#`.
+
+### Navegación y menús
+
+`Navegación y menús` contiene la opción nativa `mostrar en menús`. Esta opción
+sirve para menús generados por el sitio y no participa en el análisis ni en el
+semáforo SEO.
+
+### Metadata pública
+
+La página pública de una noticia genera:
+
+- título y descripción;
+- canonical;
+- directiva robots;
+- Open Graph;
+- tarjeta básica para Twitter/X;
+- JSON-LD `NewsArticle`.
+
+Los autores de JSON-LD salen exclusivamente de las firmas públicas, respetando
+su orden y omitiendo valores vacíos. No se usan colaboradores internos, nombres
+internos de menores, franjas de edad ni marcas de privacidad.
+
+Como una firma pública puede representar a una persona o a un equipo y esta
+versión no guarda ese tipo, los autores JSON-LD se publican sólo con su nombre,
+sin inferir `Person` u `Organization`. La herramienta no promete elegibilidad
+para resultados enriquecidos.
+
+Los endpoints técnicos son:
+
+```text
+/sitemap.xml
+/robots.txt
+```
+
+`robots.txt` permite el rastreo e indica la dirección del sitemap. No se usa
+para ocultar páginas noindex.
+
 ## Limitaciones actuales
 
 - No hay flujo editorial personalizado todavía.
@@ -281,6 +499,11 @@ por ejemplo qué campo falta en una imagen.
 - No hay tipos persistidos de firma pública todavía.
 - No hay carga ni seguimiento individual de documentos de autorización todavía.
 - Provincia y Distrito no se validan todavía contra datos geográficos oficiales.
-- No hay SEO Assistant todavía.
+- No hay análisis de sinónimos, variantes gramaticales, múltiples frases clave
+  ni inteligencia artificial dentro del Asistente SEO.
+- No hay integración con Search Console, Google News, analytics ni publicación
+  automática en redes sociales.
+- No hay gestión de redirecciones ni un workflow o rol obligatorio de curación
+  SEO.
 - No hay análisis automático de rostros, voces, proveedores externos ni datos
   personales dentro de imágenes, video o audio.

@@ -20,6 +20,7 @@ NEWS_0002 = ("news", "0002_bootstrap_editorial_data")
 NEWS_0003 = ("news", "0003_newspage_contains_identifiable_minors_and_more")
 NEWS_0004 = ("news", "0004_alter_newspage_body")
 NEWS_0005 = ("news", "0005_alter_newspage_body")
+NEWS_0006 = ("news", "0006_newspage_seo_assistant_fields")
 HOME_0001 = ("home", "0001_initial")
 BEFORE_NEWS_0002 = [HOME_0001, NEWS_0001]
 
@@ -719,6 +720,7 @@ def test_epic3_003_body_migrations_preserve_then_convert_historical_content():
             "document-link",
         ]
 
+        migrate_to(NEWS_0006)
         reconstructed_page = Revision.objects.get(pk=mixed_revision.pk).as_object()
         reconstructed_body = list(reconstructed_page.body.raw_data)
 
@@ -832,3 +834,113 @@ def test_final_migrated_default_site_root_is_spanish_home_page() -> None:
     assert home.draft_title == "Inicio"
     assert home.slug == "home"
     assert home.locale.language_code == "es"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_epic5_001_migration_preserves_news_with_blank_safe_seo_defaults() -> None:
+    try:
+        apps = migrate_to(NEWS_0005)
+        db_alias = connection.alias
+        ContentType = apps.get_model("contenttypes", "ContentType")
+        NewsSection = apps.get_model("news", "NewsSection")
+        SiteModel = apps.get_model("wagtailcore", "Site")
+
+        if not Site.objects.db_manager(db_alias).filter(is_default_site=True).exists():
+            RuntimeLocale.objects.db_manager(db_alias).get_or_create(
+                language_code="es",
+            )
+            root = RuntimePage.get_first_root_node()
+            if root is None:
+                root = RuntimePage.add_root(
+                    instance=RuntimePage(title="Root", slug="root"),
+                )
+            home_page = RuntimeHomePage(
+                title="Inicio",
+                slug="inicio-epic5-001-migration-test",
+            )
+            root.add_child(instance=home_page)
+            Site.objects.db_manager(db_alias).create(
+                hostname="testserver",
+                port=80,
+                site_name="School Newsroom",
+                root_page=home_page,
+                is_default_site=True,
+            )
+
+        site = SiteModel.objects.using(db_alias).get(is_default_site=True)
+        home = RuntimePage.objects.get(pk=site.root_page_id)
+        base_child = RuntimePage(
+            title="Historical SEO Fictional News",
+            slug="historical-seo-news",
+        )
+        home.add_child(instance=base_child)
+        news_page_content_type = ContentType.objects.using(db_alias).get(
+            app_label="news",
+            model="newspage",
+        )
+        RuntimePage.objects.filter(pk=base_child.pk).update(
+            content_type_id=news_page_content_type.pk,
+        )
+        section, _ = NewsSection.objects.using(db_alias).get_or_create(
+            slug="politica",
+            defaults={"name": "Política", "sort_order": 10},
+        )
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO news_newspage (
+                    page_ptr_id,
+                    publication_date,
+                    summary,
+                    body,
+                    coverage_province,
+                    coverage_district,
+                    featured_image_id,
+                    section_id,
+                    school_id,
+                    contains_identifiable_minors,
+                    minor_publication_authorizations_verified,
+                    sensitive_content
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                [
+                    base_child.pk,
+                    timezone.datetime(2026, 7, 12).date(),
+                    "Historical fictional summary.",
+                    json.dumps(
+                        [
+                            {
+                                "type": "paragraph",
+                                "value": "<p>Historical fictional body.</p>",
+                                "id": "99999999-9999-4999-8999-999999999999",
+                            },
+                        ],
+                    ),
+                    "Arequipa",
+                    "",
+                    None,
+                    section.pk,
+                    None,
+                    False,
+                    False,
+                    False,
+                ],
+            )
+
+        apps = migrate_to(NEWS_0006)
+        MigratedNewsPage = apps.get_model("news", "NewsPage")
+        migrated_page = MigratedNewsPage.objects.using(db_alias).get(
+            pk=base_child.pk,
+        )
+
+        assert migrated_page.focus_keyphrase == ""
+        assert migrated_page.og_title == ""
+        assert migrated_page.og_description == ""
+        assert migrated_page.og_image_id is None
+        assert migrated_page.canonical_url == ""
+        assert migrated_page.seo_noindex is False
+        assert migrated_page.body[0].value.source == "<p>Historical fictional body.</p>"
+    finally:
+        migrate_to_latest()

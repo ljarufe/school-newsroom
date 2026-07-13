@@ -46,6 +46,10 @@ def import_production_settings() -> ModuleType:
     return importlib.import_module(PRODUCTION_SETTINGS_MODULE)
 
 
+def import_base_settings() -> ModuleType:
+    return importlib.import_module(BASE_SETTINGS_MODULE)
+
+
 def import_test_settings() -> ModuleType:
     return importlib.import_module(TEST_SETTINGS_MODULE)
 
@@ -89,3 +93,21 @@ def test_production_accepts_configured_secret_key(
     production_settings = import_production_settings()
 
     assert production_settings.SECRET_KEY == TEST_SECRET_KEY
+
+
+@pytest.mark.usefixtures("isolated_settings_modules")
+def test_seo_default_noindex_is_conservative(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.delenv("SEO_DEFAULT_NOINDEX", raising=False)
+
+    base_settings = import_base_settings()
+
+    assert base_settings.SEO_DEFAULT_NOINDEX is True
+
+
+@pytest.mark.usefixtures("isolated_settings_modules")
+def test_seo_default_noindex_can_be_disabled(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setenv("SEO_DEFAULT_NOINDEX", "false")
+
+    base_settings = import_base_settings()
+
+    assert base_settings.SEO_DEFAULT_NOINDEX is False

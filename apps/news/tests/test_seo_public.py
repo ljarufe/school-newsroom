@@ -133,6 +133,49 @@ def test_news_public_metadata_uses_native_and_summary_fallbacks(
 
 
 @pytest.mark.django_db
+def test_public_metadata_ignores_whitespace_only_seo_and_social_overrides(
+    public_site,
+    section,
+    settings,
+) -> None:
+    settings.SEO_DEFAULT_NOINDEX = False
+    page = create_news_page(
+        public_site,
+        section,
+        title="Fallback Metadata News",
+        slug="fallback-metadata-news",
+        summary="Resumen público usado como fallback.",
+    )
+    page.seo_title = "   "
+    page.search_description = "\n  "
+    page.og_title = "\t"
+    page.og_description = "   "
+    page.save()
+
+    response = site_client().get(page.url)
+    content = response.content.decode()
+    data = json_ld_from_response(response)
+
+    assert response.status_code == 200
+    assert "<title>Fallback Metadata News</title>" in content
+    assert (
+        '<meta name="description" '
+        'content="Resumen público usado como fallback.">' in content
+    )
+    assert '<meta property="og:title" content="Fallback Metadata News">' in content
+    assert (
+        '<meta property="og:description" '
+        'content="Resumen público usado como fallback.">' in content
+    )
+    assert '<meta name="twitter:title" content="Fallback Metadata News">' in content
+    assert (
+        '<meta name="twitter:description" '
+        'content="Resumen público usado como fallback.">' in content
+    )
+    assert data["description"] == "Resumen público usado como fallback."
+
+
+@pytest.mark.django_db
 def test_news_public_metadata_omits_empty_optional_descriptions(
     public_site,
     section,

@@ -74,10 +74,12 @@ def _absolute_image_url(image, request=None) -> str:
 
 
 def build_public_metadata(page, request=None) -> PublicMetadata:
-    title = (page.seo_title or page.title or "").strip()
-    description = (page.search_description or page.summary or "").strip()
-    og_title = (page.og_title or title).strip()
-    og_description = (page.og_description or description).strip()
+    title = (page.seo_title or "").strip() or (page.title or "").strip()
+    description = (page.search_description or "").strip() or (
+        page.summary or ""
+    ).strip()
+    og_title = (page.og_title or "").strip() or title
+    og_description = (page.og_description or "").strip() or description
     image = page.og_image or page.featured_image
     site = _site_for_request(page, request)
     site_name = ((site.site_name if site else "") or settings.WAGTAIL_SITE_NAME).strip()

@@ -203,6 +203,24 @@ def test_draft_validation_allows_missing_public_credit(home_page, section) -> No
 
 
 @pytest.mark.django_db
+def test_empty_seo_fields_remain_non_blocking_for_full_validation(
+    home_page,
+    section,
+) -> None:
+    form = make_admin_form(
+        home_page,
+        section,
+        slug="publish-without-seo-recommendations",
+        public_credits=["Fictional school newsroom team"],
+    )
+
+    assert form.is_valid()
+    assert form.cleaned_data["focus_keyphrase"] == ""
+    assert form.cleaned_data["canonical_url"] == ""
+    assert form.cleaned_data["seo_noindex"] is False
+
+
+@pytest.mark.django_db
 def test_draft_validation_allows_incomplete_article_image_block(
     home_page,
     section,

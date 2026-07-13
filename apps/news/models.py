@@ -8,6 +8,8 @@ from wagtail.admin.panels import (
     HelpPanel,
     InlinePanel,
     MultiFieldPanel,
+    ObjectList,
+    TabbedInterface,
 )
 from wagtail.fields import StreamField
 from wagtail.models import Orderable, Page
@@ -19,6 +21,15 @@ from .blocks import (
     YouTubeEmbedBlock,
 )
 from .forms import NewsPageAdminForm
+from .panels import SeoAssistantPanel
+from .seo_metadata import (
+    build_news_article_data,
+    build_public_metadata,
+    canonical_is_self,
+    effective_noindex,
+    safe_json_dumps,
+    validate_canonical_url,
+)
 
 MINOR_PRIVACY_NOTICE = """
 <p>
@@ -228,6 +239,55 @@ class NewsPage(Page):
         blank=True,
         related_name="+",
     )
+    focus_keyphrase = models.CharField(
+        "Frase clave objetivo",
+        max_length=255,
+        blank=True,
+        help_text=(
+            "Frase exacta principal para el análisis SEO. No bloquea la publicación."
+        ),
+    )
+    og_title = models.CharField(
+        "Título para redes sociales",
+        max_length=255,
+        blank=True,
+        help_text="Si queda vacío, se usa el título SEO o el título de la noticia.",
+    )
+    og_description = models.TextField(
+        "Descripción para redes sociales",
+        max_length=500,
+        blank=True,
+        help_text=(
+            "Si queda vacía, se usa la descripción meta o el resumen de la noticia."
+        ),
+    )
+    og_image = models.ForeignKey(
+        "wagtailimages.Image",
+        verbose_name="Imagen para redes sociales",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="Si queda vacía, se usa la imagen destacada.",
+    )
+    canonical_url = models.URLField(
+        "URL canonical",
+        max_length=2048,
+        blank=True,
+        validators=[validate_canonical_url],
+        help_text=(
+            "Déjala vacía para usar la URL pública de esta noticia. Usa una URL "
+            "distinta sólo cuando otra versión deba ser la principal."
+        ),
+    )
+    seo_noindex = models.BooleanField(
+        "Excluir de los resultados de búsqueda",
+        default=False,
+        help_text=(
+            "Solicita a los buscadores que no indexen esta noticia. No impide que "
+            "la página sea visitada ni bloquea su rastreo."
+        ),
+    )
     tags = ClusterTaggableManager("Etiquetas", through=NewsPageTag, blank=True)
     contains_identifiable_minors = models.BooleanField(
         "Contiene menores identificables",
@@ -291,6 +351,68 @@ class NewsPage(Page):
             heading="Privacidad de menores",
         ),
     ]
+
+    promote_panels = [
+        MultiFieldPanel(
+            [
+                FieldPanel("slug", heading="Slug de la URL"),
+                FieldPanel("seo_title", heading="Título SEO"),
+                FieldPanel("search_description", heading="Descripción meta"),
+                FieldPanel("focus_keyphrase"),
+            ],
+            heading="Configuración SEO",
+        ),
+        MultiFieldPanel(
+            [
+                FieldPanel("og_title"),
+                FieldPanel("og_description"),
+                FieldPanel("og_image"),
+            ],
+            heading="Configuración para redes sociales",
+        ),
+        MultiFieldPanel(
+            [
+                FieldPanel("canonical_url"),
+                FieldPanel("seo_noindex"),
+            ],
+            heading="Indexación y canonical",
+        ),
+        SeoAssistantPanel(),
+        MultiFieldPanel(
+            [
+                HelpPanel(
+                    content=(
+                        "<p><strong>Esta opción organiza la navegación del sitio y "
+                        "no afecta el análisis ni el estado SEO.</strong></p>"
+                    ),
+                ),
+                FieldPanel("show_in_menus"),
+            ],
+            heading="Navegación y menús",
+        ),
+    ]
+
+    edit_handler = TabbedInterface(
+        [
+            ObjectList(content_panels, heading="Contenido"),
+            ObjectList(promote_panels, heading="Asistente SEO"),
+            ObjectList(Page.settings_panels, heading="Propiedades"),
+        ],
+    )
+
+    def get_context(self, request, *args, **kwargs):
+        context = super().get_context(request, *args, **kwargs)
+        metadata = build_public_metadata(self, request)
+        context["seo_metadata"] = metadata
+        context["seo_json_ld"] = safe_json_dumps(
+            build_news_article_data(self, metadata),
+        )
+        return context
+
+    def get_sitemap_urls(self, request=None):
+        if effective_noindex(self) or not canonical_is_self(self, request):
+            return []
+        return super().get_sitemap_urls(request=request)
 
     class Meta:
         verbose_name = "Noticia"

@@ -1,6 +1,8 @@
 from django.db.models import Prefetch
 from wagtail.models import Page
 
+from apps.news.seo_metadata import environment_noindex
+
 
 class HomePage(Page):
     template = "home/home_page.html"
@@ -29,4 +31,10 @@ class HomePage(Page):
             )
             .order_by("-publication_date", "-first_published_at")[:12]
         )
+        context["seo_noindex"] = environment_noindex()
         return context
+
+    def get_sitemap_urls(self, request=None):
+        if environment_noindex():
+            return []
+        return super().get_sitemap_urls(request=request)

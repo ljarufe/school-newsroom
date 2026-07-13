@@ -1,0 +1,88 @@
+<section
+  class="seo-assistant"
+  data-seo-assistant
+  data-public-url="{{ served_public_url }}"
+  data-current-slug="{{ self.instance.slug }}"
+>
+  <div class="seo-assistant__status seo-assistant__status--{{ analysis.overall_status }}">
+    <h2>Estado general</h2>
+    <p class="seo-assistant__traffic-light">
+      <span aria-hidden="true" class="seo-assistant__dot"></span>
+      <strong data-seo-overall-label>{{ analysis.overall_label }}</strong>
+    </p>
+    <p>Es una recomendación editorial y no bloquea el guardado ni la publicación.</p>
+  </div>
+
+  <div class="seo-assistant__grid">
+    <section class="seo-assistant__card" aria-labelledby="search-preview-heading">
+      <h2 id="search-preview-heading">Vista previa en buscador</h2>
+      <p class="seo-assistant__counter">
+        Título SEO: <strong data-seo-title-count>{{ self.instance.seo_title|length }}</strong> caracteres
+        · Descripción meta:
+        <strong data-seo-description-count>{{ self.instance.search_description|length }}</strong> caracteres
+      </p>
+      <div class="seo-assistant__preview">
+        <p class="seo-assistant__preview-url" data-seo-preview-url>{{ preview_url }}</p>
+        <p class="seo-assistant__preview-title" data-seo-preview-title>{{ metadata.title }}</p>
+        <p class="seo-assistant__preview-description" data-seo-preview-description>{{ metadata.description }}</p>
+      </div>
+      <p class="seo-assistant__fallback" data-seo-title-fallback{% if not title_uses_fallback %} hidden{% endif %}>
+        Se está usando el título de la noticia como fallback.
+      </p>
+      <p class="seo-assistant__fallback" data-seo-description-fallback{% if not description_uses_fallback %} hidden{% endif %}>
+        Se está usando el resumen como fallback.
+      </p>
+      <p class="help-block help-info">La vista usa caracteres como aproximación; no replica el ancho exacto de un buscador.</p>
+    </section>
+
+    <section class="seo-assistant__card" aria-labelledby="social-preview-heading">
+      <h2 id="social-preview-heading">Vista previa social</h2>
+      <div class="seo-assistant__preview seo-assistant__preview--social">
+        {% if metadata.og_image_url %}
+          <img src="{{ metadata.og_image_url }}" alt="" class="seo-assistant__social-image">
+        {% else %}
+          <div class="seo-assistant__image-placeholder">Sin imagen social</div>
+        {% endif %}
+        <p class="seo-assistant__site-name">{{ metadata.site_name }}</p>
+        <p class="seo-assistant__preview-title" data-seo-social-title>{{ metadata.og_title }}</p>
+        <p class="seo-assistant__preview-description" data-seo-social-description>{{ metadata.og_description }}</p>
+      </div>
+      <p class="seo-assistant__fallback" data-seo-og-title-fallback{% if not og_title_uses_fallback %} hidden{% endif %}>
+        El título social usa el título SEO o el título de la noticia.
+      </p>
+      <p class="seo-assistant__fallback" data-seo-og-description-fallback{% if not og_description_uses_fallback %} hidden{% endif %}>
+        La descripción social usa la descripción meta o el resumen.
+      </p>
+      {% if og_image_uses_fallback %}
+        <p class="seo-assistant__fallback">La imagen social usa la imagen destacada.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <div class="seo-assistant__grid">
+    <section class="seo-assistant__card" aria-labelledby="seo-analysis-heading">
+      <h2 id="seo-analysis-heading">Análisis SEO</h2>
+      <ul class="seo-assistant__checks">
+        {% for check in analysis.seo_checks %}
+          <li class="seo-assistant__check seo-assistant__check--{{ check.status }}">
+            <strong>{{ check.label }}</strong>
+            <span>{{ check.explanation }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="seo-assistant__card" aria-labelledby="readability-heading">
+      <h2 id="readability-heading">Legibilidad</h2>
+      <p class="help-block help-info">Estas heurísticas son recomendaciones para español y no una certificación lingüística.</p>
+      <ul class="seo-assistant__checks">
+        {% for check in analysis.readability_checks %}
+          <li class="seo-assistant__check seo-assistant__check--{{ check.status }}">
+            <strong>{{ check.label }}</strong>
+            <span>{{ check.explanation }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+</section>

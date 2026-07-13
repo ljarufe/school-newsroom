@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ page.title }}</title>
+    <meta name="robots" content="{% if seo_noindex %}noindex, follow{% else %}index, follow{% endif %}">
   </head>
   <body>
     <main>

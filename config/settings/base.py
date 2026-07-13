@@ -12,6 +12,7 @@ env = environ.Env(
     DJANGO_DEBUG=(bool, False),
     DJANGO_ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
     DATABASE_URL=(str, DEFAULT_DATABASE_URL),
+    SEO_DEFAULT_NOINDEX=(bool, True),
 )
 
 environ.Env.read_env(BASE_DIR / ".env")
@@ -19,6 +20,7 @@ environ.Env.read_env(BASE_DIR / ".env")
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 DEBUG = env("DJANGO_DEBUG")
 ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")
+SEO_DEFAULT_NOINDEX = env("SEO_DEFAULT_NOINDEX")
 
 INSTALLED_APPS = [
     "apps.home",
@@ -41,6 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "django.contrib.sitemaps",
     "django.contrib.staticfiles",
 ]
 

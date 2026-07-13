@@ -88,6 +88,22 @@ def test_custom_editor_visible_labels_are_spanish() -> None:
     assert NewsPage._meta.get_field("featured_image").verbose_name == (
         "Imagen destacada"
     )
+    assert NewsPage._meta.get_field("focus_keyphrase").verbose_name == (
+        "Frase clave objetivo"
+    )
+    assert NewsPage._meta.get_field("og_title").verbose_name == (
+        "Título para redes sociales"
+    )
+    assert NewsPage._meta.get_field("og_description").verbose_name == (
+        "Descripción para redes sociales"
+    )
+    assert NewsPage._meta.get_field("og_image").verbose_name == (
+        "Imagen para redes sociales"
+    )
+    assert NewsPage._meta.get_field("canonical_url").verbose_name == "URL canonical"
+    assert NewsPage._meta.get_field("seo_noindex").verbose_name == (
+        "Excluir de los resultados de búsqueda"
+    )
     assert NewsPage._meta.get_field("tags").verbose_name == "Etiquetas"
     assert NewsPage._meta.get_field("contains_identifiable_minors").verbose_name == (
         "Contiene menores identificables"

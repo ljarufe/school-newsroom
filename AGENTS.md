@@ -21,6 +21,42 @@ These instructions apply to the whole repository.
 - Do not commit secrets, credentials, private keys, tokens, or production values.
 - Privacy risks involving minors are high priority.
 
+
+## Inspection and implementation handoffs
+
+### Inspection-only passes
+
+When a task explicitly requests checkout inspection without implementation:
+
+- Do not modify repository files.
+- Generate `tmp/<TICKET-ID>_checkout_inspection_report.md`.
+- Include the active branch and worktree state, relevant architecture, recommended implementation path, risks, blockers, and decisions required.
+- Do not report the ticket as implemented or complete.
+- Keep the report temporary; do not stage or commit it.
+
+### Implementation-pass handoff
+
+At the end of every implementation pass:
+
+- Create or update `docs/process/<TICKET-ID>_feedback.md`.
+- Generate `tmp/<TICKET-ID>_diff_review.txt`.
+- Provide a final Codex chat report summarizing implementation, validation, failures, warnings, deferred UAT, New Work Discovered, and final Git status.
+
+The diff-review artifact must include:
+
+- the active branch;
+- `git status --short`;
+- diff statistics and changed-file lists;
+- tracked unstaged changes;
+- staged changes when present;
+- the complete contents of relevant untracked files.
+
+Exclude the review artifact itself, unrelated `tmp/` files, caches, generated noise, secrets, and files outside the ticket scope.
+
+Generate the diff-review artifact only after all formatter, migration, generator, and validation-related file changes are complete. Regenerate it if the worktree changes afterward.
+
+Temporary inspection and diff-review artifacts under `tmp/` must not be staged or committed.
+
 ## Development workflow
 
 - Preserve the Docker-first runtime and the Dev Container workflow.

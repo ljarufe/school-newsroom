@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation Closing Draft
+Closing Feedback Final
 
 ## Scope delivered
 
@@ -173,6 +173,11 @@ JSON-LD `description` are omitted when the native meta description and summary
 produce no effective value. Open Graph and Twitter/X descriptions are omitted
 when their effective social description is empty. No description is fabricated.
 
+Metadata candidates are stripped before fallback selection. Whitespace-only
+`seo_title`, `search_description`, `og_title`, and `og_description` values
+therefore behave as empty values and fall back to the page title, summary, or
+effective public metadata instead of suppressing those fallbacks.
+
 Additional fallback coverage confirms that an explicit `og_image` takes
 precedence over `featured_image`. Clearing the optional field or deleting its
 selected image leaves `og_image` null through `SET_NULL` and restores the
@@ -237,16 +242,20 @@ shows that entered value.
 
 Wagtail 7.4.2's `TabbedInterface` uses the native `w-tabs` controller and URL
 fragment state. Successful form redirects do not retain that fragment. The
-small persistence bridge stores the active SEO panel ID in `sessionStorage`,
-scoped by the current Admin pathname, only when the native draft-save button is
-submitted while that panel is active. On reload it consumes the state only when
-Wagtail rendered a success message, the form has no validation errors, and no
-different URL fragment requested another panel. It then activates Wagtail's own
-tab trigger and URL state instead of changing panel classes directly.
+small persistence bridge uses one stable `sessionStorage` key and stores JSON
+containing the active panel ID, origin pathname, whether the origin was a page
+creation route, and the save timestamp.
 
-Validation responses, named workflow actions, unrelated page paths, and URLs
-that intentionally select another panel are not overridden. Unavailable session
-storage degrades to Wagtail's default behavior.
+The bridge accepts either the same edit pathname or the expected create-to-edit
+transition, expires state after 60 seconds, consumes it once, and restores the
+tab only after a successful native draft save. Wagtail's success message,
+validation-error state, and explicit URL fragment remain authoritative. The
+implementation activates Wagtail's own tab trigger instead of modifying panel
+classes directly.
+
+Validation responses, named workflow actions, unrelated page paths, stale or
+malformed state, and URLs intentionally selecting another panel are not
+overridden. Unavailable session storage degrades to Wagtail's default behavior.
 
 It does not inspect Draftail ContentState, register Telepath adapters, analyze
 body content, or integrate with external services. Server-side analysis after
@@ -275,6 +284,24 @@ All three P2 findings were accepted and corrected:
    nested list-item content to appear in both child and ancestor events. It now
    appends to only the innermost active capture while retaining all visible text
    in the article snapshot.
+
+## GitHub Codex review correction
+
+The Pull Request review produced one actionable P2 finding:
+
+- metadata fallback selection occurred before whitespace normalization, so
+  whitespace-only SEO or social override values could suppress valid page-title,
+  summary, or social fallbacks when content was created outside the normal
+  Wagtail form path.
+
+The finding was accepted and corrected in `build_public_metadata()` by stripping
+each candidate before choosing its fallback. Regression coverage confirms that
+whitespace-only `seo_title`, `search_description`, `og_title`, and
+`og_description` values produce the expected HTML, Open Graph, Twitter/X, and
+JSON-LD fallbacks.
+
+No additional actionable GitHub review findings remained open before final
+feedback preparation.
 
 ## Files changed
 
@@ -445,14 +472,15 @@ compiled-output side effect is present.
 
 ## Maintainer browser UAT
 
-The maintainer reported the following completed browser UAT results before this
-correction pass.
+The maintainer completed browser UAT for the ticket.
 
 Passed:
 
+- visible editor tabs are `Contenido` and `Asistente SEO`;
 - live search preview;
 - live social text preview;
 - title and description counters;
+- canonical editing and fallback behavior;
 - SEO checks;
 - Spanish readability checks;
 - body-image alt analysis;
@@ -460,11 +488,15 @@ Passed:
 - global noindex;
 - sitemap;
 - `robots.txt`;
-- public metadata and safe public-author output.
+- public metadata and safe public-author output;
+- saving an existing page from `Asistente SEO` restores that tab;
+- the first save of a new page survives the create-to-edit route change and
+  restores `Asistente SEO`;
+- validation errors retain Wagtail's normal error and tab priority.
 
 Expected results:
 
-- the exact focus keyphrase was absent from the tested headings, so the subtitle
+- the exact focus keyphrase was absent from one tested heading, so the subtitle
   check correctly produced a warning;
 - after adding a body image with alt text, its check became green.
 
@@ -475,30 +507,34 @@ Not applicable:
   remain for imported, pasted, historical, or externally generated nested-list
   HTML.
 
-Failed in UAT and corrected in this pass:
+## Final validation and Pull Request evidence
 
-- the visible tab label was English;
-- a successful draft save returned to `Contenido` instead of the SEO tab;
-- documentation incorrectly claimed a visible `Propiedades` tab.
+Final local validation after the active-tab and metadata-fallback corrections:
 
-The corrected Spanish label and post-save tab restoration have not been marked
-as manually passed; both require the maintainer retests below.
+```text
+make check: passed
+Ruff: passed
+Migration drift: no changes detected
+Full pytest suite: passed
+git diff --check: passed
+```
 
-## Deferred validation
+The Pull Request CI completed successfully. The GitHub Codex P2 metadata
+fallback finding was corrected and resolved. No additional actionable review
+finding remained open.
 
-Two focused maintainer/browser retests remain required:
-
-- confirm that the visible tab label is `Asistente SEO`;
-- from `Asistente SEO`, save a valid draft/update and confirm that the reloaded
-  editor returns to that tab. Also confirm that a validation error still lets
-  Wagtail select the tab or panel containing the error.
-
-Commit, push, CI, GitHub review, and merge are not completed by this
-implementation handoff. The maintainer completed the reported UAT cases above;
-only the two focused correction retests remain pending.
+Commit, push, Pull Request creation, CI, review correction, and final feedback
+preparation are complete. Merge remains the maintainer's final repository action.
 
 ## Failed attempts and root causes
 
+- A direct focused pytest command initially used the wrong Django settings and
+  triggered missing staticfiles-manifest errors. The project Makefile's test
+  configuration (`config.settings.test`) was used instead; the manifest errors
+  were environmental command errors, not product regressions.
+- One source-level JavaScript assertion expected `form.querySelector(` and its
+  selector on the same line. The implementation was correct; the brittle test
+  assertion was relaxed to verify the complete selector string.
 - The initial parallel focused lint/migration invocation produced a Docker API
   permission failure for migration-check while lint ran successfully. Repeating
   the migration check sequentially still encountered sandbox Docker access; the
@@ -541,8 +577,8 @@ only the two focused correction retests remain pending.
   assertion preserved its behavior; the repeated complete gate then passed.
 - An optional host-side `node --check` probe could not run because the repository
   does not select a Node.js version for the installed asdf shim. No Node runtime
-  or dependency was added for this ticket; JavaScript remains covered by focused
-  source assertions and the pending browser retest.
+  or dependency was added for this ticket; JavaScript is covered by focused
+  source assertions and completed browser UAT.
 
 ## Warnings and known limitations
 
@@ -584,11 +620,16 @@ Potential future tickets, all outside EPIC5-001:
 
 ## Durable knowledge candidates
 
-The repository maintainer has already added durable inspection-only and
-implementation-pass handoff artifact rules to `AGENTS.md`. Codex preserved but
-did not author that change.
+The repository maintainer added durable inspection-only and implementation-pass
+handoff artifact rules to `AGENTS.md`. Codex preserved but did not author that
+change.
 
-Public absolute URLs continuing to come from Wagtail Sites/page URL helpers,
-rather than `WAGTAILADMIN_BASE_URL`, remains a useful technical convention in
-this feedback. No additional repository-instruction update is proposed in this
-correction pass.
+Public absolute URLs must continue to come from Wagtail Sites/page URL helpers,
+rather than `WAGTAILADMIN_BASE_URL`.
+
+The closing workflow was also clarified for future tickets: use one local
+independent review before the PR, use the GitHub Codex review as the final remote
+review gate, avoid repetitive Git status/diff commands, create PRs through the
+GitHub web interface, skip unnecessary rebases when there is no external branch
+divergence, and replace the complete feedback file in a final documentation
+commit immediately before merge.

@@ -1,84 +1,67 @@
-{% load static wagtailcore_tags wagtailimages_tags %}
-<!doctype html>
-<html lang="es">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ seo_metadata.title }}</title>
-    {% if seo_metadata.description %}
-      <meta name="description" content="{{ seo_metadata.description }}">
-    {% endif %}
-    <link rel="canonical" href="{{ seo_metadata.canonical_url }}">
-    <meta name="robots" content="{{ seo_metadata.robots }}">
-    <meta property="og:title" content="{{ seo_metadata.og_title }}">
-    {% if seo_metadata.og_description %}
-      <meta property="og:description" content="{{ seo_metadata.og_description }}">
-    {% endif %}
-    <meta property="og:type" content="{{ seo_metadata.og_type }}">
-    <meta property="og:url" content="{{ seo_metadata.canonical_url }}">
-    <meta property="og:site_name" content="{{ seo_metadata.site_name }}">
-    {% if seo_metadata.og_image_url %}
-      <meta property="og:image" content="{{ seo_metadata.og_image_url }}">
-    {% endif %}
-    <meta name="twitter:card" content="{{ seo_metadata.twitter_card }}">
-    <meta name="twitter:title" content="{{ seo_metadata.og_title }}">
-    {% if seo_metadata.og_description %}
-      <meta name="twitter:description" content="{{ seo_metadata.og_description }}">
-    {% endif %}
-    {% if seo_metadata.og_image_url %}
-      <meta name="twitter:image" content="{{ seo_metadata.og_image_url }}">
-    {% endif %}
-    <script type="application/ld+json">{{ seo_json_ld|safe }}</script>
-  </head>
-  <body>
-    <main>
-      <article>
-        <header>
-          <h1>{{ page.title }}</h1>
-          <p>{{ page.summary }}</p>
-          {% with public_credits=page.public_credits.all %}
-            {% if public_credits %}
-              <p>Por
-                {% for credit in public_credits %}
-                  {{ credit.display_name }}{% if not forloop.last %}; {% endif %}
-                {% endfor %}
-              </p>
-            {% endif %}
-          {% endwith %}
-          <dl>
-            <dt>Fecha de publicación</dt>
-            <dd>{{ page.publication_date }}</dd>
-            <dt>Sección</dt>
-            <dd>{{ page.section }}</dd>
-            {% if page.school %}
-              <dt>Colegio</dt>
-              <dd>{{ page.school }}</dd>
-            {% endif %}
-            <dt>Cobertura</dt>
-            <dd>
-              {{ page.coverage_province }}{% if page.coverage_district %}, {{ page.coverage_district }}{% endif %}
-            </dd>
-          </dl>
-          {% if page.featured_image %}
-            {% image page.featured_image width-960 %}
-          {% endif %}
-        </header>
+{% extends "base.html" %}
+{% load wagtailcore_tags wagtailimages_tags %}
 
-        {% include_block page.body %}
+{% block title %}{{ seo_metadata.title }}{% endblock title %}
 
-        {% with tags=page.tags.all %}
-          {% if tags %}
-            <footer>
-              <h2>Etiquetas</h2>
-              <ul>
-                {% for tag in tags %}
-                  <li>{{ tag.name }}</li>
-                {% endfor %}
-              </ul>
-            </footer>
-          {% endif %}
-        {% endwith %}
-      </article>
-    </main>
-  </body>
-</html>
+{% block metadata %}
+  {% if seo_metadata.description %}<meta name="description" content="{{ seo_metadata.description }}">{% endif %}
+  <link rel="canonical" href="{{ seo_metadata.canonical_url }}">
+  <meta name="robots" content="{{ seo_metadata.robots }}">
+  <meta property="og:title" content="{{ seo_metadata.og_title }}">
+  {% if seo_metadata.og_description %}<meta property="og:description" content="{{ seo_metadata.og_description }}">{% endif %}
+  <meta property="og:type" content="{{ seo_metadata.og_type }}">
+  <meta property="og:url" content="{{ seo_metadata.canonical_url }}">
+  <meta property="og:site_name" content="{{ seo_metadata.site_name }}">
+  {% if seo_metadata.og_image_url %}<meta property="og:image" content="{{ seo_metadata.og_image_url }}">{% endif %}
+  <meta name="twitter:card" content="{{ seo_metadata.twitter_card }}">
+  <meta name="twitter:title" content="{{ seo_metadata.og_title }}">
+  {% if seo_metadata.og_description %}<meta name="twitter:description" content="{{ seo_metadata.og_description }}">{% endif %}
+  {% if seo_metadata.og_image_url %}<meta name="twitter:image" content="{{ seo_metadata.og_image_url }}">{% endif %}
+  <script type="application/ld+json">{{ seo_json_ld|safe }}</script>
+{% endblock metadata %}
+
+{% block content %}
+  <article class="container article-layout py-5">
+    <header class="article-header content-width mx-auto mb-5">
+      <p class="eyebrow">{{ page.section.name }}</p>
+      <h1 class="display-3">{{ page.title }}</h1>
+      <p class="lead">{{ page.summary }}</p>
+      {% with public_credits=page.public_credits.all %}
+        {% if public_credits %}
+          <p class="byline">Por
+            {% for credit in public_credits %}
+              {{ credit.display_name }}{% if not forloop.last %}; {% endif %}
+            {% endfor %}
+          </p>
+        {% endif %}
+      {% endwith %}
+      <dl class="news-meta news-meta--detail mb-4">
+        <div><dt>Fecha de publicación</dt><dd><time datetime="{{ page.publication_date|date:'Y-m-d' }}">{{ page.publication_date }}</time></dd></div>
+        <div><dt>Sección</dt><dd><a href="{% url 'news_list' %}?seccion={{ page.section.slug|urlencode }}">{{ page.section.name }}</a></dd></div>
+        {% if page.school %}<div><dt>Colegio</dt><dd>{{ page.school }}</dd></div>{% endif %}
+        <div><dt>Cobertura</dt><dd>{{ page.coverage_province }}{% if page.coverage_district %}, {{ page.coverage_district }}{% endif %}</dd></div>
+      </dl>
+    </header>
+
+    {% if page.featured_image %}
+      <figure class="article-featured-image mb-5">
+        {% image page.featured_image width-1200 %}
+      </figure>
+    {% endif %}
+
+    <div class="article-body content-width mx-auto">
+      {% include_block page.body %}
+    </div>
+
+    {% with tags=page.tags.all %}
+      {% if tags %}
+        <footer class="article-tags content-width mx-auto mt-5 pt-4">
+          <h2 class="h5">Etiquetas</h2>
+          <ul class="list-inline mb-0">
+            {% for tag in tags %}<li class="list-inline-item"><span class="badge text-bg-light">{{ tag.name }}</span></li>{% endfor %}
+          </ul>
+        </footer>
+      {% endif %}
+    {% endwith %}
+  </article>
+{% endblock content %}

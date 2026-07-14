@@ -8,8 +8,8 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('home', '0002_alter_homepage_options'),
-        ('wagtailcore', '0097_baselogentry_uuid_action_timestamp_indexes'),
+        ("home", "0002_alter_homepage_options"),
+        ("wagtailcore", "0097_baselogentry_uuid_action_timestamp_indexes"),
     ]
 
     operations = [

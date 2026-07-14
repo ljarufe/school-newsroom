@@ -596,3 +596,225 @@ def test_home_thumbnail_uses_decorative_empty_alt(
     assert response.status_code == 200
     assert b"<img" in response.content
     assert b'alt=""' in response.content
+
+
+@pytest.mark.django_db
+def test_home_separates_featured_story_from_secondary_stories(
+    public_site,
+    section,
+) -> None:
+    older = create_news_page(
+        public_site,
+        section,
+        title="Older secondary story",
+        slug="older-secondary-story",
+        publication_date=dt.date(2026, 7, 1),
+    )
+    featured = create_news_page(
+        public_site,
+        section,
+        title="Newest featured story",
+        slug="newest-featured-story",
+        publication_date=dt.date(2026, 7, 2),
+    )
+
+    context = public_site.get_context(RequestFactory().get("/"))
+
+    assert context["featured_news"] == featured
+    assert context["secondary_news"] == [older]
+    assert featured not in context["secondary_news"]
+
+
+@pytest.mark.django_db
+def test_news_list_without_filter_uses_editorial_order(
+    public_site,
+    section,
+) -> None:
+    create_news_page(
+        public_site,
+        section,
+        title="Older listed story",
+        slug="older-listed-story",
+        publication_date=dt.date(2026, 7, 1),
+    )
+    create_news_page(
+        public_site,
+        section,
+        title="Newest listed story",
+        slug="newest-listed-story",
+        publication_date=dt.date(2026, 7, 2),
+    )
+
+    response = Client().get("/noticias/")
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert content.index("Newest listed story") < content.index("Older listed story")
+
+
+@pytest.mark.django_db
+def test_news_list_filters_by_matching_real_section(public_site, section) -> None:
+    other_section = NewsSection.objects.create(
+        name="Sección ficticia",
+        slug="seccion-ficticia",
+    )
+    create_news_page(
+        public_site,
+        section,
+        title="Matching section story",
+        slug="matching-section-story",
+        publication_date=dt.date(2026, 7, 2),
+    )
+    create_news_page(
+        public_site,
+        other_section,
+        title="Other section story",
+        slug="other-section-story",
+        publication_date=dt.date(2026, 7, 1),
+    )
+
+    response = Client().get("/noticias/", {"seccion": section.slug})
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert f"Noticias de {section.name}" in content
+    assert "Matching section story" in content
+    assert "Other section story" not in content
+
+
+@pytest.mark.django_db
+def test_news_list_renders_empty_state_for_real_section_without_results(
+    public_site,
+) -> None:
+    empty_section = NewsSection.objects.create(
+        name="Sección sin noticias",
+        slug="seccion-sin-noticias",
+    )
+
+    response = Client().get("/noticias/", {"seccion": empty_section.slug})
+
+    assert response.status_code == 200
+    assert "Aún no hay noticias publicadas en esta sección.".encode() in (
+        response.content
+    )
+
+
+@pytest.mark.django_db
+def test_news_list_handles_unknown_section_slug_safely(public_site) -> None:
+    response = Client().get("/noticias/", {"seccion": "does-not-exist"})
+
+    assert response.status_code == 200
+    assert "La sección solicitada no existe.".encode() in response.content
+
+
+@pytest.mark.django_db
+def test_news_list_excludes_drafts_and_restricted_pages(
+    public_site,
+    section,
+) -> None:
+    create_news_page(
+        public_site,
+        section,
+        title="Invisible draft story",
+        slug="invisible-draft-story",
+        publication_date=dt.date(2026, 7, 1),
+        live=False,
+    )
+    restricted = create_news_page(
+        public_site,
+        section,
+        title="Invisible restricted story",
+        slug="invisible-restricted-story",
+        publication_date=dt.date(2026, 7, 2),
+    )
+    PageViewRestriction.objects.create(
+        page=restricted,
+        restriction_type=PageViewRestriction.LOGIN,
+    )
+    create_news_page(
+        public_site,
+        section,
+        title="Visible listed story",
+        slug="visible-listed-story",
+        publication_date=dt.date(2026, 7, 3),
+    )
+
+    content = Client().get("/noticias/").content.decode()
+
+    assert "Visible listed story" in content
+    assert "Invisible draft story" not in content
+    assert "Invisible restricted story" not in content
+
+
+@pytest.mark.django_db
+def test_news_list_does_not_expose_internal_minor_or_privacy_data(
+    public_site,
+    section,
+) -> None:
+    school = School.objects.create(
+        name="Fictional privacy school",
+        province="Arequipa",
+        district="Cercado",
+    )
+    group = ContributorGroup.objects.create(
+        name="Fictional privacy group",
+        school=school,
+    )
+    contributor = MinorContributor.objects.create(
+        full_name="Private fictional minor name",
+        group=group,
+        age_band=MinorContributor.AgeBand.UNDER_14,
+    )
+    page = create_news_page(
+        public_site,
+        section,
+        title="Public privacy-safe listing story",
+        slug="public-privacy-safe-listing-story",
+        publication_date=dt.date(2026, 7, 1),
+    )
+    page.contains_identifiable_minors = True
+    page.minor_publication_authorizations_verified = True
+    page.sensitive_content = True
+    page.save()
+    NewsPageContributor.objects.create(page=page, contributor=contributor)
+    NewsPagePublicCredit.objects.create(
+        page=page,
+        display_name="Safe fictional public byline",
+    )
+
+    content = Client().get("/noticias/").content.decode()
+
+    assert "Safe fictional public byline" in content
+    assert "Private fictional minor name" not in content
+    assert "under_14" not in content
+    assert "internal_contributors" not in content
+    assert "contains_identifiable_minors" not in content
+    assert "minor_publication_authorizations_verified" not in content
+    assert "sensitive_content" not in content
+
+
+@pytest.mark.django_db
+def test_shared_public_layout_renders_landmarks_and_navigation(
+    public_site,
+    section,
+) -> None:
+    page = create_news_page(
+        public_site,
+        section,
+        title="Shared layout detail story",
+        slug="shared-layout-detail-story",
+        publication_date=dt.date(2026, 7, 1),
+    )
+
+    for url in ["/", "/noticias/", page.url]:
+        response = Client().get(url)
+        content = response.content.decode()
+
+        assert response.status_code == 200
+        assert '<html lang="es">' in content
+        assert "Navegación principal" in content
+        assert "Saltar al contenido principal" in content
+        assert "<header" in content
+        assert "<nav" in content
+        assert '<main id="main-content"' in content
+        assert "<footer" in content

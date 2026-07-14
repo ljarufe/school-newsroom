@@ -1,0 +1,36 @@
+{% load wagtailcore_tags %}
+<header class="site-header">
+  <nav class="navbar navbar-expand-lg navbar-dark" aria-label="Navegación principal">
+    <div class="container">
+      <a class="navbar-brand" href="{% if home_page %}{% pageurl home_page %}{% else %}/{% endif %}">School Newsroom</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#public-navigation" aria-controls="public-navigation" aria-expanded="false" aria-label="Abrir navegación">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="public-navigation">
+        <ul class="navbar-nav ms-auto align-items-lg-center">
+          <li class="nav-item">
+            <a class="nav-link" href="{% if home_page %}{% pageurl home_page %}{% else %}/{% endif %}">Inicio</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'news_list' %}">Noticias</a>
+          </li>
+          {% if sections %}
+            <li class="nav-item dropdown">
+              <button class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Secciones</button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                {% for section in sections %}
+                  <li><a class="dropdown-item" href="{% url 'news_list' %}?seccion={{ section.slug|urlencode }}">{{ section.name }}</a></li>
+                {% endfor %}
+              </ul>
+            </li>
+          {% endif %}
+          {% for institutional_page in institutional_pages %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% pageurl institutional_page %}">{{ institutional_page.title }}</a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </nav>
+</header>

@@ -14,6 +14,61 @@ Home pública local:
 http://localhost:8000/
 ```
 
+Listado público de noticias:
+
+```text
+http://localhost:8000/noticias/
+```
+
+## Navegación pública
+
+El sitio público comparte una navegación responsive entre la Home, el listado
+de noticias, el detalle de cada noticia y las páginas institucionales. Incluye:
+
+- `Inicio`;
+- `Noticias`;
+- las secciones editoriales existentes, que abren el listado filtrado por su
+  slug;
+- las páginas institucionales publicadas que tengan activa la opción nativa
+  `mostrar en menús`.
+
+Una página institucional que no exista, no esté publicada o no esté marcada
+para menús no genera un enlace vacío en la navegación.
+
+## Páginas institucionales simples
+
+Ruta para crear una página institucional:
+
+```text
+Páginas -> Inicio -> Añadir página hija -> Página institucional
+```
+
+La página usa el título nativo de Wagtail y añade estos campos:
+
+- `Introducción`: resumen corto del propósito de la página;
+- `Contenido`: texto enriquecido sencillo con negrita, cursiva, enlaces, H2,
+  H3, listas numeradas o con viñetas y citas.
+
+Para mostrarla en la navegación pública, abre las opciones de promoción de la
+página, activa `mostrar en menús` y publícala. La página institucional no admite
+páginas hijas. No se crean páginas institucionales ni contenido de forma
+automática.
+
+## Verificación del sitio público con contenido real
+
+La Home y el listado usan únicamente noticias reales publicadas y accesibles al
+público. Para revisar el recorrido:
+
+1. Publica una o dos noticias con datos ficticios y no sensibles.
+2. Abre la Home y confirma que la noticia más reciente aparece como destacada y
+   que las siguientes no la duplican.
+3. Abre `/noticias/` y usa una sección de la navegación para revisar el filtro.
+4. Abre el título de una noticia para revisar su detalle, cuerpo estructurado,
+   imágenes y contenido de YouTube o Spotify cuando existan.
+
+Si no hay noticias públicas, o una sección real no tiene resultados, la página
+muestra un estado vacío. No se generan tarjetas ni datos de demostración.
+
 ## Secciones editoriales
 
 Ruta en Wagtail Admin:
@@ -507,3 +562,7 @@ para ocultar páginas noindex.
   SEO.
 - No hay análisis automático de rostros, voces, proveedores externos ni datos
   personales dentro de imágenes, video o audio.
+- No existe un sistema de gestión de talleres, inscripciones o agenda.
+- Las páginas institucionales son contenido simple; no incluyen gestión de
+  equipos, constructor de páginas, formularios ni flujos institucionales
+  avanzados.

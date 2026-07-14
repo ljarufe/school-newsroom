@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}{% if selected_section %}{{ selected_section.name }} | {% endif %}Noticias | School Newsroom{% endblock title %}
+
+{% block content %}
+  <section class="container py-5" aria-labelledby="news-list-heading">
+    <header class="page-header mb-4">
+      <p class="eyebrow">Archivo editorial</p>
+      <h1 id="news-list-heading" class="display-4">{% if selected_section %}Noticias de {{ selected_section.name }}{% else %}Noticias{% endif %}</h1>
+      {% if selected_section %}
+        <p class="lead">Resultados de la sección editorial seleccionada.</p>
+        <a href="{% url 'news_list' %}">Ver todas las noticias</a>
+      {% else %}
+        <p class="lead mb-0">Todas las noticias publicadas, de la más reciente a la más antigua.</p>
+      {% endif %}
+    </header>
+
+    {% if unknown_section_slug %}
+      <div class="empty-state" role="status">
+        <h2>La sección solicitada no existe.</h2>
+        <p>Revisa la dirección o vuelve al listado completo de noticias.</p>
+        <a class="btn btn-primary" href="{% url 'news_list' %}">Ver todas las noticias</a>
+      </div>
+    {% elif news_pages %}
+      <div class="row g-4">
+        {% for news in news_pages %}
+          <div class="col-md-6 col-xl-4">{% include "includes/news_card.html" with news=news heading_level=2 only %}</div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state" role="status">
+        <h2>{% if selected_section %}Aún no hay noticias publicadas en esta sección.{% else %}Aún no hay noticias publicadas.{% endif %}</h2>
+        <p class="mb-0">Las noticias aparecerán aquí cuando el equipo editorial las publique.</p>
+      </div>
+    {% endif %}
+  </section>
+{% endblock content %}

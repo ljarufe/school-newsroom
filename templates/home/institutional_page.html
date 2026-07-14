@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags %}
+
+{% block title %}{{ page.title }} | School Newsroom{% endblock title %}
+
+{% block content %}
+  <article class="container content-width py-5">
+    <header class="page-header mb-5">
+      <p class="eyebrow">Información institucional</p>
+      <h1 class="display-4">{{ page.title }}</h1>
+      <p class="lead mb-0">{{ page.introduction }}</p>
+    </header>
+    <div class="rich-text article-body">{{ page.body|richtext }}</div>
+  </article>
+{% endblock content %}

@@ -15,7 +15,7 @@
             {% if featured_news.featured_image %}
               <div class="col-lg-7">
                 {% image featured_news.featured_image fill-1280x720 as hero_image %}
-                <img class="featured-story__image" src="{{ hero_image.url }}" width="{{ hero_image.width }}" height="{{ hero_image.height }}" alt="">
+                <img class="featured-story__image" src="{{ hero_image.url }}" width="{{ hero_image.width }}" height="{{ hero_image.height }}" alt="{{ featured_news.effective_featured_image_alt_text }}">
               </div>
             {% endif %}
             <div class="{% if featured_news.featured_image %}col-lg-5{% else %}col-12{% endif %} p-4 p-lg-5 d-flex flex-column justify-content-center">

@@ -6,6 +6,8 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from wagtail.models import Site
 
+from .image_metadata import effective_text
+
 
 @dataclass(frozen=True)
 class PublicMetadata:
@@ -16,6 +18,7 @@ class PublicMetadata:
     og_title: str
     og_description: str
     og_image_url: str
+    og_image_alt_text: str
     og_type: str
     site_name: str
     twitter_card: str
@@ -80,7 +83,12 @@ def build_public_metadata(page, request=None) -> PublicMetadata:
     ).strip()
     og_title = (page.og_title or "").strip() or title
     og_description = (page.og_description or "").strip() or description
-    image = page.og_image or page.featured_image
+    if page.og_image:
+        image = page.og_image
+        image_alt_text = effective_text(page.og_image_alt_text)
+    else:
+        image = page.featured_image
+        image_alt_text = effective_text(page.featured_image_alt_text)
     site = _site_for_request(page, request)
     site_name = ((site.site_name if site else "") or settings.WAGTAIL_SITE_NAME).strip()
     image_url = _absolute_image_url(image, request)
@@ -92,6 +100,7 @@ def build_public_metadata(page, request=None) -> PublicMetadata:
         og_title=og_title,
         og_description=og_description,
         og_image_url=image_url,
+        og_image_alt_text=image_alt_text if image_url else "",
         og_type="article",
         site_name=site_name,
         twitter_card="summary_large_image" if image_url else "summary",

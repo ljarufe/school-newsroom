@@ -2,8 +2,13 @@ from django import forms
 from wagtail.admin.forms import WagtailAdminPageForm
 from wagtail.blocks.stream_block import StreamBlockValidationError
 
+from .image_metadata import REQUIRED_METADATA_PARTS, effective_text
+
 
 class NewsPageAdminForm(WagtailAdminPageForm):
+    class Media:
+        js = ["news/js/caption_alt_sync.js"]
+
     BODY_BLOCK_ERROR = "Revisa los bloques marcados con errores."
     PUBLIC_CREDIT_REQUIRED_ERROR = (
         "Añade al menos una firma pública antes de publicar la noticia."
@@ -11,6 +16,10 @@ class NewsPageAdminForm(WagtailAdminPageForm):
     MINOR_AUTHORIZATION_REQUIRED_ERROR = (
         "Confirma que se verificaron las autorizaciones requeridas para los "
         "menores identificables antes de publicar la noticia."
+    )
+    IMAGE_CONTEXTS = (
+        ("featured_image", "imagen destacada"),
+        ("og_image", "imagen para redes sociales"),
     )
 
     def add_error(self, field, error):
@@ -33,6 +42,8 @@ class NewsPageAdminForm(WagtailAdminPageForm):
                 ),
             )
 
+        self._validate_contextual_image_metadata(cleaned_data)
+
         if cleaned_data.get("contains_identifiable_minors") and not cleaned_data.get(
             "minor_publication_authorizations_verified"
         ):
@@ -45,6 +56,23 @@ class NewsPageAdminForm(WagtailAdminPageForm):
             )
 
         return cleaned_data
+
+    def _validate_contextual_image_metadata(self, cleaned_data) -> None:
+        for image_field, context_label in self.IMAGE_CONTEXTS:
+            if not cleaned_data.get(image_field):
+                continue
+            for metadata_part, metadata_label in REQUIRED_METADATA_PARTS:
+                field_name = f"{image_field}_{metadata_part}"
+                if effective_text(cleaned_data.get(field_name)):
+                    continue
+                self.add_error(
+                    field_name,
+                    forms.ValidationError(
+                        f"Completa el {metadata_label} de la {context_label} "
+                        "antes de publicar la noticia.",
+                        code=f"missing_{field_name}",
+                    ),
+                )
 
     def _has_effective_public_credit(self) -> bool:
         formset = self.formsets.get("public_credits")

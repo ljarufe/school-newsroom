@@ -7,6 +7,8 @@ from urllib.parse import urlsplit
 
 from wagtail.rich_text import RichText
 
+from .image_metadata import effective_text
+
 WORD_RE = re.compile(r"[^\W_]+(?:['’-][^\W_]+)*", re.UNICODE)
 SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
 SPACE_RE = re.compile(r"\s+")
@@ -179,6 +181,32 @@ def extract_content(body) -> ContentSnapshot:
 
 def _result(status: str, label: str, explanation: str) -> CheckResult:
     return CheckResult(status=status, label=label, explanation=explanation)
+
+
+def _image_metadata_check(
+    *,
+    image,
+    caption,
+    alt_text,
+    label: str,
+    missing_image_explanation: str,
+    complete_explanation: str,
+) -> CheckResult:
+    if not image:
+        return _result("problem", label, missing_image_explanation)
+
+    missing_parts = []
+    if not effective_text(caption):
+        missing_parts.append("pie de foto")
+    if not effective_text(alt_text):
+        missing_parts.append("texto alternativo")
+    if missing_parts:
+        return _result(
+            "problem",
+            label,
+            f"Completa {', '.join(missing_parts)} para este uso de la imagen.",
+        )
+    return _result("good", label, complete_explanation)
 
 
 def _keyphrase_location_check(
@@ -434,13 +462,46 @@ def _seo_checks(
             _word_count_check(snapshot.word_count),
         ],
     )
+    featured_image = getattr(page, "featured_image", None)
+    featured_caption = getattr(page, "featured_image_caption", "")
+    featured_alt_text = getattr(page, "featured_image_alt_text", "")
     checks.append(
-        _result(
-            "good" if page.featured_image else "problem",
-            "Imagen destacada",
-            "La noticia tiene imagen destacada."
-            if page.featured_image
-            else "Añade una imagen destacada para la vista social y la noticia.",
+        _image_metadata_check(
+            image=featured_image,
+            caption=featured_caption,
+            alt_text=featured_alt_text,
+            label="Imagen destacada",
+            missing_image_explanation=(
+                "Añade una imagen destacada para la noticia y su vista social."
+            ),
+            complete_explanation=(
+                "La imagen destacada tiene pie de foto y texto alternativo."
+            ),
+        ),
+    )
+    og_image = getattr(page, "og_image", None)
+    if og_image:
+        social_caption = getattr(page, "og_image_caption", "")
+        social_alt_text = getattr(page, "og_image_alt_text", "")
+        social_explanation = (
+            "La imagen social propia tiene pie de foto y texto alternativo."
+        )
+    else:
+        social_caption = featured_caption
+        social_alt_text = featured_alt_text
+        social_explanation = (
+            "La imagen social usa la imagen destacada y su metadata contextual."
+        )
+    checks.append(
+        _image_metadata_check(
+            image=og_image or featured_image,
+            caption=social_caption,
+            alt_text=social_alt_text,
+            label="Metadata de imagen social",
+            missing_image_explanation=(
+                "Añade una imagen social o una imagen destacada como fallback."
+            ),
+            complete_explanation=social_explanation,
         ),
     )
     if not snapshot.body_image_alts:

@@ -87,6 +87,21 @@ def create_test_image():
 
 
 @pytest.mark.django_db
+def test_contextual_image_metadata_fields_are_blank_safe() -> None:
+    page = NewsPage()
+
+    assert page.featured_image_caption == ""
+    assert page.featured_image_alt_text == ""
+    assert page.featured_image_credit == ""
+    assert page.og_image_caption == ""
+    assert page.og_image_alt_text == ""
+    assert page.og_image_credit == ""
+    assert NewsPage._meta.get_field("featured_image_caption").max_length == 500
+    assert NewsPage._meta.get_field("featured_image_alt_text").max_length == 500
+    assert NewsPage._meta.get_field("featured_image_credit").max_length == 255
+
+
+@pytest.mark.django_db
 def test_initial_news_sections_are_seeded() -> None:
     assert list(NewsSection.objects.values_list("slug", flat=True)) == (
         INITIAL_SECTION_SLUGS

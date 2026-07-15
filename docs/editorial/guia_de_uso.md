@@ -175,6 +175,42 @@ La ubicación del colegio describe dónde está la institución educativa asocia
 La cobertura editorial describe el territorio sobre el que trata la noticia.
 Pueden coincidir, pero no son el mismo dato.
 
+## Imágenes y datos editoriales por uso
+
+En la pestaña `Contenido`, `Imagen destacada` aparece inmediatamente después de
+`Resumen` y antes del editor de `Contenido`. Esta imagen se usa en la portada,
+el listado, las tarjetas, el detalle de la noticia y como fallback social. Junto
+a la imagen se completan:
+
+- `Pie de foto`: contexto visible que se muestra en el detalle público;
+- `Texto alternativo`: descripción contextual para el atributo `alt`;
+- `Crédito de imagen`: fuente o autoría pública opcional.
+
+La ayuda de edición funciona igual en la imagen destacada, las imágenes del
+cuerpo y la imagen social: al comenzar, el pie de foto se copia al texto
+alternativo. Puedes personalizar el texto alternativo; después de hacerlo, los
+cambios posteriores del pie ya no lo sobrescriben. Al reabrir una noticia, la
+sincronización continúa sólo si el texto alternativo está vacío o todavía es
+igual al pie.
+
+La imagen destacada de las tarjetas usa el texto alternativo, pero no repite el
+pie ni el crédito. Una noticia histórica puede seguir mostrándose aunque todavía
+no tenga estos nuevos datos; en ese caso no se fabrica un pie visible ni se usa
+automáticamente la descripción global del archivo como texto alternativo.
+
+La biblioteca de imágenes y la noticia guardan información distinta. La pantalla
+`Imágenes`, y el enlace `Editar esta imagen`, abren los datos generales del
+archivo: allí viven su título, descripción, etiquetas, punto focal y usos. Estos
+datos sirven para administrar y reutilizar el archivo, pero no reemplazan el
+pie, el texto alternativo ni el crédito editorial del uso concreto en una
+noticia. Si reutilizas el mismo archivo como destacada, dentro del cuerpo y como
+imagen social, completa los datos editoriales adecuados en cada contexto.
+
+El selector nativo ofrece `Búsqueda` para reutilizar un archivo y `Subir` para
+incorporar uno nuevo. En la versión actual abre primero `Búsqueda`; selecciona
+`Subir` cuando necesites cargar un archivo. La pestaña de búsqueda permanece
+disponible en imagen destacada, imágenes del cuerpo e imagen social.
+
 ## Colaboradores internos y firma pública
 
 En una noticia, `Colaboradores internos` y `Firma pública` son datos distintos.
@@ -305,10 +341,9 @@ crédito opcional. Sus campos son:
 `alt` de la imagen y no se imprime como texto visible adicional. `Crédito de
 imagen` es opcional y sólo se muestra cuando tiene contenido.
 
-Al crear o reabrir una imagen del cuerpo, el Admin ayuda copiando el pie de foto
-al texto alternativo como punto de partida mientras el texto alternativo no haya
-sido personalizado. Si el editor cambia manualmente el texto alternativo,
-cambios posteriores del pie de foto ya no lo sobrescriben para ese bloque.
+La ayuda compartida de pie de foto y texto alternativo descrita en la sección de
+imágenes también se aplica al crear bloques nuevos y al reabrir bloques
+existentes del cuerpo.
 
 Guardar como borrador permite dejar incompleta una imagen del cuerpo. Para
 publicar, programar o enviar a workflow, la imagen, el pie de foto y el texto
@@ -333,8 +368,11 @@ la Home, el título de la noticia abre su página pública de detalle.
 La publicación, programación o envío a workflow se bloquea cuando:
 
 - falta una firma pública efectiva;
+- existe una imagen destacada sin pie de foto o texto alternativo efectivo;
 - una imagen del cuerpo no tiene imagen, pie de foto o texto alternativo
   efectivo;
+- existe una imagen para redes sociales propia sin pie de foto o texto
+  alternativo efectivo;
 - `Contiene menores identificables` está marcado y no se confirmó la
   verificación de autorizaciones.
 
@@ -411,7 +449,14 @@ Los campos sociales son:
 
 - `Título para redes sociales`;
 - `Descripción para redes sociales`;
-- `Imagen para redes sociales`.
+- `Imagen para redes sociales`;
+- `Pie de foto`, `Texto alternativo` y `Crédito de imagen` para ese uso social.
+
+La imagen social y sus datos editoriales permanecen dentro de `Asistente SEO`.
+Si eliges una imagen social propia, el pie y el texto alternativo son
+obligatorios para la validación completa; el crédito es opcional. El pie social
+se conserva como contexto editorial, pero la imagen social no se muestra como
+contenido visible en el detalle por defecto.
 
 Si quedan vacíos, se aplican estos fallbacks:
 
@@ -426,6 +471,9 @@ Descripción social
 
 Imagen social
 → imagen destacada
+
+Texto alternativo social
+→ texto alternativo de la imagen destacada cuando opera ese fallback
 ```
 
 La vista previa es conceptual. No representa exactamente la interfaz de una red
@@ -443,7 +491,8 @@ El análisis revisa de forma determinística:
 - repetición evidente de la frase clave;
 - longitud del título SEO y de la descripción meta;
 - extensión del cuerpo;
-- presencia de imagen destacada;
+- imagen destacada y su metadata contextual;
+- imagen social efectiva y su metadata contextual;
 - texto alternativo de imágenes del cuerpo;
 - presencia de enlaces internos y externos.
 

@@ -13,10 +13,12 @@
   <meta property="og:url" content="{{ seo_metadata.canonical_url }}">
   <meta property="og:site_name" content="{{ seo_metadata.site_name }}">
   {% if seo_metadata.og_image_url %}<meta property="og:image" content="{{ seo_metadata.og_image_url }}">{% endif %}
+  {% if seo_metadata.og_image_alt_text %}<meta property="og:image:alt" content="{{ seo_metadata.og_image_alt_text }}">{% endif %}
   <meta name="twitter:card" content="{{ seo_metadata.twitter_card }}">
   <meta name="twitter:title" content="{{ seo_metadata.og_title }}">
   {% if seo_metadata.og_description %}<meta name="twitter:description" content="{{ seo_metadata.og_description }}">{% endif %}
   {% if seo_metadata.og_image_url %}<meta name="twitter:image" content="{{ seo_metadata.og_image_url }}">{% endif %}
+  {% if seo_metadata.og_image_alt_text %}<meta name="twitter:image:alt" content="{{ seo_metadata.og_image_alt_text }}">{% endif %}
   <script type="application/ld+json">{{ seo_json_ld|safe }}</script>
 {% endblock metadata %}
 
@@ -45,7 +47,16 @@
 
     {% if page.featured_image %}
       <figure class="article-featured-image mb-5">
-        {% image page.featured_image width-1200 %}
+        {% image page.featured_image width-1200 as featured_rendition %}
+        <img src="{{ featured_rendition.url }}" width="{{ featured_rendition.width }}" height="{{ featured_rendition.height }}" alt="{{ page.effective_featured_image_alt_text }}">
+        {% if page.effective_featured_image_caption or page.effective_featured_image_credit %}
+          <figcaption>
+            {{ page.effective_featured_image_caption }}
+            {% if page.effective_featured_image_credit %}
+              <span class="image-credit">Crédito: {{ page.effective_featured_image_credit }}</span>
+            {% endif %}
+          </figcaption>
+        {% endif %}
       </figure>
     {% endif %}
 

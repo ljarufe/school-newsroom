@@ -10,6 +10,13 @@ from wagtail.blocks.struct_block import StructBlockAdapter
 from wagtail.embeds.blocks import EmbedBlock
 from wagtail.images.blocks import ImageChooserBlock
 
+from .image_metadata import (
+    ALT_TEXT_HELP_TEXT,
+    ALT_TEXT_LABEL,
+    CAPTION_LABEL,
+    CREDIT_LABEL,
+)
+
 PARAGRAPH_FEATURES = [
     "bold",
     "italic",
@@ -31,12 +38,12 @@ ParagraphBlock = blocks.RichTextBlock
 
 class ArticleImageBlock(blocks.StructBlock):
     image = ImageChooserBlock(label="Imagen")
-    caption = blocks.CharBlock(label="Pie de foto")
+    caption = blocks.CharBlock(label=CAPTION_LABEL)
     alt_text = blocks.CharBlock(
-        label="Texto alternativo",
-        help_text="Describe el sentido contextual de esta imagen en la noticia.",
+        label=ALT_TEXT_LABEL,
+        help_text=ALT_TEXT_HELP_TEXT,
     )
-    credit = blocks.CharBlock(label="Crédito de imagen", required=False)
+    credit = blocks.CharBlock(label=CREDIT_LABEL, required=False)
 
     class Meta:
         icon = "image"
@@ -50,7 +57,10 @@ class ArticleImageBlockAdapter(StructBlockAdapter):
     @cached_property
     def media(self):
         return super().media + forms.Media(
-            js=["news/js/article_image_block.js"],
+            js=[
+                "news/js/caption_alt_sync.js",
+                "news/js/article_image_block.js",
+            ],
         )
 
 

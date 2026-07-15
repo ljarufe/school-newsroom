@@ -39,7 +39,7 @@
       <h2 id="social-preview-heading">Vista previa social</h2>
       <div class="seo-assistant__preview seo-assistant__preview--social">
         {% if metadata.og_image_url %}
-          <img src="{{ metadata.og_image_url }}" alt="" class="seo-assistant__social-image">
+          <img src="{{ metadata.og_image_url }}" alt="{{ metadata.og_image_alt_text }}" class="seo-assistant__social-image">
         {% else %}
           <div class="seo-assistant__image-placeholder">Sin imagen social</div>
         {% endif %}

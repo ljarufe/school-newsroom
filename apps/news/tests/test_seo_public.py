@@ -63,6 +63,7 @@ def create_news_page(
     slug="seo-test-news",
     live=True,
     featured_image=None,
+    featured_image_alt_text="",
     summary="Resumen público ficticio para comprobar metadata SEO.",
 ):
     page = NewsPage(
@@ -81,6 +82,7 @@ def create_news_page(
         section=section,
         coverage_province="Arequipa",
         featured_image=featured_image,
+        featured_image_alt_text=featured_image_alt_text,
     )
     home.add_child(instance=page)
     return page
@@ -234,7 +236,12 @@ def test_news_public_metadata_uses_configured_social_and_canonical_values(
     settings.SEO_DEFAULT_NOINDEX = False
     settings.MEDIA_ROOT = tmp_path
     image = create_image()
-    page = create_news_page(public_site, section, featured_image=image)
+    page = create_news_page(
+        public_site,
+        section,
+        featured_image=image,
+        featured_image_alt_text="Aula ficticia preparada para un taller.",
+    )
     page.seo_title = "Título SEO configurado"
     page.search_description = "Descripción meta configurada."
     page.og_title = "Título social configurado"
@@ -256,8 +263,16 @@ def test_news_public_metadata_uses_configured_social_and_canonical_values(
         'property="og:description" content="Descripción social configurada."' in content
     )
     assert 'property="og:image" content="http://school.test/media/' in content
+    assert (
+        '<meta property="og:image:alt" '
+        'content="Aula ficticia preparada para un taller.">' in content
+    )
     assert 'name="twitter:card" content="summary_large_image"' in content
     assert 'name="twitter:image" content="http://school.test/media/' in content
+    assert (
+        '<meta name="twitter:image:alt" '
+        'content="Aula ficticia preparada para un taller.">' in content
+    )
 
 
 @pytest.mark.django_db
@@ -277,8 +292,10 @@ def test_explicit_og_image_precedes_featured_image(
         title="Explicit OG Image News",
         slug="explicit-og-image-news",
         featured_image=featured_image,
+        featured_image_alt_text="Alt de imagen destacada ficticia.",
     )
     page.og_image = og_image
+    page.og_image_alt_text = "Alt contextual de imagen social ficticia."
     page.save()
 
     response = site_client().get(page.url)
@@ -293,6 +310,14 @@ def test_explicit_og_image_precedes_featured_image(
     assert (
         f'<meta property="og:image" '
         f'content="http://school.test{featured_rendition_url}">' not in content
+    )
+    assert (
+        '<meta property="og:image:alt" '
+        'content="Alt contextual de imagen social ficticia.">' in content
+    )
+    assert (
+        '<meta property="og:image:alt" '
+        'content="Alt de imagen destacada ficticia.">' not in content
     )
 
 
@@ -313,8 +338,10 @@ def test_cleared_or_deleted_og_image_restores_featured_image_fallback(
         title="OG Image Fallback News",
         slug="og-image-fallback-news",
         featured_image=featured_image,
+        featured_image_alt_text="Alt contextual del fallback destacado.",
     )
     page.og_image = og_image
+    page.og_image_alt_text = "   "
     page.save()
     featured_rendition_url = featured_image.get_rendition("fill-1200x630").url
 
@@ -327,6 +354,10 @@ def test_cleared_or_deleted_og_image_restores_featured_image_fallback(
         f'<meta property="og:image" '
         f'content="http://school.test{featured_rendition_url}">' in cleared_content
     )
+    assert (
+        '<meta property="og:image:alt" '
+        'content="Alt contextual del fallback destacado.">' in cleared_content
+    )
 
     page.og_image = og_image
     page.save(update_fields=["og_image"])
@@ -338,6 +369,10 @@ def test_cleared_or_deleted_og_image_restores_featured_image_fallback(
     assert (
         f'<meta property="og:image" '
         f'content="http://school.test{featured_rendition_url}">' in deleted_content
+    )
+    assert (
+        '<meta property="og:image:alt" '
+        'content="Alt contextual del fallback destacado.">' in deleted_content
     )
 
 
@@ -388,8 +423,10 @@ def test_json_ld_is_safe_and_uses_only_ordered_public_credits(
     public_site,
     section,
     settings,
+    tmp_path,
 ) -> None:
     settings.SEO_DEFAULT_NOINDEX = False
+    settings.MEDIA_ROOT = tmp_path
     school = School.objects.create(
         name="Fictional School",
         province="Arequipa",
@@ -410,6 +447,16 @@ def test_json_ld_is_safe_and_uses_only_ordered_public_credits(
         section,
         title=title,
         slug="safe-json-ld",
+        featured_image=create_image("privacy-safe-featured.gif"),
+        featured_image_alt_text="Materiales de un taller escolar ficticio.",
+    )
+    page.contains_identifiable_minors = True
+    page.minor_publication_authorizations_verified = True
+    page.save(
+        update_fields=[
+            "contains_identifiable_minors",
+            "minor_publication_authorizations_verified",
+        ],
     )
     NewsPageContributor.objects.create(page=page, contributor=contributor)
     NewsPagePublicCredit.objects.create(
@@ -439,6 +486,10 @@ def test_json_ld_is_safe_and_uses_only_ordered_public_credits(
     assert "Private Fictional Minor" not in content
     assert "under_14" not in content
     assert "contains_identifiable_minors" not in content
+    assert (
+        '<meta property="og:image:alt" '
+        'content="Materiales de un taller escolar ficticio.">' in content
+    )
     assert "</script><script>alert('x')</script>" not in content
     assert "\\u003C/script\\u003E" in content
 

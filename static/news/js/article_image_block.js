@@ -6,8 +6,11 @@
     window.wagtailStreamField &&
     window.wagtailStreamField.blocks &&
     window.wagtailStreamField.blocks.StructBlockDefinition;
+  const setupCaptionAltSync =
+    window.schoolNewsroom.images &&
+    window.schoolNewsroom.images.setupCaptionAltSync;
 
-  if (!BaseStructBlockDefinition) {
+  if (!BaseStructBlockDefinition || !setupCaptionAltSync) {
     return;
   }
 
@@ -15,42 +18,10 @@
     return document.querySelector(`[name="${prefix}-${fieldName}"]`);
   }
 
-  function setupCaptionAltSync(prefix) {
+  function setupBlockCaptionAltSync(prefix) {
     const captionInput = inputForPrefix(prefix, "caption");
     const altInput = inputForPrefix(prefix, "alt_text");
-
-    if (!captionInput || !altInput || altInput.dataset.captionSyncInitialized) {
-      return;
-    }
-
-    altInput.dataset.captionSyncInitialized = "true";
-
-    let syncing = false;
-    let isSynchronizable =
-      altInput.value.trim() === "" || altInput.value === captionInput.value;
-
-    if (isSynchronizable && altInput.value !== captionInput.value) {
-      syncing = true;
-      altInput.value = captionInput.value;
-      altInput.dispatchEvent(new Event("input", { bubbles: true }));
-      syncing = false;
-    }
-
-    captionInput.addEventListener("input", () => {
-      if (!isSynchronizable) {
-        return;
-      }
-      syncing = true;
-      altInput.value = captionInput.value;
-      altInput.dispatchEvent(new Event("input", { bubbles: true }));
-      syncing = false;
-    });
-
-    altInput.addEventListener("input", () => {
-      if (!syncing) {
-        isSynchronizable = false;
-      }
-    });
+    setupCaptionAltSync(captionInput, altInput);
   }
 
   class ArticleImageBlockDefinition extends BaseStructBlockDefinition {
@@ -61,7 +32,7 @@
         initialState,
         initialError,
       );
-      setupCaptionAltSync(prefix);
+      setupBlockCaptionAltSync(prefix);
       return block;
     }
   }

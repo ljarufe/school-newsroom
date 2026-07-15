@@ -1,35 +1,38 @@
-# UX-001 — Feedback de cierre
+# UX-001 — Closing Feedback
 
-## Estado
+## Status
 
 Implementation Closing Draft
 
 ## Summary
 
-UX-001 produjo una guía visual y técnica de handoff destinada al diseñador del sitio público de Noticias / School Newsroom. La guía define el formato de entrega esperado para fundamentos visuales, responsive, componentes, pantallas, assets y handoff, sin implementar código ni ampliar la funcionalidad del producto.
+UX-001 produced a visual and technical handoff guide for the designer responsible for the Noticias / School Newsroom public site. The guide defines the expected delivery format for visual foundations, responsive behavior, components, screens, assets, and handoff without implementing code or expanding product functionality.
 
-La versión final para distribución al diseñador se preparó como PDF visual. El repositorio conserva una fuente Markdown versionable acompañada de las imágenes de referencia necesarias.
+The final designer-facing version was prepared as a visual PDF in Spanish. The repository keeps an English, version-controlled Markdown source accompanied by the reference images needed to understand the specification.
 
 ## Implementation
 
-Se preparó:
+The ticket produced:
 
-- una guía en castellano orientada a un diseñador profesional;
-- especificaciones concretas para color, tipografía, espaciado, grid, contenedores, bordes, radios y sombras;
-- requisitos de marca, logotipo, iconografía, fuentes y formatos de assets;
-- requisitos de responsive para mobile, desktop y tablet cuando exista un cambio material;
-- componentes mínimos y formato de especificación de variantes y estados;
-- superficies finales requeridas para Home, listado, detalle, página institucional, navegación, footer y estados vacíos;
-- clasificación del material como `Listo para desarrollo`, `En exploración`, `Propuesta futura` o `Requiere validación técnica`;
-- referencias visuales separadas por fundamento de diseño;
-- capturas de las superficies públicas actuales y del detalle con multimedia externa;
-- checklist final de entrega.
+- a Spanish designer-facing guide for a professional designer;
+- an English repository version intended for versioning, technical review, and later use by Codex or another implementer;
+- concrete specifications for color, typography, spacing, grid, containers, borders, radii, and shadows;
+- brand, logo, iconography, font, and asset-format requirements;
+- responsive requirements for mobile, desktop, and tablet when a material layout change exists;
+- minimum component requirements and a format for defining variants and states;
+- required final surfaces for Home, news listing, news detail, generic institutional pages, navigation, footer, and empty states;
+- visible design-status classification as `Ready for development`, `In exploration`, `Future proposal`, or `Requires technical validation`;
+- separate visual references for each visual-foundation topic;
+- screenshots of the current public surfaces and the news detail with external multimedia;
+- a final delivery checklist.
 
-Durante la iteración se eliminó contenido orientado al programador o al proceso interno que no aportaba al diseñador, incluida la matriz diseño → implementación. Ese material se preserva como conocimiento para el futuro ticket de implementación.
+During iteration, content aimed at programmers or internal implementation process was removed from the designer-facing guide, including the design-to-implementation matrix. That material is preserved as durable process knowledge for the later implementation handoff and implementation ticket.
+
+The repository language convention was also corrected during closeout: repository-facing technical documentation and `docs/process/<TICKET-ID>_feedback.md` are kept in English, while the external designer-facing PDF remains in Spanish.
 
 ## Files changed
 
-Esperados en el repositorio:
+Expected in the repository:
 
 - `docs/product/UX-001_public_site_design_handoff_guide.md`
 - `docs/product/assets/ux-001/file-organization-example.png`
@@ -45,92 +48,114 @@ Esperados en el repositorio:
 - `docs/product/assets/ux-001/current-multimedia-detail-reference.png`
 - `docs/process/UX-001_feedback.md`
 
-El PDF y el DOCX de distribución no son la fuente versionada del repositorio y se conservan fuera de Git en el espacio documental del proyecto.
+The distribution PDF and editable DOCX are not repository sources of truth and remain outside Git in the project's document storage.
 
 ## Validation
 
-Validación documental realizada durante la elaboración:
+Document validation performed during preparation:
 
-- revisión iterativa del contenido con el responsable de producto;
-- revisión del alcance para evitar funcionalidades nuevas;
-- revisión de consistencia entre especificaciones y ejemplos visuales;
-- render y revisión visual del PDF final.
+- iterative content review with the product owner;
+- scope review to prevent new functionality from entering the design engagement;
+- consistency review between specifications and visual examples;
+- rendering and visual review of the final PDF;
+- language review to align repository-facing documentation and ticket feedback with the repository's English technical-documentation convention.
 
-Validación pendiente en el repositorio:
+Repository validation still pending at this draft stage:
 
-- revisión del diff real;
+- review of the real diff after the English replacements;
 - `git diff --check`;
-- commit y pre-commit;
-- push y pre-push;
+- commit and pre-commit;
+- push and pre-push;
 - Pull Request;
 - CI;
-- review de PR.
+- PR review.
 
-No se requiere UAT de Django ni navegador porque el ticket no modifica código ni comportamiento de la aplicación.
+Django or browser UAT is not required because this ticket does not modify application code or behavior.
 
 ## Failures / retries / root causes
 
-El primer enfoque de la guía contenía demasiado contexto de producto y explicaciones dirigidas a desarrollo. La causa fue tratar el documento como una especificación mixta de producto e implementación en lugar de como un contrato de entrega para un diseñador profesional.
+The first approach contained too much product context and too many explanations aimed at development. The root cause was treating the document as a mixed product-and-implementation specification instead of a delivery contract for a professional designer.
 
-La corrección fue reorganizar el documento alrededor de:
+The correction reorganized the document around:
 
-- formato de archivo;
-- valores inspeccionables;
-- fundamentos visuales;
-- responsive;
-- componentes;
+- file format;
+- inspectable values;
+- visual foundations;
+- responsive behavior;
+- components;
 - assets;
 - handoff.
 
-También se separaron los ejemplos visuales por tema para que color, tipografía, espaciado, grid y otros fundamentos tuvieran referencias específicas y utilizables durante la posterior implementación.
+The first repository-ready feedback and guide were also prepared in Spanish. This conflicted with the repository convention that technical repository content is written in English. The correction was to keep the external visual deliverable in Spanish while replacing the repository Markdown guide and ticket feedback with English versions.
+
+Visual examples were also split by topic so color, typography, spacing, grid, and other foundations have specific references that can later support implementation.
 
 ## Warnings / known limitations
 
-- El diseño visual final del sitio todavía no existe; esta guía define cómo debe entregarse.
-- El nombre público definitivo de la marca puede continuar abierto y debe marcarse como provisional si no está aprobado al iniciar diseño.
-- Un archivo Figma no es automáticamente accesible para Codex u otro agente; el ticket de implementación deberá proporcionar acceso, enlaces directos a frames o exportaciones suficientes.
+- The final visual design of the public site does not exist yet; this guide defines how it must be delivered.
+- The final public brand name may still be open and must be marked as provisional if it is not approved when design work begins.
+- A Figma file is not automatically accessible to Codex or another agent; the implementation ticket must provide actual access, direct frame links, or sufficient exports.
+- This guide defines the expected structure and quality of the design handoff. It does not replace the future approved design, final Figma file, implementation handoff, or implementation ticket as the source of truth for visual implementation.
 
 ## New Work Discovered
 
-### Revisar y preparar el entregable real del diseñador antes de implementación
+### Review and prepare the actual designer deliverable before implementation
 
-**Finding:** la recepción de un archivo de diseño no garantiza por sí sola que esté listo para implementación.
+**Finding:** receiving a design file does not by itself guarantee that it is ready for implementation.
 
-**Impact:** pueden existir decisiones abiertas, assets incompletos, inconsistencias entre viewports o propuestas que requieran validación técnica.
+**Impact:** open decisions, incomplete assets, inconsistencies between viewports, or proposals requiring technical validation may remain.
 
-**Suggested disposition:** crear un ticket posterior de revisión/refinamiento del entregable de diseño cuando exista el diseño real, antes del ticket de implementación visual si el handoff necesita ajustes.
+**Suggested disposition:** create a later design-review/refinement ticket when the real design exists, before the visual implementation ticket if the handoff requires material correction.
 
-### Preparar el handoff diseño → implementación
+### Prepare the design-to-implementation handoff
 
-**Finding:** la matriz entre superficies de diseño y templates/CSS es útil para desarrollo, pero introduce ruido en el documento dirigido al diseñador.
+**Finding:** the mapping between design surfaces and templates/CSS is useful for development but adds noise to the document intended for the designer.
 
-**Impact:** debe existir en el contexto del futuro ticket de implementación, no en la guía externa.
+**Impact:** it should live in the context of the later implementation ticket rather than the external designer guide.
 
-**Suggested disposition:** reconstruir y validar la matriz contra el checkout real cuando se defina el ticket de implementación.
+**Suggested disposition:** rebuild and validate the matrix against the real checkout when defining the implementation ticket.
 
-### Definir una fuente viva sobre trabajo con diseño
+### Define a durable source for design work
 
-**Finding:** los tickets de diseño y handoff tienen un ciclo distinto al de los tickets de código y producen conocimiento reusable sobre briefs, entregables, revisión, fuentes canónicas y preparación para implementación.
+**Finding:** design and handoff tickets follow a different lifecycle from code tickets and produce reusable knowledge about briefs, deliverables, review, canonical sources, and implementation preparation.
 
-**Impact:** sin una fuente consolidada, futuros trabajos de diseño pueden repetir la misma investigación y mezclar audiencias.
+**Impact:** without consolidated guidance, future design work may repeat the same discovery and mix audiences.
 
-**Suggested disposition:** evaluar una nueva fuente viva o una ampliación de las guías existentes para trabajo con diseño, específica de Noticias / School Newsroom pero reusable en futuros proyectos.
+**Suggested disposition:** evaluate a new durable design/handoff source or an extension of the existing planning and execution guides, specific to Noticias / School Newsroom but reusable in future projects.
+
+### Optimize validation for documentation-only changes
+
+**Finding:** the current Pull Request validation and local pre-push path run the general technical gate even when a change contains only non-executable documentation and documentation images.
+
+**Impact:** documentation-only tickets can run the complete Django test/lint/migration gate even though their relevant validation is primarily diff review and whitespace/document integrity checks.
+
+**Suggested disposition:** schedule a separate technical/process ticket to classify the real delta and keep one stable required PR check while using a lightweight path for documentation-only changes and the full `make check` path for executable changes. Evaluate the same policy for the local pre-push entry point. Do not solve this through routine `[skip ci]`, manual PR checkboxes, or a workflow-level `paths-ignore` approach that can leave a future required check unresolved.
+
+### Make repository language conventions explicit for process feedback
+
+**Finding:** the repository convention already states that technical repository content is written in English, but the expected language of `docs/process/<TICKET-ID>_feedback.md` was not explicit enough in the working process and the first UX-001 feedback draft was produced in Spanish.
+
+**Impact:** future tickets may repeat the inconsistency.
+
+**Suggested disposition:** update the durable execution/process guidance to state explicitly that repository-facing technical documentation and ticket feedback under `docs/process/` are written in English unless a file has a deliberate user-facing language requirement. Designer-facing, editor-facing, and public-facing deliverables may remain in Spanish when that is their audience.
 
 ## Durable knowledge candidates
 
-Candidatos para consolidación posterior:
+Candidates for later consolidation:
 
-- separar el documento para el diseñador del handoff técnico de implementación;
-- definir una fuente canónica por tipo de artefacto: diseño editable en la herramienta de diseño, distribución visual en el espacio documental y especificación versionable necesaria para desarrollo en el repositorio;
-- pedir valores explícitos y semánticos para fundamentos visuales, no sólo capturas;
-- mantener ejemplos visuales junto a la especificación que ilustran;
-- proporcionar al agente de implementación acceso explícito al diseño o a exportaciones suficientes;
-- revisar el entregable real del diseñador antes de convertirlo directamente en código cuando existan ambigüedades;
-- conservar la matriz diseño → implementación para el ticket técnico, no para el diseñador.
+- separate the designer-facing document from the technical implementation handoff;
+- define one canonical source by artifact type: editable visual design in the design tool, visual distribution in document storage, and version-controlled implementation-relevant specification in the repository;
+- request explicit semantic values for visual foundations, not screenshots alone;
+- keep visual examples next to the specification they illustrate;
+- provide the implementation agent with explicit access to the design or sufficient exports;
+- review the actual designer deliverable before translating it directly into code when material ambiguity remains;
+- keep the design-to-implementation matrix for the technical implementation ticket, not the designer;
+- make the English language requirement explicit for repository-facing technical documentation and `docs/process/<TICKET-ID>_feedback.md`;
+- evaluate delta-aware validation for documentation-only PRs and pre-push while preserving a stable required status check.
 
 ## Deferred closure evidence
 
-Pendiente de consolidar una sola vez justo antes del merge:
+To be consolidated once, immediately before merge:
 
 - commit;
 - pre-commit;
@@ -138,5 +163,5 @@ Pendiente de consolidar una sola vez justo antes del merge:
 - pre-push;
 - Pull Request;
 - CI;
-- review y correcciones, si existen;
-- resultado final del merge.
+- review and corrections, if any;
+- final merge result.

@@ -1,602 +1,561 @@
-# Guía de entregables de diseño para el sitio público
+# Public Site Design Deliverables Guide
 
-Especificaciones de archivo, fundamentos visuales, responsive, componentes, pantallas, assets y handoff.
+File specifications, visual foundations, responsive behavior, components, screens, assets, and handoff requirements.
 
-El objetivo de esta guía es que el diseño pueda implementarse sin tener que adivinar valores, variantes, assets ni comportamiento responsive.
+The purpose of this guide is to ensure the design can be implemented without guessing values, variants, assets, or responsive behavior.
 
-> **Alcance: MVP público en modo claro. El archivo de diseño debe ser editable, inspeccionable y preparado para handoff.**
+> **Scope: public MVP in light mode. The design file must be editable, inspectable, and prepared for handoff.**
 
-# 1. Objetivo y entregables
+# 1. Objective and deliverables
 
-Definir el sistema visual y las pantallas del sitio público actual con especificaciones suficientes para reproducir el diseño en desarrollo sin inferir colores, tipografías, medidas, espaciados, comportamiento responsive ni assets.
+Define the visual system and the current public-site screens with enough specification to reproduce the design in development without inferring colors, typography, measurements, spacing, responsive behavior, or assets.
 
-## Entregables obligatorios
+## Required deliverables
 
-> **1.** Archivo de diseño editable, preferentemente en Figma.
+> **1.** Editable design file, preferably in Figma.
 >
-> **2.** Fundamentos visuales con valores exactos: color, tipografía, espaciado, grid, contenedores, bordes, radios y sombras cuando se utilicen.
+> **2.** Visual foundations with exact values: color, typography, spacing, grid, containers, borders, radii, and shadows when used.
 >
-> **3.** Componentes reutilizables con variantes y estados.
+> **3.** Reusable components with variants and states.
 >
-> **4.** Pantallas finales en mobile y desktop; tablet cuando exista un cambio de layout que no pueda inferirse con claridad.
+> **4.** Final mobile and desktop screens; tablet when a layout change cannot be clearly inferred.
 >
-> **5.** Assets finales exportables: logotipo, variantes de marca utilizadas, iconografía propia y recursos gráficos necesarios.
+> **5.** Exportable final assets: logo, used brand variants, custom iconography, and required graphic resources.
 >
-> **6.** Especificación de fuentes, pesos, origen y licencia.
+> **6.** Font specification, including weights, source, and licensing.
 >
-> **7.** Notas de comportamiento únicamente cuando una decisión no sea evidente en el diseño.
+> **7.** Behavior notes only when a decision is not evident from the design itself.
 >
-> **8.** Identificación visible del material listo para desarrollo.
+> **8.** Visible identification of material that is ready for development.
 
-> **Una colección de capturas planas no constituye un handoff suficiente: los valores visuales y los assets deben poder inspeccionarse o consultarse de forma explícita.**
+> **A collection of flat screenshots is not a sufficient handoff: visual values and assets must be explicitly inspectable or documented.**
 
-# 2. Archivo de diseño
+# 2. Design file
 
-## Formato preferido
+## Preferred format
 
-La opción preferida es un archivo Figma editable. Puede utilizarse una herramienta equivalente si permite inspeccionar valores exactos, identificar componentes y variantes, revisar responsive, exportar assets y separar con claridad diseños finales de exploraciones.
+The preferred option is an editable Figma file. An equivalent tool may be used if it allows exact values to be inspected, components and variants to be identified, responsive behavior to be reviewed, assets to be exported, and final designs to be clearly separated from explorations.
 
-## El archivo debe permitir inspeccionar
+## The file must allow inspection of
 
-- dimensiones y posición;
+- dimensions and position;
 
-- padding y gap;
+- padding and gap;
 
-- colores;
+- colors;
 
-- familia, peso, tamaño, line-height y letter-spacing;
+- font family, weight, size, line-height, and letter-spacing;
 
-- radios, bordes y sombras;
+- radii, borders, and shadows;
 
-- componentes y variantes;
+- components and variants;
 
-- assets configurados para exportación.
+- assets configured for export.
 
-## Estructura recomendada
+## Recommended structure
 
-> **Sección** | **Contenido**                  |
-|-------------|--------------------------------|
-| 00          | Portada y estado de entrega    |
-| 01          | Fundamentos visuales           |
-| 02          | Componentes                    |
-| 03          | Home                           |
-| 04          | Listado de noticias            |
-| 05          | Detalle de noticia             |
-| 06          | Página institucional           |
-| 07          | Estados y 404                  |
-| 08          | Exploraciones, sólo si existen |
+| **Section** | **Content** |
+|---|---|
+| 00 | Cover and delivery status |
+| 01 | Visual foundations |
+| 02 | Components |
+| 03 | Home |
+| 04 | News listing |
+| 05 | News detail |
+| 06 | Institutional page |
+| 07 | States and 404 |
+| 08 | Explorations, only if they exist |
 
-## Nombres semánticos
+## Semantic naming
 
-Usar nombres estables y descriptivos para secciones, frames y componentes. Mantener una única versión final claramente identificada por viewport y separar las exploraciones del material listo para desarrollo.
+Use stable, descriptive names for sections, frames, and components. Keep one clearly identified final version per viewport and separate explorations from material that is ready for development.
 
-| **Correcto**                                 | **Evitar**  |
-|----------------------------------------------|-------------|
-| Fundamentos / Color                          | Frame 123   |
-| Componente / Tarjeta de noticia / Principal  | Card 7      |
-| Página / Home / Desktop / Final              | Final final |
-| Página / Detalle de noticia / Mobile / Final | Copy 4      |
+| **Preferred** | **Avoid** |
+|---|---|
+| Foundations / Color | Frame 123 |
+| Component / News Card / Primary | Card 7 |
+| Page / Home / Desktop / Final | Final final |
+| Page / News Detail / Mobile / Final | Copy 4 |
 
-![Referencia visual](assets/ux-001/file-organization-example.png)
+![Visual reference](assets/ux-001/file-organization-example.png)
 
-Ejemplo de organización del archivo y de separación entre material final y exploraciones.
+Example of file organization and separation between final material and explorations.
 
-# 3. Fundamentos visuales
+# 3. Visual foundations
 
-Los fundamentos deben quedar definidos con nombres y valores exactos. Los ejemplos de esta sección muestran el nivel de precisión esperado; sus valores son ilustrativos.
+Visual foundations must be defined with exact names and values. The examples in this section show the expected level of precision; their values are illustrative.
 
 ## 3.1. Color
 
-Entregar cada color con nombre semántico, valor exacto y función. Cuando un color cambie por interacción, documentar la relación entre sus estados.
+Deliver each color with a semantic name, exact value, and purpose. When a color changes through interaction, document the relationship between its states.
 
-| **Nombre**                   | **Valor**      | **Uso principal**        |
-|------------------------------|----------------|--------------------------|
-| Color / Brand / Primary      | \#\_\_\_\_\_\_ | Marca y acento principal |
-| Color / Background / Page    | \#\_\_\_\_\_\_ | Fondo general            |
-| Color / Background / Surface | \#\_\_\_\_\_\_ | Superficies              |
-| Color / Text / Primary       | \#\_\_\_\_\_\_ | Texto principal          |
-| Color / Text / Secondary     | \#\_\_\_\_\_\_ | Metadata                 |
-| Color / Border / Default     | \#\_\_\_\_\_\_ | Bordes y divisores       |
-| Color / Link / Default       | \#\_\_\_\_\_\_ | Enlaces                  |
-| Color / Focus                | \#\_\_\_\_\_\_ | Indicador de foco        |
+| **Name** | **Value** | **Primary use** |
+|---|---|---|
+| Color / Brand / Primary | `#______` | Brand and primary accent |
+| Color / Background / Page | `#______` | Page background |
+| Color / Background / Surface | `#______` | Surfaces |
+| Color / Text / Primary | `#______` | Primary text |
+| Color / Text / Secondary | `#______` | Metadata |
+| Color / Border / Default | `#______` | Borders and dividers |
+| Color / Link / Default | `#______` | Links |
+| Color / Focus | `#______` | Focus indicator |
 
-- Usar HEX para colores sólidos destinados a web.
+- Use HEX for solid colors intended for the web.
 
-- Indicar RGBA u opacidad cuando exista transparencia.
+- Specify RGBA or explicit opacity when transparency is used.
 
-- Definir todos los valores y la dirección si se utiliza un gradiente.
+- Define all values and direction when a gradient is used.
 
-- Documentar Default, Hover, Active y Focus cuando cambien visualmente.
+- Document Default, Hover, Active, and Focus when they change visually.
 
-![Referencia visual](assets/ux-001/color-specification-example.png)
+![Visual reference](assets/ux-001/color-specification-example.png)
 
-Ejemplo de especificación de paleta y estados interactivos.
+Example of palette specification and interactive states.
 
-## 3.2. Tipografía
+## 3.2. Typography
 
-Identificar cada familia tipográfica, su origen, licencia, uso, pesos, estilos y fallback. La escala debe expresar valores exactos por viewport cuando cambien.
+Identify each typeface, its source, license, purpose, weights, styles, and fallback. The type scale must provide exact values per viewport when they change.
 
-| **Campo**          | **Especificación**                  |
-|--------------------|-------------------------------------|
-| Nombre exacto      |                                     |
-| Proveedor u origen |                                     |
-| Licencia           |                                     |
-| Uso                | Títulos / lectura / interfaz / otro |
-| Pesos utilizados   | Ej. 400, 500, 700                   |
-| Estilos utilizados | Normal / italic                     |
-| Fallback web       | Ej. "Nombre", Arial, sans-serif     |
+| **Field** | **Specification** |
+|---|---|
+| Exact name | |
+| Provider or source | |
+| License | |
+| Use | Headings / reading / interface / other |
+| Weights used | Example: 400, 500, 700 |
+| Styles used | Normal / italic |
+| Web fallback | Example: `"Name", Arial, sans-serif` |
 
-La escala tipográfica debe cubrir como mínimo H1, H2, H3, cuerpo, texto pequeño, metadata, captions, créditos, navegación y controles que utilicen un estilo propio. Para cada estilo indicar familia, peso, tamaño, line-height y letter-spacing.
+The type scale must cover at least H1, H2, H3, body, small text, metadata, captions, credits, navigation, and controls that use a distinct style. For each style, specify family, weight, size, line-height, and letter-spacing.
 
-![Referencia visual](assets/ux-001/typography-specification-example.png)
+![Visual reference](assets/ux-001/typography-specification-example.png)
 
-Ejemplo de ficha de familia y escala tipográfica preparada para implementación.
+Example of a font-family sheet and implementation-ready type scale.
 
-## 3.3. Espaciado
+## 3.3. Spacing
 
-Definir una escala reutilizable para padding, gap, separación entre elementos relacionados, separación entre secciones y márgenes verticales del contenido editorial.
+Define a reusable scale for padding, gap, separation between related elements, separation between sections, and vertical margins in editorial content.
 
-| **Nombre** | **Valor**-----------|
-| Space / 1  | \_\_ px   |
-| Space / 2  | \_\_ px   |
-| Space / 3  | \_\_ px   |
-| Space / 4  | \_\_ px   |
-| Space / 5  | \_\_ px   |
-| Space / 6  | \_\_ px   |
+| **Name** | **Value** |
+|---|---|
+| Space / 1 | `__ px` |
+| Space / 2 | `__ px` |
+| Space / 3 | `__ px` |
+| Space / 4 | `__ px` |
+| Space / 5 | `__ px` |
+| Space / 6 | `__ px` |
 
-Cuando un valor excepcional no pertenezca a la escala, identificarlo en el componente o layout donde se utiliza.
+When an exceptional value does not belong to the scale, identify it in the component or layout where it is used.
 
-![Referencia visual](assets/ux-001/spacing-specification-example.png)
+![Visual reference](assets/ux-001/spacing-specification-example.png)
 
-Ejemplo de escala de spacing y aplicación de valores dentro de un componente.
+Example of a spacing scale and application of values inside a component.
 
-## 3.4. Grid, contenedores y anchos
+## 3.4. Grid, containers, and widths
 
-Definir la estructura de layout por viewport y documentar por separado los anchos máximos de contenido y de lectura.
+Define the layout structure by viewport and document content and reading maximum widths separately.
 
-> **Viewport de referencia** | **Columnas** | **Margen lateral** | **Gutter** | **Contenedor máx.**--------------|--------------------|------------|---------------------|
-| Mobile                     |              |                    |            |                     |
-| Tablet, si aplica          |              |                    |            |                     |
-| Desktop                    |              |                    |            |                     |
+| **Reference viewport** | **Columns** | **Side margin** | **Gutter** | **Max. container** |
+|---|---:|---:|---:|---:|
+| Mobile | | | | |
+| Tablet, if applicable | | | | |
+| Desktop | | | | |
 
-> **Medida**                              | **Valor**-----------|
-| Ancho máximo del contenido general      |           |
-| Ancho máximo de lectura de artículos    |           |
-| Ancho máximo de contenido institucional |           |
-| Ancho o comportamiento de multimedia    |           |
+| **Measurement** | **Value** |
+|---|---:|
+| Maximum overall content width | |
+| Maximum article reading width | |
+| Maximum institutional content width | |
+| Multimedia width or behavior | |
 
-La implementación actual utiliza Bootstrap 5. El diseñador no necesita especificar clases técnicas, pero una grilla responsive convencional facilita la traducción del diseño. En desktop, una grilla de 12 columnas es la referencia más directa. Cualquier composición que se aparte de la grilla principal debe quedar identificada.
+The current implementation uses Bootstrap 5. The designer does not need to specify technical classes, but a conventional responsive grid makes the design easier to translate. On desktop, a 12-column grid is the most direct implementation reference. Any composition that intentionally departs from the main grid must be identified.
 
-![Referencia visual](assets/ux-001/grid-containers-example.png)
+![Visual reference](assets/ux-001/grid-containers-example.png)
 
-Ejemplo de especificación de columnas, márgenes, gutters y contenedor por viewport.
+Example of columns, margins, gutters, and container specification by viewport.
 
-## 3.5. Bordes, radios y sombras
+## 3.5. Borders, radii, and shadows
 
-Documentar únicamente las propiedades utilizadas en el diseño final.
+Document only the properties used in the final design.
 
-- Radios: nombre, valor y uso.
+- Radii: name, value, and use.
 
-- Bordes: grosor, estilo y color.
+- Borders: width, style, and color.
 
-- Sombras: nombre, x, y, blur, spread, color/opacidad y componentes donde se utilizan.
+- Shadows: name, x, y, blur, spread, color/opacity, and components where they are used.
 
-![Referencia visual](assets/ux-001/borders-radii-shadows-example.png)
+![Visual reference](assets/ux-001/borders-radii-shadows-example.png)
 
-Ejemplo de especificación de radios, bordes y efectos de superficie.
+Example of radii, borders, and surface-effect specification.
 
-## 3.6. Marca, logotipo e iconografía
+## 3.6. Brand, logo, and iconography
 
-### Nombre del sitio
+### Site name
 
-El diseño debe mostrar el nombre de marca utilizado y su relación con el logotipo. Si el nombre público todavía no está aprobado, marcarlo como provisional y evitar integrarlo de forma irreversible dentro de un asset raster.
+The design must show the brand name used on the site and its relationship with the logo. If the public name has not yet been approved, mark it as provisional and avoid embedding it irreversibly inside a raster asset.
 
-### Logotipo
+### Logo
 
-Entregar únicamente las variantes realmente utilizadas. Para cada variante indicar nombre, uso, fondo previsto, formato final, área de seguridad y tamaño mínimo cuando aplique. El formato preferido para logotipos vectoriales es SVG con fondo transparente y viewBox correcto.
+Deliver only the variants that are actually used. For each variant, specify name, use, intended background, final format, clear space, and minimum size when applicable. The preferred format for vector logos is SVG with a transparent background and a correct `viewBox`.
 
-### Iconografía
+### Iconography
 
-Si se utiliza una librería existente, identificar nombre, origen y licencia. Si se crean iconos propios, entregar cada icono final en SVG y mantener un sistema consistente de tamaño y trazo.
+If an existing library is used, identify its name, source, and license. If custom icons are created, deliver each final icon as SVG and keep a consistent size and stroke system.
 
-![Referencia visual](assets/ux-001/brand-logo-iconography-example.png)
+![Visual reference](assets/ux-001/brand-logo-iconography-example.png)
 
-Ejemplo de ficha de logo, iconografía y estructura de exportación de assets.
+Example of a logo and iconography sheet and asset-export structure.
 
 # 4. Responsive
 
-## Viewports de diseño
+## Design viewports
 
-> **Viewport** | **Entregable**                                                                                      |
-|--------------|-----------------------------------------------------------------------------------------------------|
-| Mobile       | Frame final representativo entre 360 y 430 px.                                                      |
-| Desktop      | Frame final representativo entre 1200 y 1440 px.                                                    |
-| Tablet       | Alrededor de 768 px cuando exista un cambio material que no pueda inferirse entre mobile y desktop. |
+| **Viewport** | **Deliverable** |
+|---|---|
+| Mobile | Representative final frame between 360 and 430 px. |
+| Desktop | Representative final frame between 1200 and 1440 px. |
+| Tablet | Around 768 px when there is a material change that cannot be inferred between mobile and desktop. |
 
-Se recomienda mantener un ancho de referencia consistente para todas las páginas de una misma familia, por ejemplo 390 px, 768 px y 1440 px. Estos tamaños son frames de diseño, no los únicos anchos que tendrá el sitio real.
+A consistent reference width is recommended across all pages in the same family, for example 390 px, 768 px, and 1440 px. These sizes are design frames, not the only widths the real site will support.
 
-## Cambios que deben quedar definidos
+## Changes that must be defined
 
-- número de columnas;
+- number of columns;
 
-- orden y alineación de elementos;
+- element order and alignment;
 
-- ancho relativo de bloques;
+- relative width of blocks;
 
-- comportamiento y proporción de imágenes;
+- image behavior and proportions;
 
-- cambios tipográficos;
+- typography changes;
 
-- cambios de padding o gap;
+- padding or gap changes;
 
-- componentes que pasan de horizontal a vertical;
+- components that change from horizontal to vertical;
 
-- comportamiento del menú;
+- menu behavior;
 
-- elementos que se ocultan, únicamente si aplica.
+- hidden elements, only when applicable.
 
-Cuando el cambio sea evidente en los frames finales no es necesario repetirlo en una nota. Anotar sólo el comportamiento que no pueda inferirse visualmente.
+When the change is evident in the final frames, it does not need to be repeated in a note. Annotate only behavior that cannot be inferred visually.
 
-![Referencia visual](assets/ux-001/responsive-handoff-example.png)
+![Visual reference](assets/ux-001/responsive-handoff-example.png)
 
-Ejemplo de entrega responsive con frames de referencia y reglas de cambio entre tamaños.
+Example of a responsive handoff with reference frames and transition rules between sizes.
 
-# 5. Componentes
+# 5. Components
 
-Cada componente reutilizable debe quedar definido mediante sus variantes y estados. No es necesario crear una ficha textual independiente cuando la información pueda inspeccionarse claramente en el componente y sus propiedades.
+Each reusable component must be defined through its variants and states. A separate written specification is not required when the information can be clearly inspected in the component and its properties.
 
-| **Campo**          | **Contenido**                                  |
-|--------------------|------------------------------------------------|
-| Nombre             | Nombre semántico                               |
-| Anatomía           | Partes que lo componen                         |
-| Variantes          | Diferencias estructurales reales               |
-| Estados            | Default, hover, focus, active, etc.            |
-| Tamaño             | Fijo, fluido o condicionado por contenedor     |
-| Responsive         | Cambios entre viewports                        |
-| Contenido variable | Qué elementos pueden crecer, faltar o envolver |
-| Assets             | Iconos o imágenes asociados                    |
+| **Field** | **Content** |
+|---|---|
+| Name | Semantic name |
+| Anatomy | Parts that compose it |
+| Variants | Real structural differences |
+| States | Default, hover, focus, active, etc. |
+| Size | Fixed, fluid, or container-dependent |
+| Responsive | Changes between viewports |
+| Variable content | Which elements may grow, be absent, or wrap |
+| Assets | Associated icons or images |
 
-## Componentes mínimos
+## Minimum components
 
-| **Grupo**           | **Componentes**                                                                                                                                             |
-|---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Navegación          | Header, navegación desktop, menú mobile, enlace activo si se utiliza, identidad de marca y footer.                                                          |
-| Noticias            | Tarjeta principal, tarjeta secundaria, tarjeta/item de listado, variantes con y sin imagen, badge de sección, fecha, créditos y resumen cuando corresponda. |
-| Contenido editorial | Cabecera de artículo, imagen destacada, cuerpo de lectura, H2, H3, enlaces, figura, caption, crédito, YouTube y Spotify.                                    |
-| Interacción         | Botón primario, botón secundario si se usa, enlace textual, hover, focus y active cuando corresponda.                                                       |
-| Estados             | Estado vacío general y filtro sin resultados.                                                                                                               |
-| Institucional       | Patrón de página institucional genérica.                                                                                                                    |
+| **Group** | **Components** |
+|---|---|
+| Navigation | Header, desktop navigation, mobile menu, active link if used, brand identity, and footer. |
+| News | Primary card, secondary card, listing card/item, with-image and without-image variants, section badge, date, credits, and summary when applicable. |
+| Editorial content | Article header, featured image, reading body, H2, H3, links, figure, caption, credit, YouTube, and Spotify. |
+| Interaction | Primary button, secondary button if used, text link, hover, focus, and active when applicable. |
+| States | General empty state and filter-with-no-results state. |
+| Institutional | Generic institutional page pattern. |
 
-![Referencia visual](assets/ux-001/component-specification-example.png)
+![Visual reference](assets/ux-001/component-specification-example.png)
 
-Ejemplo de anatomía, variantes, estados y comportamiento de contenido en un componente reutilizable.
+Example of anatomy, variants, states, and variable-content behavior in a reusable component.
 
-# 6. Pantallas finales
+# 6. Final screens
 
-Cada superficie debe entregarse como frame final en mobile y desktop. Tablet se incluye sólo cuando aporta una decisión adicional de layout.
+Each surface must be delivered as a final mobile and desktop frame. Tablet is included only when it adds an additional layout decision.
 
 ## 6.1. Home
 
-- noticia principal;
+- primary story;
 
-- noticias secundarias;
+- secondary stories;
 
-- navegación y footer;
+- navigation and footer;
 
-- componentes de noticia utilizados;
+- news components used;
 
-- variantes con y sin imagen cuando correspondan.
+- with-image and without-image variants when applicable.
 
-## 6.2. Listado de noticias
+## 6.2. News listing
 
-- estado normal;
+- normal state;
 
-- filtro por sección activo;
+- active section filter;
 
-- estado sin resultados;
+- no-results state;
 
-- mobile y desktop.
+- mobile and desktop.
 
-## 6.3. Detalle de noticia
+## 6.3. News detail
 
-- cabecera editorial y metadata;
+- editorial header and metadata;
 
-- imagen destacada cuando exista;
+- featured image when present;
 
-- cuerpo de lectura;
+- reading body;
 
-- H1, H2 y H3;
+- H1, H2, and H3;
 
-- imágenes del cuerpo, caption y crédito;
+- body images, caption, and credit;
 
-- YouTube y Spotify;
+- YouTube and Spotify;
 
-- enlaces y etiquetas cuando estén presentes.
+- links and tags when present.
 
-Debe quedar definido el ancho de lectura, la separación vertical del contenido, la jerarquía tipográfica y el tratamiento de imágenes y multimedia.
+The reading width, vertical content spacing, typographic hierarchy, and treatment of images and multimedia must be defined.
 
-## 6.4. Página institucional genérica
+## 6.4. Generic institutional page
 
-- título;
+- title;
 
-- introducción cuando exista;
+- introduction when present;
 
-- cuerpo;
+- body;
 
-- subtítulos;
+- subheadings;
 
-- enlaces;
+- links;
 
-- mobile y desktop.
+- mobile and desktop.
 
-## 6.5. Navegación, footer y estados
+## 6.5. Navigation, footer, and states
 
-- header desktop;
+- desktop header;
 
-- menú mobile cerrado y abierto;
+- mobile menu closed and open;
 
 - footer;
 
-- estado vacío;
+- empty state;
 
-- filtro sin resultados;
+- filter with no results;
 
-- página 404, opcional.
+- 404 page, optional.
 
-| **Las interacciones o composiciones especialmente personalizadas deben marcarse como “Requiere validación técnica” antes de considerarse comprometidas para implementación.**
+> **Highly customized interactions or compositions must be marked as `Requires technical validation` before they are considered committed for implementation.**
 
-# 7. Assets y handoff
+# 7. Assets and handoff
 
-## Paquete de assets finales
+## Final asset package
 
-Todo recurso necesario para reproducir el diseño debe estar identificado, marcado como final, exportable y separado de los recursos utilizados únicamente para mockups.
+Every resource required to reproduce the design must be identified, marked as final, exportable, and separated from resources used only for mockups.
 
-> **Tipo**                                                  | **Formato preferido**-----------------------|
-| Logotipos, iconos e ilustraciones vectoriales             | SVG                   |
-| Raster final optimizado para web                          | WebP                  |
-| Raster con transparencia o necesidad específica           | PNG                   |
-| Fotografía cuando sea apropiado                           | JPEG o WebP           |
-| Fuente alojada por el proyecto, si la licencia lo permite | WOFF2                 |
+| **Type** | **Preferred format** |
+|---|---|
+| Logos, icons, and vector illustrations | SVG |
+| Final raster optimized for the web | WebP |
+| Raster with transparency or a specific need | PNG |
+| Photography when appropriate | JPEG or WebP |
+| Font hosted by the project, when licensing allows | WOFF2 |
 
-## Fuentes
+## Fonts
 
-Indicar nombre exacto, pesos y estilos utilizados, proveedor, licencia y método previsto de uso. No entregar pesos que el diseño no utiliza. No incorporar una fuente comercial sin informar al equipo de su licencia.
+Specify exact name, weights and styles used, provider, license, and intended usage method. Do not deliver weights that are not used in the design. Do not introduce a commercial font without informing the team about its license.
 
-## Estados del diseño
+## Design states
 
-| **Estado**                  | **Significado**                                                                 |
-|-----------------------------|---------------------------------------------------------------------------------|
-| Listo para desarrollo       | Diseño final aprobado para implementación.                                      |
-| En exploración              | Alternativa o trabajo todavía no cerrado.                                       |
-| Propuesta futura            | Idea que no pertenece al alcance actual.                                        |
-| Requiere validación técnica | Diseño o interacción que debe revisarse antes de comprometer su implementación. |
+| **State** | **Meaning** |
+|---|---|
+| Ready for development | Final design approved for implementation. |
+| In exploration | Alternative or work that is not yet resolved. |
+| Future proposal | Idea outside the current scope. |
+| Requires technical validation | Design or interaction that must be reviewed before implementation is committed. |
 
-## Notas de handoff
+## Handoff notes
 
-Añadir notas sólo cuando el diseño no comunique por sí mismo una decisión relevante, por ejemplo:
+Add notes only when the design does not communicate a relevant decision by itself, for example:
 
-- comportamiento responsive no evidente;
+- non-obvious responsive behavior;
 
-- regla de recorte de una imagen;
+- image crop rule;
 
-- elemento que cambia de posición;
+- element that changes position;
 
-- variante excepcional;
+- exceptional variant;
 
-- interacción;
+- interaction;
 
-- asset externo;
+- external asset;
 
-- comportamiento de texto variable;
+- variable-text behavior;
 
-- excepción a la grilla.
+- grid exception.
 
-## Entrega final
+## Final delivery
 
-> **1.** Enlace al archivo editable.
+> **1.** Link to the editable design file.
 >
-> **2.** Enlaces directos a las secciones o frames finales cuando la herramienta lo permita.
+> **2.** Direct links to final sections or frames when the tool allows it.
 >
-> **3.** Assets finales.
+> **3.** Final assets.
 >
-> **4.** Información de fuentes y licencias.
+> **4.** Font and licensing information.
 >
-> **5.** Identificación del material listo para desarrollo.
+> **5.** Identification of material that is ready for development.
 >
-> **6.** Lista breve de decisiones todavía abiertas, si existen.
+> **6.** Short list of decisions that remain open, if any.
 
-# 8. Contexto del sitio actual
+# 8. Current site context
 
-El diseño se aplica a las superficies públicas existentes. Las capturas siguientes sirven para identificar el contenido y las superficies que deben rediseñarse.
+The design applies to the existing public surfaces. The following screenshots are references for identifying the content and surfaces that must be redesigned.
 
-## Superficies existentes
+## Existing surfaces
 
 > **1.** Home.
 >
-> **2.** Listado de noticias en /noticias/.
+> **2.** News listing at `/noticias/`.
 >
-> **3.** Filtro del listado por sección.
+> **3.** News-list section filter.
 >
-> **4.** Detalle de noticia.
+> **4.** News detail.
 >
-> **5.** Página institucional genérica.
+> **5.** Generic institutional page.
 >
-> **6.** Header y navegación.
+> **6.** Header and navigation.
 >
 > **7.** Footer.
 >
-> **8.** Estados vacíos.
+> **8.** Empty states.
 >
-> **9.** Página 404, opcional dentro de este encargo.
+> **9.** 404 page, optional within this engagement.
 
-Las secciones editoriales funcionan como navegación y filtro; no son páginas independientes.
+Editorial sections work as navigation and filtering; they are not independent pages.
 
-![Referencia visual](assets/ux-001/current-public-surfaces-reference.png)
+![Visual reference](assets/ux-001/current-public-surfaces-reference.png)
 
-Referencia de las superficies públicas actuales.
+Reference for the current public surfaces.
 
-## Contenido que los componentes deben soportar
+## Content the components must support
 
-- noticia con y sin imagen;
+- news with and without an image;
 
-- título corto y largo;
+- short and long titles;
 
-- uno o varios créditos públicos;
+- one or multiple public credits;
 
-- detalle con y sin imagen destacada;
+- detail pages with and without a featured image;
 
-- artículo largo;
+- long-form article content;
 
-- imagen de cuerpo con caption y crédito;
+- body image with caption and credit;
 
-- bloque YouTube;
+- YouTube block;
 
-- bloque Spotify.
+- Spotify block.
 
-![Referencia visual](assets/ux-001/current-multimedia-detail-reference.png)
+![Visual reference](assets/ux-001/current-multimedia-detail-reference.png)
 
-Referencia del detalle actual con imágenes del cuerpo, YouTube y Spotify.
+Reference for the current detail page with body images, YouTube, and Spotify.
 
-## Límites del encargo
+## Scope limits
 
-No forman parte del diseño comprometido para este encargo:
+The following are not part of the design committed for this engagement:
 
-- formulario de contacto;
+- contact form;
 
-- compartir en redes;
+- social sharing;
 
-- nueva paginación;
+- new pagination;
 
-- búsqueda avanzada;
+- advanced search;
 
-- sistema de talleres;
+- workshop system;
 
 - newsletter;
 
 - dashboard;
 
-- app móvil;
+- mobile app;
 
 - Wagtail Admin;
 
 - dark mode;
 
-- frontend separado.
+- separate frontend.
 
-Si alguna de estas ideas aparece como exploración, debe permanecer fuera de las pantallas marcadas como “Listas para desarrollo”.
+If any of these ideas appear as an exploration, they must remain outside screens marked as `Ready for development`.
 
-# 9. Checklist final de entrega
+# 9. Final delivery checklist
 
-## Archivo y estructura
+## File and structure
 
-☐ Archivo editable compartido.
+- [ ] Editable file shared.
+- [ ] Sections and frames use semantic names.
+- [ ] One identifiable final version per viewport.
+- [ ] Explorations separated from final material.
+- [ ] Final frames marked as `Ready for development`.
 
-☐ Secciones y frames con nombres semánticos.
+## Visual foundations
 
-☐ Una versión final identificable por viewport.
+- [ ] Colors include name, exact value, and use.
+- [ ] Interactive color states are defined when applicable.
+- [ ] Typeface families, weights, styles, source, and license are identified.
+- [ ] Type scale includes size, line-height, and letter-spacing when applicable.
+- [ ] Spacing scale is defined.
+- [ ] Grid, gutters, and side margins are defined by viewport.
+- [ ] Maximum container width and maximum reading width are defined.
+- [ ] Radii, borders, and shadows are defined when used.
 
-☐ Exploraciones separadas del material final.
+## Brand and assets
 
-☐ Frames finales marcados como Listo para desarrollo.
+- [ ] Brand name used in the design is identified.
+- [ ] Final logo is exportable.
+- [ ] Used logo variants are identified.
+- [ ] Custom iconography is exportable.
+- [ ] Icon libraries and licenses are identified when used.
+- [ ] Final raster assets are identified.
+- [ ] Mockup assets are separated from interface assets.
+- [ ] Fonts and licenses are identified.
 
-## Fundamentos visuales
+## Components
 
-☐ Colores con nombre, valor exacto y uso.
+- [ ] Header and desktop navigation.
+- [ ] Mobile menu.
+- [ ] Footer.
+- [ ] Primary card.
+- [ ] Secondary card.
+- [ ] Listing item or card.
+- [ ] With-image and without-image variants.
+- [ ] Section badge and metadata.
+- [ ] Article header.
+- [ ] Figure with caption and credit.
+- [ ] YouTube and Spotify.
+- [ ] Buttons and links used.
+- [ ] Hover and focus.
+- [ ] Empty state and filter with no results.
+- [ ] Institutional pattern.
 
-☐ Estados interactivos de color definidos cuando aplican.
+## Screens and responsive behavior
 
-☐ Familias tipográficas, pesos, estilos, origen y licencia identificados.
-
-☐ Escala tipográfica con tamaño, line-height y letter-spacing cuando corresponda.
-
-☐ Escala de espaciado definida.
-
-☐ Grid, gutters y márgenes laterales por viewport definidos.
-
-☐ Ancho máximo de contenedor y ancho máximo de lectura definidos.
-
-☐ Radios, bordes y sombras definidos si se usan.
-
-## Marca y assets
-
-☐ Nombre de marca utilizado identificado.
-
-☐ Logotipo final exportable.
-
-☐ Variantes de logotipo utilizadas identificadas.
-
-☐ Iconografía propia exportable.
-
-☐ Librerías de iconos y licencias identificadas si se usan.
-
-☐ Assets raster finales identificados.
-
-☐ Assets de mockup separados de assets de interfaz.
-
-☐ Fuentes y licencias identificadas.
-
-## Componentes
-
-☐ Header y navegación desktop.
-
-☐ Menú mobile.
-
-☐ Footer.
-
-☐ Tarjeta principal.
-
-☐ Tarjeta secundaria.
-
-☐ Item o tarjeta de listado.
-
-☐ Variantes con y sin imagen.
-
-☐ Badge de sección y metadata.
-
-☐ Cabecera de artículo.
-
-☐ Figura con caption y crédito.
-
-☐ YouTube y Spotify.
-
-☐ Botones y enlaces utilizados.
-
-☐ Hover y focus.
-
-☐ Estado vacío y filtro sin resultados.
-
-☐ Patrón institucional.
-
-## Pantallas y responsive
-
-☐ Home mobile y desktop.
-
-☐ Listado mobile y desktop.
-
-☐ Filtro activo.
-
-☐ Estado sin resultados.
-
-☐ Detalle mobile y desktop.
-
-☐ Página institucional mobile y desktop.
-
-☐ Menú mobile abierto.
-
-☐ Tablet donde exista una decisión material adicional.
-
-☐ Cambios responsive no evidentes anotados.
+- [ ] Home mobile and desktop.
+- [ ] News listing mobile and desktop.
+- [ ] Active filter state.
+- [ ] No-results state.
+- [ ] News detail mobile and desktop.
+- [ ] Institutional page mobile and desktop.
+- [ ] Mobile menu open.
+- [ ] Tablet where there is an additional material decision.
+- [ ] Non-obvious responsive changes are annotated.
 
 ## Handoff
 
-☐ Assets configurados para exportación o entregados.
-
-☐ Enlaces directos a frames finales disponibles.
-
-☐ Notas añadidas sólo donde son necesarias.
-
-☐ Decisiones abiertas registradas.
-
-☐ Propuestas futuras separadas.
-
-☐ Elementos que requieren validación técnica identificados.
+- [ ] Assets configured for export or delivered.
+- [ ] Direct links to final frames are available.
+- [ ] Notes are added only where necessary.
+- [ ] Open decisions are recorded.
+- [ ] Future proposals are separated.
+- [ ] Elements requiring technical validation are identified.

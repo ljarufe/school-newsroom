@@ -21,6 +21,7 @@ NEWS_0003 = ("news", "0003_newspage_contains_identifiable_minors_and_more")
 NEWS_0004 = ("news", "0004_alter_newspage_body")
 NEWS_0005 = ("news", "0005_alter_newspage_body")
 NEWS_0006 = ("news", "0006_newspage_seo_assistant_fields")
+NEWS_0007 = ("news", "0007_newspage_featured_image_alt_text_and_more")
 HOME_0001 = ("home", "0001_initial")
 BEFORE_NEWS_0002 = [HOME_0001, NEWS_0001]
 
@@ -720,12 +721,18 @@ def test_epic3_003_body_migrations_preserve_then_convert_historical_content():
             "document-link",
         ]
 
-        migrate_to(NEWS_0006)
+        migrate_to(NEWS_0007)
         reconstructed_page = Revision.objects.get(pk=mixed_revision.pk).as_object()
         reconstructed_body = list(reconstructed_page.body.raw_data)
 
         assert reconstructed_body == json.loads(final_mixed_revision.content["body"])
         assert all(item.get("type") != "heading" for item in reconstructed_body)
+        assert reconstructed_page.featured_image_caption == ""
+        assert reconstructed_page.featured_image_alt_text == ""
+        assert reconstructed_page.featured_image_credit == ""
+        assert reconstructed_page.og_image_caption == ""
+        assert reconstructed_page.og_image_alt_text == ""
+        assert reconstructed_page.og_image_credit == ""
     finally:
         if revision_ids:
             Revision.objects.filter(pk__in=revision_ids).delete()

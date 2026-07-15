@@ -21,7 +21,8 @@ from .blocks import (
     YouTubeEmbedBlock,
 )
 from .forms import NewsPageAdminForm
-from .panels import SeoAssistantPanel
+from .image_metadata import contextual_metadata_field, effective_text
+from .panels import SeoAssistantPanel, contextual_image_panels
 from .seo_metadata import (
     build_news_article_data,
     build_public_metadata,
@@ -50,14 +51,10 @@ MINOR_PRIVACY_NOTICE = """
 </p>
 """
 
-CONTENT_AUTHORING_HELP = """
-<h2>Cómo editar el contenido</h2>
-<p>
-  Selecciona texto para mostrar la barra de formato y usa el pin para mantenerla
-  visible. Pulsa "/" para insertar o dividir bloques. El editor admite atajos de
-  escritura tipo Markdown para los formatos disponibles.
-</p>
-"""
+CONTENT_AUTHORING_HELP = (
+    "Selecciona texto para mostrar la barra de formato. Usa el pin para mantenerla "
+    'visible y "/" para insertar o dividir bloques.'
+)
 
 PUBLIC_CREDIT_HELP = (
     "Obligatoria para publicar. Puedes dejarla vacía mientras trabajas en un borrador."
@@ -238,7 +235,14 @@ class NewsPage(Page):
         null=True,
         blank=True,
         related_name="+",
+        help_text=(
+            "Selecciona el archivo principal. Completa debajo su metadata editorial "
+            "para esta noticia."
+        ),
     )
+    featured_image_caption = contextual_metadata_field("caption")
+    featured_image_alt_text = contextual_metadata_field("alt_text")
+    featured_image_credit = contextual_metadata_field("credit")
     focus_keyphrase = models.CharField(
         "Frase clave objetivo",
         max_length=255,
@@ -268,8 +272,14 @@ class NewsPage(Page):
         null=True,
         blank=True,
         related_name="+",
-        help_text="Si queda vacía, se usa la imagen destacada.",
+        help_text=(
+            "Si queda vacía, se usa la imagen destacada y su texto alternativo "
+            "contextual."
+        ),
     )
+    og_image_caption = contextual_metadata_field("caption")
+    og_image_alt_text = contextual_metadata_field("alt_text")
+    og_image_credit = contextual_metadata_field("credit")
     canonical_url = models.URLField(
         "URL canonical",
         max_length=2048,
@@ -322,8 +332,11 @@ class NewsPage(Page):
     content_panels = Page.content_panels + [
         FieldPanel("publication_date"),
         FieldPanel("summary"),
-        HelpPanel(content=CONTENT_AUTHORING_HELP),
-        FieldPanel("body"),
+        MultiFieldPanel(
+            contextual_image_panels("featured_image", "featured_image"),
+            heading="Imagen destacada",
+        ),
+        FieldPanel("body", help_text=CONTENT_AUTHORING_HELP),
         InlinePanel(
             "public_credits",
             label="Firma pública",
@@ -339,7 +352,6 @@ class NewsPage(Page):
             ],
             heading="Cobertura",
         ),
-        FieldPanel("featured_image"),
         FieldPanel("tags"),
         MultiFieldPanel(
             [
@@ -366,7 +378,10 @@ class NewsPage(Page):
             [
                 FieldPanel("og_title"),
                 FieldPanel("og_description"),
-                FieldPanel("og_image"),
+                MultiFieldPanel(
+                    contextual_image_panels("og_image", "og_image"),
+                    heading="Imagen social y metadata editorial",
+                ),
             ],
             heading="Configuración para redes sociales",
         ),
@@ -413,6 +428,18 @@ class NewsPage(Page):
         if effective_noindex(self) or not canonical_is_self(self, request):
             return []
         return super().get_sitemap_urls(request=request)
+
+    @property
+    def effective_featured_image_caption(self) -> str:
+        return effective_text(self.featured_image_caption)
+
+    @property
+    def effective_featured_image_alt_text(self) -> str:
+        return effective_text(self.featured_image_alt_text)
+
+    @property
+    def effective_featured_image_credit(self) -> str:
+        return effective_text(self.featured_image_credit)
 
     class Meta:
         verbose_name = "Noticia"

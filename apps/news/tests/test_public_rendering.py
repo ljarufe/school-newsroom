@@ -59,6 +59,9 @@ def create_news_page(
     first_published_at=None,
     school=None,
     featured_image=None,
+    featured_image_caption="",
+    featured_image_alt_text="",
+    featured_image_credit="",
     body=None,
     tags=None,
 ):
@@ -80,6 +83,9 @@ def create_news_page(
         coverage_province="Arequipa",
         coverage_district="Cercado",
         featured_image=featured_image,
+        featured_image_caption=featured_image_caption,
+        featured_image_alt_text=featured_image_alt_text,
+        featured_image_credit=featured_image_credit,
     )
     home_page.add_child(instance=page)
     if first_published_at is not None:
@@ -411,7 +417,7 @@ def test_news_detail_renders_without_optional_metadata(public_site, section) -> 
 
 
 @pytest.mark.django_db
-def test_news_detail_renders_featured_image_with_default_alt(
+def test_historical_featured_image_does_not_use_global_asset_metadata(
     public_site,
     section,
     settings,
@@ -432,7 +438,66 @@ def test_news_detail_renders_featured_image_with_default_alt(
 
     assert response.status_code == 200
     assert b"<img" in response.content
-    assert 'alt="Descripción significativa de imagen"'.encode() in response.content
+    assert b'alt=""' in response.content
+    assert "Descripción significativa de imagen".encode() not in response.content
+    assert b"<figcaption>" not in response.content
+
+
+@pytest.mark.django_db
+def test_news_detail_renders_contextual_featured_image_metadata(
+    public_site,
+    section,
+    settings,
+    tmp_path,
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    image = create_uploaded_image()
+    page = create_news_page(
+        public_site,
+        section,
+        title="Contextual Featured Image News",
+        slug="contextual-featured-image-news",
+        publication_date=dt.date(2026, 7, 1),
+        featured_image=image,
+        featured_image_caption="Taller ficticio preparando una noticia.",
+        featured_image_alt_text="Cuadernos y grabadoras sobre una mesa.",
+        featured_image_credit="Archivo escolar ficticio",
+    )
+
+    response = Client().get(page.url)
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert 'alt="Cuadernos y grabadoras sobre una mesa."' in content
+    assert "Taller ficticio preparando una noticia." in content
+    assert "Crédito: Archivo escolar ficticio" in content
+    assert "Descripción significativa de imagen" not in content
+
+
+@pytest.mark.django_db
+def test_home_and_news_list_use_contextual_featured_alt_without_visible_caption(
+    public_site,
+    section,
+    settings,
+    tmp_path,
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    image = create_uploaded_image()
+    create_news_page(
+        public_site,
+        section,
+        title="Contextual Card Image News",
+        slug="contextual-card-image-news",
+        publication_date=dt.date(2026, 7, 1),
+        featured_image=image,
+        featured_image_caption="Pie visible sólo en el detalle.",
+        featured_image_alt_text="Mesa de redacción escolar ficticia.",
+    )
+
+    for url in ["/", "/noticias/"]:
+        content = Client().get(url).content.decode()
+        assert 'alt="Mesa de redacción escolar ficticia."' in content
+        assert "Pie visible sólo en el detalle." not in content
 
 
 @pytest.mark.django_db

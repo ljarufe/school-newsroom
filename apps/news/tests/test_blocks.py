@@ -9,11 +9,13 @@ from wagtail import blocks
 from wagtail.embeds.embeds import get_embed_hash
 from wagtail.embeds.models import Embed
 from wagtail.images import get_image_model
+from wagtail.images.widgets import AdminImageChooser
 
 import apps.news.blocks as news_blocks
 from apps.news.blocks import (
     PARAGRAPH_FEATURES,
     ArticleImageBlock,
+    ArticleImageBlockAdapter,
     SpotifyEmbedBlock,
     YouTubeEmbedBlock,
 )
@@ -142,7 +144,48 @@ def test_article_image_block_field_order_and_admin_media() -> None:
     assert block.child_blocks["alt_text"].label == "Texto alternativo"
     assert block.child_blocks["credit"].label == "Crédito de imagen"
     assert block.child_blocks["credit"].required is False
-    assert "news/js/article_image_block.js" in str(form_class().media)
+    media_js = list(form_class().media._js)
+    assert "news/js/caption_alt_sync.js" in media_js
+    assert "news/js/article_image_block.js" in media_js
+    assert media_js.index("news/js/caption_alt_sync.js") < media_js.index(
+        "news/js/article_image_block.js",
+    )
+
+
+def test_caption_alt_sync_is_shared_by_page_fields_and_article_image_blocks() -> None:
+    adapter_media_js = list(ArticleImageBlockAdapter().media._js)
+    shared_source = Path("static/news/js/caption_alt_sync.js").read_text()
+    article_source = Path("static/news/js/article_image_block.js").read_text()
+
+    assert adapter_media_js.index("news/js/caption_alt_sync.js") < (
+        adapter_media_js.index("news/js/article_image_block.js")
+    )
+    assert "id_featured_image_caption" in shared_source
+    assert "id_featured_image_alt_text" in shared_source
+    assert "id_og_image_caption" in shared_source
+    assert "id_og_image_alt_text" in shared_source
+    assert "captionSyncInitialized" in shared_source
+    assert "let isSynchronizable" in shared_source
+    assert "window.schoolNewsroom.images.setupCaptionAltSync" in article_source
+    assert "setupCaptionAltSync(captionInput, altInput)" in article_source
+    assert "let isSynchronizable" not in article_source
+
+
+def test_all_news_image_contexts_use_the_native_wagtail_chooser() -> None:
+    form_class = NewsPage.get_edit_handler().get_form_class()
+    article_image = NewsPage._meta.get_field("body").stream_block.child_blocks[
+        "article_image"
+    ]
+    widgets = [
+        form_class.base_fields["featured_image"].widget,
+        article_image.child_blocks["image"].widget,
+        form_class.base_fields["og_image"].widget,
+    ]
+
+    assert all(isinstance(widget, AdminImageChooser) for widget in widgets)
+    assert {widget.chooser_modal_url_name for widget in widgets} == {
+        "wagtailimages_chooser:choose"
+    }
 
 
 @pytest.mark.django_db

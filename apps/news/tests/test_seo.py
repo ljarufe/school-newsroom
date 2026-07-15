@@ -35,6 +35,11 @@ def make_page(
     summary="El periodismo escolar abre nuevas oportunidades de aprendizaje.",
     body=None,
     featured_image=True,
+    featured_image_caption="Redacción escolar trabajando.",
+    featured_image_alt_text="Mesa con materiales periodísticos ficticios.",
+    og_image=None,
+    og_image_caption="",
+    og_image_alt_text="",
 ):
     raw_body = (
         body
@@ -59,6 +64,11 @@ def make_page(
         summary=summary,
         body=stream_value(raw_body),
         featured_image=featured_image,
+        featured_image_caption=featured_image_caption,
+        featured_image_alt_text=featured_image_alt_text,
+        og_image=og_image,
+        og_image_caption=og_image_caption,
+        og_image_alt_text=og_image_alt_text,
     )
 
 
@@ -293,6 +303,49 @@ def test_body_image_alt_check_is_defensive_for_incomplete_drafts() -> None:
         ).status
         == "problem"
     )
+
+
+def test_image_checks_require_contextual_metadata_and_honor_social_fallback() -> None:
+    incomplete = analyze_page(
+        make_page(
+            featured_image_caption="   ",
+            featured_image_alt_text="",
+        ),
+    )
+    complete = analyze_page(make_page())
+
+    assert check_by_label(incomplete.seo_checks, "Imagen destacada").status == (
+        "problem"
+    )
+    assert (
+        check_by_label(
+            incomplete.seo_checks,
+            "Metadata de imagen social",
+        ).status
+        == "problem"
+    )
+    assert check_by_label(complete.seo_checks, "Imagen destacada").status == "good"
+    assert (
+        check_by_label(
+            complete.seo_checks,
+            "Metadata de imagen social",
+        ).status
+        == "good"
+    )
+
+
+def test_social_image_check_uses_explicit_social_metadata() -> None:
+    result = analyze_page(
+        make_page(
+            og_image=True,
+            og_image_caption="Pie social ficticio.",
+            og_image_alt_text="Vista amplia de un taller ficticio.",
+        ),
+    )
+
+    check = check_by_label(result.seo_checks, "Metadata de imagen social")
+    assert check.status == "good"
+    assert "imagen social propia" in check.explanation
 
 
 @pytest.mark.parametrize(

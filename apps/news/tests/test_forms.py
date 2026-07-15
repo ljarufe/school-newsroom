@@ -100,6 +100,14 @@ def admin_form_data(
     authorizations_verified=False,
     sensitive_content=False,
     body_block=None,
+    featured_image="",
+    featured_image_caption="",
+    featured_image_alt_text="",
+    featured_image_credit="",
+    og_image="",
+    og_image_caption="",
+    og_image_alt_text="",
+    og_image_credit="",
 ):
     public_credits = public_credits or []
     deleted_credit_ids = deleted_credit_ids or []
@@ -122,10 +130,17 @@ def admin_form_data(
         "school": "",
         "coverage_province": "Arequipa",
         "coverage_district": "Cercado",
-        "featured_image": "",
+        "featured_image": featured_image,
+        "featured_image_caption": featured_image_caption,
+        "featured_image_alt_text": featured_image_alt_text,
+        "featured_image_credit": featured_image_credit,
         "tags": "",
         "seo_title": "",
         "search_description": "",
+        "og_image": og_image,
+        "og_image_caption": og_image_caption,
+        "og_image_alt_text": og_image_alt_text,
+        "og_image_credit": og_image_credit,
         "show_in_menus": "",
         "go_live_at": "",
         "expire_at": "",
@@ -242,6 +257,91 @@ def test_draft_validation_allows_incomplete_article_image_block(
 
     assert form.is_valid()
     assert form.is_deferred_validation
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("image_field", ["featured_image", "og_image"])
+def test_draft_validation_allows_incomplete_contextual_image_metadata(
+    image_field,
+    home_page,
+    section,
+    settings,
+    tmp_path,
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    image = create_uploaded_image()
+    form = make_admin_form(
+        home_page,
+        section,
+        slug=f"draft-incomplete-{image_field}",
+        **{image_field: str(image.pk)},
+    )
+
+    form.defer_required_fields()
+
+    assert form.is_valid()
+    assert form.is_deferred_validation
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("image_field", ["featured_image", "og_image"])
+@pytest.mark.parametrize("missing_part", ["caption", "alt_text"])
+def test_full_validation_requires_contextual_image_caption_and_alt(
+    image_field,
+    missing_part,
+    home_page,
+    section,
+    settings,
+    tmp_path,
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    image = create_uploaded_image()
+    metadata = {
+        f"{image_field}_caption": "Pie editorial ficticio",
+        f"{image_field}_alt_text": "Descripción contextual ficticia",
+        f"{image_field}_credit": "",
+    }
+    metadata[f"{image_field}_{missing_part}"] = "   "
+    form = make_admin_form(
+        home_page,
+        section,
+        slug=f"full-{image_field}-without-{missing_part}",
+        public_credits=["Fictional school newsroom team"],
+        **{image_field: str(image.pk)},
+        **metadata,
+    )
+
+    assert not form.is_valid()
+    field_name = f"{image_field}_{missing_part}"
+    assert field_name in form.errors
+    assert "antes de publicar la noticia" in str(form.errors[field_name])
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("image_field", ["featured_image", "og_image"])
+def test_full_validation_accepts_optional_contextual_image_credit(
+    image_field,
+    home_page,
+    section,
+    settings,
+    tmp_path,
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    image = create_uploaded_image()
+    form = make_admin_form(
+        home_page,
+        section,
+        slug=f"full-{image_field}-without-credit",
+        public_credits=["Fictional school newsroom team"],
+        **{
+            image_field: str(image.pk),
+            f"{image_field}_caption": "Pie editorial ficticio",
+            f"{image_field}_alt_text": "Descripción contextual ficticia",
+            f"{image_field}_credit": "",
+        },
+    )
+
+    assert form.is_valid(), form.errors.as_json()
 
 
 @pytest.mark.django_db

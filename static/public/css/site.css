@@ -212,6 +212,7 @@ h3,
   height: auto;
 }
 
+.article-featured-image figcaption,
 .article-body figure figcaption {
   margin-bottom: 3rem;
   padding-top: 0.65rem;

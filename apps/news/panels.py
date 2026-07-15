@@ -1,9 +1,18 @@
 from django import forms
-from wagtail.admin.panels import Panel
+from wagtail.admin.panels import FieldPanel, Panel
 from wagtail.models import Site
 
 from .seo import analyze_page
 from .seo_metadata import build_public_metadata, served_public_url
+
+
+def contextual_image_panels(image_field: str, metadata_prefix: str) -> list[Panel]:
+    return [
+        FieldPanel(image_field),
+        FieldPanel(f"{metadata_prefix}_caption"),
+        FieldPanel(f"{metadata_prefix}_alt_text"),
+        FieldPanel(f"{metadata_prefix}_credit"),
+    ]
 
 
 class SeoAssistantPanel(Panel):

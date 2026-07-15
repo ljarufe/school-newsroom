@@ -2,9 +2,17 @@
 
 ## Status
 
-Implementation Closing Draft. The technical implementation and automated close
-gate are complete. Real browser/Admin UAT is deferred to the maintainer and is
-not claimed here.
+Closing Feedback Final (Stage B).
+
+The implementation, automated validation, maintainer browser/Admin UAT, real
+commit and push, Pull Request CI, and PR review are complete. The PR is ready
+for Squash and merge.
+
+The only repository delta after this document is installed is this factual
+feedback finalization itself. It is documentation-only and does not invalidate
+the prior executable validation evidence. The repository's normal pre-push and
+PR CI entry points will run again naturally when this final feedback update is
+pushed.
 
 ## Source and initial checkout
 
@@ -33,7 +41,7 @@ not New Work Discovered:
 - caption-to-alt assistance existed only in `article_image`, so its state
   machine was extracted and shared by featured, body, and social image contexts.
 
-Real browser verification of these corrections remains maintainer UAT.
+The maintainer subsequently verified these corrections in the real Wagtail Admin browser flow. The corrected presentation and shared caption-to-alt behavior passed UAT.
 
 ## Implementation summary and shared pattern
 
@@ -279,8 +287,7 @@ dependent script, the two fixed field pairs are present, and the block script
 delegates instead of retaining a second state machine. This is not browser
 runtime evidence.
 
-`git diff --check` is run again after this closing-draft update and recorded in
-the final handoff chat and diff-review artifact.
+`git diff --check` passed for the implementation/correction delta. The Stage B replacement is documentation-only and is checked again before its final commit.
 
 ## Failed attempts and root causes
 
@@ -319,46 +326,92 @@ assistance and its manual-customization boundary; draft/full validation; visible
 detail versus card/social behavior; native Search/Upload use; social fallback;
 and the evidence-based decision to leave `Búsqueda` as the native initial tab.
 
-## Deferred maintainer browser UAT
+## Maintainer browser/Admin UAT
 
-Use only fictional, non-sensitive content and complete the ticket's manual
-validation. In particular, the maintainer must still verify:
+Maintainer UAT completed successfully using fictional/non-sensitive content.
 
-1. Featured image appears after Summary and immediately before Content, with no
-   repeated general image-metadata help block.
-2. Featured chooser can search, upload, choose, clear, and open global asset
-   editing; its contextual fields remain on NewsPage.
-3. Content shows the concise help inside its own field surface and no standalone
-   “Cómo editar el contenido” section.
-4. Featured, body, and social captions initially copy to alt; continued caption
-   edits update a still-synchronized alt; manually customized alt remains intact
-   after later caption edits; reopening empty/equal/custom alt preserves the
-   specified state.
-5. Body image retains field order, chooser behavior, dynamic-block
-   initialization, and semantic public output.
-6. Social image chooser and metadata remain inside Asistente SEO without the
-   removed general HelpPanel.
-7. All three modals open with native `Búsqueda` first and retain `Subir`.
-8. Draft save accepts incomplete contextual metadata.
-9. Publish/workflow/full validation blocks missing/whitespace featured and
-   explicit social caption/alt with clear Spanish errors; credit remains optional.
-10. Home/list cards use contextual featured alt without visible caption/credit.
-11. Detail shows contextual featured alt/caption/optional credit and a historical
-   page without metadata remains safe and caption-free.
-12. Open Graph, Twitter/X, canonical, robots, and JSON-LD remain correct for an
-    explicit social image and featured-image fallback.
-13. No internal minor name, age band, contributor relation, authorization flag,
-    or privacy flag appears publicly.
-14. If a chooser thumbnail is empty, capture the asset ID, file/media URL,
-    browser network result, and whether `/admin/images/<id>/` can render it.
+The initial UAT found three issues inside EPIC3-004:
+
+1. the repeated contextual-image explanatory `HelpPanel` created unnecessary visual noise;
+2. the standalone “Cómo editar el contenido” section appeared visually attached to the preceding featured-image group;
+3. caption-to-alt authoring assistance existed only for body `article_image`.
+
+Those findings were corrected in the same ticket and the affected delta was revalidated.
+
+Final browser/Admin UAT passed for:
+
+- `Imagen destacada` appearing after `Resumen` and immediately before `Contenido`;
+- removal of the repeated general image-metadata help block;
+- concise Content help rendering inside the `Contenido` field surface;
+- featured, body, and social image choosers remaining available with native `Búsqueda` and `Subir`;
+- featured, body, and social caption-to-alt synchronization;
+- continued synchronization while alt remains empty/equal to caption;
+- manual alt customization stopping later caption overwrites;
+- reopened empty/equal/custom alt states preserving the intended synchronization behavior;
+- body image field order and dynamic-block behavior;
+- social image metadata remaining inside `Asistente SEO`;
+- draft save allowing incomplete contextual metadata;
+- full publication validation blocking missing/whitespace caption or alt for featured and explicit social images;
+- optional credit remaining non-blocking;
+- Home/list cards using contextual featured alt without visible caption/credit;
+- detail rendering contextual featured alt, caption, and optional credit;
+- historical pages without new contextual metadata rendering safely without a fabricated caption or global asset-description fallback;
+- Open Graph and Twitter/X image-alt behavior for explicit social image and featured-image fallback;
+- canonical, robots, JSON-LD, and existing public SEO behavior remaining intact;
+- no public exposure of internal minor names, age bands, contributor relations, authorization flags, or privacy flags.
+
+No reproducible broken chooser thumbnail was observed during the completed UAT, so no asset/storage repair work was justified.
+
+No required manual UAT remains pending for EPIC3-004.
+
+## Operational closure evidence
+
+The late operational evidence collected after the implementation draft is:
+
+```text
+real commit
+→ completed successfully
+→ no hook-modified delta or blocking pre-commit failure reported
+
+real push
+→ completed successfully
+→ no blocking pre-push failure reported
+
+Pull Request
+→ opened against main
+
+PR CI
+→ completed without errors
+
+PR review
+→ completed with no comments or findings
+
+post-review code corrections
+→ none required
+```
+
+The final feedback update is intentionally performed once, after UAT, commit, push, PR, CI, and review evidence were known.
+
+The PR is ready for the project's configured merge strategy:
+
+```text
+Squash and merge
+```
+
+Merge, local `main` synchronization, local/remote branch cleanup, and Planka `Done` are operational steps performed after this Stage B file is committed and the resulting PR check is green.
 
 ## Warnings and known issues
 
-- Browser/modal behavior, responsive visual appearance, and real publication
-  actions are deferred; source and Django client tests do not replace UAT.
+- Source/wiring tests are not treated as browser-runtime proof; the corresponding interactive Admin behavior was validated separately in maintainer UAT.
 - Existing historical pages are public-safe but will be blocked on future full
   validation until editors add required featured metadata, as approved.
 - The existing Treebeard future warning remains outside this ticket.
+
+## Final PR review state
+
+PR review completed with no findings or comments requiring changes.
+
+No code delta was introduced after the final green implementation gate and successful maintainer UAT. This Stage B feedback replacement is the only final documentation update before merge.
 
 ## New Work Discovered
 
@@ -371,6 +424,21 @@ Potential future work, outside EPIC3-004:
   broken-thumbnail asset ID and media response;
 - handle the existing Treebeard 6 compatibility warning in its dependency
   maintenance work, not in this feature.
+
+### Non-blocking developer-experience observation
+
+During normal Dev Container use, the maintainer observed multiple Pylance diagnostics around dynamic Django/Wagtail APIs, including `Site` attributes, Wagtail page queryset methods, template-context typing, and field overloads.
+
+The observed examples did not correspond to runtime failures and were not introduced or changed by EPIC3-004. Ruff, Django migration checks, pytest, UAT, pre-push validation, and PR CI remained green.
+
+Suggested disposition:
+
+```text
+Consciously deferred / needs discovery
+```
+
+Only promote a dedicated typing/DX cleanup if Pylance diagnostic noise becomes recurring development friction. A future cleanup should inventory diagnostics first, distinguish false positives from real defects, and prefer narrow typing or casts over globally disabling useful diagnostics.
+
 
 ## Durable knowledge candidates
 

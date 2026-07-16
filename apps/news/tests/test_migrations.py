@@ -8,9 +8,31 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.utils import timezone
-from wagtail.models import Locale as RuntimeLocale
-from wagtail.models import Page as RuntimePage
-from wagtail.models import Revision, Site
+from wagtail.models import (
+    GroupApprovalTask as RuntimeGroupApprovalTask,
+)
+from wagtail.models import (
+    Locale as RuntimeLocale,
+)
+from wagtail.models import (
+    Page as RuntimePage,
+)
+from wagtail.models import (
+    Revision,
+    Site,
+)
+from wagtail.models import (
+    Task as RuntimeTask,
+)
+from wagtail.models import (
+    Workflow as RuntimeWorkflow,
+)
+from wagtail.models import (
+    WorkflowPage as RuntimeWorkflowPage,
+)
+from wagtail.models import (
+    WorkflowTask as RuntimeWorkflowTask,
+)
 from wagtail.users.models import UserProfile
 
 from apps.home.models import HomePage as RuntimeHomePage
@@ -22,6 +44,8 @@ NEWS_0004 = ("news", "0004_alter_newspage_body")
 NEWS_0005 = ("news", "0005_alter_newspage_body")
 NEWS_0006 = ("news", "0006_newspage_seo_assistant_fields")
 NEWS_0007 = ("news", "0007_newspage_featured_image_alt_text_and_more")
+NEWS_0008 = ("news", "0008_alter_newspage_options")
+NEWS_0009 = ("news", "0009_reconcile_mvp_access")
 HOME_0001 = ("home", "0001_initial")
 BEFORE_NEWS_0002 = [HOME_0001, NEWS_0001]
 
@@ -47,6 +71,61 @@ def bootstrap_migration_module():
 
 def migration_schema_editor():
     return SimpleNamespace(connection=connection)
+
+
+def mvp_access_migration_module():
+    return importlib.import_module(
+        "apps.news.migrations.0009_reconcile_mvp_access",
+    )
+
+
+def prepare_obsolete_mvp_access(apps):
+    Group = apps.get_model("auth", "Group")
+    Page = apps.get_model("wagtailcore", "Page")
+    db_alias = connection.alias
+
+    RuntimeWorkflow.objects.using(db_alias).filter(
+        name__in=[
+            "Aprobación de moderadores",
+            "Revisión editorial MVP",
+            "Revisión editorial",
+        ]
+    ).delete()
+    RuntimeTask.objects.using(db_alias).filter(
+        name="Aprobación de moderadores"
+    ).delete()
+
+    moderator_group, _ = Group.objects.using(db_alias).get_or_create(name="Moderadores")
+    Group.objects.using(db_alias).get_or_create(name="Editores")
+    moderator_group.user_set.clear()
+
+    task = RuntimeGroupApprovalTask.objects.using(db_alias).create(
+        name="Aprobación de moderadores"
+    )
+    task.groups.set([moderator_group.pk])
+    workflow = RuntimeWorkflow.objects.using(db_alias).create(
+        name="Aprobación de moderadores"
+    )
+    RuntimeWorkflowTask.objects.using(db_alias).create(
+        workflow=workflow,
+        task=task,
+        sort_order=0,
+    )
+    runtime_root_page = RuntimePage.get_first_root_node()
+    if runtime_root_page is None:
+        RuntimeLocale.objects.get_or_create(language_code="es")
+        runtime_root_page = RuntimePage.add_root(
+            instance=RuntimePage(title="Root", slug="root"),
+        )
+    root_page = Page.objects.using(db_alias).get(pk=runtime_root_page.pk)
+    RuntimeWorkflowPage.objects.using(db_alias).update_or_create(
+        page_id=root_page.pk,
+        defaults={"workflow": workflow},
+    )
+    legacy_workflow = RuntimeWorkflow.objects.using(db_alias).create(
+        name="Revisión editorial MVP"
+    )
+    return moderator_group.pk, task.pk, workflow.pk, legacy_workflow.pk
 
 
 def prepare_base_bootstrap_home(apps, *, title="Welcome to your new Wagtail site!"):
@@ -257,6 +336,31 @@ def test_bootstrap_data_migration_normalizes_known_admin_bootstrap_names():
             .exists()
         )
     finally:
+        if "apps" in locals():
+            db_alias = connection.alias
+            Group = apps.get_model("auth", "Group")
+            Task = apps.get_model("wagtailcore", "Task")
+            Workflow = apps.get_model("wagtailcore", "Workflow")
+            Workflow.objects.using(db_alias).filter(
+                name__in=[
+                    "Moderators approval",
+                    "Aprobación de moderadores",
+                ]
+            ).delete()
+            Task.objects.using(db_alias).filter(
+                name__in=[
+                    "Moderators approval",
+                    "Aprobación de moderadores",
+                ]
+            ).delete()
+            Group.objects.using(db_alias).filter(
+                name__in=[
+                    "Moderators",
+                    "Moderadores",
+                    "Editors",
+                    "Editores",
+                ]
+            ).delete()
         migrate_to_latest()
 
 
@@ -282,6 +386,122 @@ def test_bootstrap_admin_name_normalization_fails_on_target_conflict():
                 "DELETE FROM auth_group WHERE name IN (%s, %s)",
                 ["Moderators", "Moderadores"],
             )
+        migrate_to_latest()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_epic4_access_migration_removes_only_safe_obsolete_records_and_renames():
+    try:
+        apps = migrate_to(NEWS_0008)
+        Group = apps.get_model("auth", "Group")
+        db_alias = connection.alias
+        unrelated_group = Group.objects.using(db_alias).create(
+            name="Grupo no relacionado"
+        )
+        _group_id, _task_id, _workflow_id, legacy_workflow_id = (
+            prepare_obsolete_mvp_access(apps)
+        )
+
+        apps = migrate_to(NEWS_0009)
+        Group = apps.get_model("auth", "Group")
+        Task = apps.get_model("wagtailcore", "Task")
+        Workflow = apps.get_model("wagtailcore", "Workflow")
+        WorkflowPage = apps.get_model("wagtailcore", "WorkflowPage")
+
+        assert (
+            not Group.objects.using(db_alias)
+            .filter(name__in=["Moderadores", "Editores"])
+            .exists()
+        )
+        assert Group.objects.using(db_alias).filter(pk=unrelated_group.pk).exists()
+        assert (
+            not Task.objects.using(db_alias)
+            .filter(name="Aprobación de moderadores")
+            .exists()
+        )
+        assert (
+            not Workflow.objects.using(db_alias)
+            .filter(name="Aprobación de moderadores")
+            .exists()
+        )
+        renamed_workflow = Workflow.objects.using(db_alias).get(
+            name="Revisión editorial"
+        )
+        assert renamed_workflow.pk == legacy_workflow_id
+        assert (
+            not Workflow.objects.using(db_alias)
+            .filter(name="Revisión editorial MVP")
+            .exists()
+        )
+        assert (
+            not WorkflowPage.objects.using(db_alias)
+            .filter(workflow_id=_workflow_id)
+            .exists()
+        )
+    finally:
+        migrate_to_latest()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_epic4_access_migration_fails_before_deleting_an_assigned_group():
+    username = "obsolete-group-member"
+    try:
+        apps = migrate_to(NEWS_0008)
+        Group = apps.get_model("auth", "Group")
+        User = apps.get_model("auth", "User")
+        db_alias = connection.alias
+        moderator_group_id, _task_id, _workflow_id, _legacy_id = (
+            prepare_obsolete_mvp_access(apps)
+        )
+        user = User.objects.using(db_alias).create(username=username)
+        user.groups.add(moderator_group_id)
+
+        with pytest.raises(ImproperlyConfigured, match="still has assigned users"):
+            mvp_access_migration_module().reconcile_mvp_access(
+                apps,
+                migration_schema_editor(),
+            )
+
+        assert Group.objects.using(db_alias).filter(pk=moderator_group_id).exists()
+        assert (
+            RuntimeWorkflow.objects.using(db_alias)
+            .filter(name="Revisión editorial MVP")
+            .exists()
+        )
+    finally:
+        get_user_model().objects.filter(username=username).delete()
+        migrate_to_latest()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_epic4_access_migration_fails_on_an_unexpected_group_dependency():
+    extra_task_id = None
+    try:
+        apps = migrate_to(NEWS_0008)
+        Group = apps.get_model("auth", "Group")
+        db_alias = connection.alias
+        moderator_group_id, _task_id, _workflow_id, _legacy_id = (
+            prepare_obsolete_mvp_access(apps)
+        )
+        extra_task = RuntimeGroupApprovalTask.objects.using(db_alias).create(
+            name="Otra aprobación vigente"
+        )
+        extra_task_id = extra_task.pk
+        extra_task.groups.set([moderator_group_id])
+
+        with pytest.raises(
+            ImproperlyConfigured,
+            match="used by another workflow task",
+        ):
+            mvp_access_migration_module().reconcile_mvp_access(
+                apps,
+                migration_schema_editor(),
+            )
+
+        assert Group.objects.using(db_alias).filter(pk=moderator_group_id).exists()
+    finally:
+        if extra_task_id is not None:
+            RuntimeTask.objects.filter(pk=extra_task_id).delete()
         migrate_to_latest()
 
 

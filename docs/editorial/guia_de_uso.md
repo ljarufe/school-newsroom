@@ -20,6 +20,30 @@ Listado público de noticias:
 http://localhost:8000/noticias/
 ```
 
+No compartas cuentas para la operación real. Cada persona adulta debe usar su
+propia cuenta. Los escolares pueden figurar como colaboradores internos, pero
+no son usuarios del CMS en este MVP.
+
+## Roles del Admin
+
+`Director/editor` puede crear y editar noticias y páginas institucionales,
+gestionar los snippets de `Editorial`, trabajar con imágenes y documentos,
+revisar privacidad y créditos, usar el Asistente SEO, enviar contenido al
+workflow, realizar la revisión editorial final y publicar. No administra
+usuarios, grupos ni permisos y no es superusuario.
+
+`Curador SEO` puede entrar al Admin, abrir una tarea activa de `Revisión SEO`,
+editar la superficie SEO permitida y elegir una imagen social existente. No ve
+la pestaña `Contenido`, `Propiedades`, `Navegación y menús`, colaboradores
+internos ni snippets editoriales; tampoco puede publicar. En noticias dispone
+del Asistente SEO completo. En `Inicio` y páginas institucionales dispone sólo
+de `Slug de la URL`, `Título SEO` y `Descripción meta`, porque esos tipos no
+tienen el checklist ampliado de la noticia.
+
+El `Superadmin técnico` crea, desactiva y asigna usuarios y grupos, ejecuta el
+bootstrap y atiende configuración técnica. No uses una cuenta superuser para
+comprobar restricciones: el superuser omite los límites de los roles.
+
 ## Navegación pública
 
 El sitio público comparte una navegación responsive entre la Home, el listado
@@ -49,10 +73,11 @@ La página usa el título nativo de Wagtail y añade estos campos:
 - `Contenido`: texto enriquecido sencillo con negrita, cursiva, enlaces, H2,
   H3, listas numeradas o con viñetas y citas.
 
-Para mostrarla en la navegación pública, abre las opciones de promoción de la
-página, activa `mostrar en menús` y publícala. La página institucional no admite
-páginas hijas. No se crean páginas institucionales ni contenido de forma
-automática.
+Para mostrarla en la navegación pública como Director/editor, abre `Asistente
+SEO`, busca `Navegación y menús`, activa `mostrar en menús` y publícala. Esa
+opción no está disponible para Curador SEO porque controla navegación, no SEO.
+La página institucional no admite páginas hijas. No se crean páginas
+institucionales ni contenido de forma automática.
 
 ## Verificación del sitio público con contenido real
 
@@ -380,15 +405,88 @@ Cuando `Contenido` tiene un error, el resumen de la página indica que se deben
 revisar los bloques marcados. El bloque afectado muestra el detalle específico,
 por ejemplo qué campo falta en una imagen.
 
+## Workflow editorial MVP
+
+El camino operativo recomendado es:
+
+```text
+Borrador
+→ Revisión SEO
+→ Revisión editorial final
+→ publicación automática
+```
+
+Como Director/editor:
+
+1. Completa contenido, firma pública, privacidad, imágenes y datos necesarios.
+2. Usa `Guardar borrador` mientras el trabajo esté incompleto.
+3. Cuando las validaciones estén completas, elige `Enviar a Revisión
+   editorial`.
+4. Después de la aprobación SEO, abre la tarea `Revisión editorial final`.
+5. Elige `Aprobar y Publicar` o `Aprobar con comentario y Publicar`. La
+   aprobación de esta última tarea termina el workflow y publica
+   automáticamente la revisión nativa.
+
+Como Curador SEO, abre la tarea `Revisión SEO` desde el panel o el informe de
+tareas, revisa los campos permitidos y elige:
+
+- `Solicitar cambios` para devolver el contenido al Director/editor con un
+  comentario; o
+- `Aprobar` / `Aprobar con comentario` para avanzar a `Revisión editorial
+  final`.
+
+Un Director/editor conserva el botón `Publicar` como override autorizado del
+MVP. Úsalo sólo cuando la operación requiera omitir el recorrido recomendado;
+no elimina ninguna validación de créditos públicos, privacidad o metadata de
+imágenes. Curador SEO nunca tiene publicación directa.
+
+En `Revisión editorial final`, las acciones visibles tienen propósitos
+distintos: `Publicar` es el override directo; `Aprobar y Publicar` y `Aprobar
+con comentario y Publicar` son el cierre normal del workflow. También pueden
+aparecer `Cancelar flujo de trabajo`, `Solicitar cambios` y `Guardar borrador`.
+
+El workflow está asignado a `Inicio` y, por herencia nativa del árbol, afecta a
+la propia Home, las noticias y las páginas institucionales debajo de ella. En
+las páginas sin Asistente SEO ampliado, Curador SEO revisa los tres campos SEO
+nativos y puede aprobar o solicitar cambios sin acceder al contenido.
+
+Una cuenta no-superuser puede pertenecer a ambos grupos y completar las dos
+tareas. Esa cuenta acumula permisos y no sirve para demostrar el aislamiento de
+Curador SEO.
+
+## Cuenta y contraseña
+
+En el menú de la cuenta, usa `Cambiar contraseña` para reemplazar tu propia
+contraseña. En el primer acceso, cambia inmediatamente la contraseña temporal
+que el superadmin te entregó por un canal privado. Este MVP no impone todavía
+un bloqueo técnico que obligue a cambiarla en el primer inicio de sesión.
+
+Si una persona olvida la contraseña mientras el correo saliente no está
+operativo, debe pedir al superadmin un restablecimiento administrativo. No
+envíes contraseñas por canales públicos ni las guardes en el repositorio.
+
 ## Asistente SEO
 
-Cada noticia muestra las pestañas visibles `Contenido` y `Asistente SEO`. La
-configuración de página de Wagtail permanece en sus herramientas laterales; no
-existe una tercera pestaña visible llamada `Propiedades`.
+Para Director/editor, cada noticia muestra `Contenido` y `Asistente SEO`. Para
+Curador SEO durante su tarea activa, sólo se muestra `Asistente SEO`. La
+configuración de página de Wagtail permanece fuera de la superficie SEO y no
+queda editable para Curador SEO.
 
 La pestaña `Asistente SEO` reutiliza los
 campos nativos de Wagtail para la URL, el título SEO y la descripción meta, y
 añade herramientas editoriales para revisar la noticia antes de publicarla.
+
+Al inicio de la pestaña, `Contexto de la noticia — solo lectura` muestra el
+título, la sección, la fecha, el resumen, una representación fiel del cuerpo,
+la imagen destacada con su metadata contextual pública y las firmas públicas.
+`Previsualizar borrador completo` abre la revisión completa en otra pestaña.
+Este contexto no contiene campos editables y nunca muestra colaboradores
+internos, franjas de edad, declaraciones de privacidad ni confirmaciones de
+autorización.
+
+En la Home y las páginas institucionales, `Contexto de la página — solo
+lectura` muestra el título y la misma acción de previsualización. Curador SEO
+continúa limitado a `Slug de la URL`, `Título SEO` y `Descripción meta`.
 
 El Asistente SEO es una ayuda formativa. Sus recomendaciones y su semáforo no
 bloquean el guardado, la programación, el envío a workflow ni la publicación.
@@ -560,7 +658,7 @@ Debe ser una URL HTTP o HTTPS completa y no puede contener un fragmento `#`.
 
 `Navegación y menús` contiene la opción nativa `mostrar en menús`. Esta opción
 sirve para menús generados por el sitio y no participa en el análisis ni en el
-semáforo SEO.
+semáforo SEO. Sólo Director/editor puede modificarla.
 
 ### Metadata pública
 
@@ -594,8 +692,12 @@ para ocultar páginas noindex.
 
 ## Limitaciones actuales
 
-- No hay flujo editorial personalizado todavía.
-- No hay roles ni permisos personalizados todavía.
+- El workflow MVP usa las capacidades nativas de Wagtail y es el camino
+  recomendado, pero Director/editor conserva publicación directa autorizada.
+- No existe cambio obligatorio de contraseña ni bloqueo técnico en el primer
+  acceso.
+- No hay correo saliente/transaccional operativo ni recuperación operacional
+  de contraseña por correo.
 - No hay cuentas de estudiantes, docentes, monitores ni tutores todavía.
 - No hay responsabilidades individuales por fotografía, investigación,
   redacción u otras labores todavía.
@@ -607,8 +709,8 @@ para ocultar páginas noindex.
   ni inteligencia artificial dentro del Asistente SEO.
 - No hay integración con Search Console, Google News, analytics ni publicación
   automática en redes sociales.
-- No hay gestión de redirecciones ni un workflow o rol obligatorio de curación
-  SEO.
+- No hay gestión de redirecciones ni una vista SEO dedicada separada del editor
+  nativo con panels condicionados por permiso.
 - No hay análisis automático de rostros, voces, proveedores externos ni datos
   personales dentro de imágenes, video o audio.
 - No existe un sistema de gestión de talleres, inscripciones o agenda.

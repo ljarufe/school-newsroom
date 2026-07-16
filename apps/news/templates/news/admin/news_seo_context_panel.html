@@ -1,0 +1,53 @@
+{% load wagtailcore_tags wagtailimages_tags %}
+<section aria-labelledby="news-seo-context-heading">
+    <h2 id="news-seo-context-heading">Contexto de la noticia — solo lectura</h2>
+    <dl>
+        <dt>Título</dt>
+        <dd>{{ self.instance.title }}</dd>
+        <dt>Sección</dt>
+        <dd>{{ self.instance.section }}</dd>
+        <dt>Fecha de publicación</dt>
+        <dd>{{ self.instance.publication_date|date:"DATE_FORMAT" }}</dd>
+        <dt>Resumen</dt>
+        <dd>{{ self.instance.summary }}</dd>
+    </dl>
+
+    <h3>Contenido</h3>
+    <div class="news-seo-context__body">
+        {% include_block self.instance.body %}
+    </div>
+
+    {% if self.instance.featured_image %}
+        {% image self.instance.featured_image width-640 as context_image %}
+        <h3>Imagen destacada</h3>
+        <figure>
+            <img src="{{ context_image.url }}" width="{{ context_image.width }}" height="{{ context_image.height }}" alt="{{ self.instance.effective_featured_image_alt_text }}">
+            {% if self.instance.effective_featured_image_caption %}
+                <figcaption>{{ self.instance.effective_featured_image_caption }}</figcaption>
+            {% endif %}
+        </figure>
+        <dl>
+            <dt>Texto alternativo</dt>
+            <dd>{{ self.instance.effective_featured_image_alt_text|default:"—" }}</dd>
+            <dt>Crédito de imagen</dt>
+            <dd>{{ self.instance.effective_featured_image_credit|default:"—" }}</dd>
+        </dl>
+    {% endif %}
+
+    <h3>Firmas públicas</h3>
+    <ul>
+        {% for credit in self.instance.public_credits.all %}
+            <li>{{ credit.display_name }}</li>
+        {% empty %}
+            <li>Sin firma pública registrada.</li>
+        {% endfor %}
+    </ul>
+
+    {% if draft_preview_url %}
+        <p>
+            <a class="button button-secondary" href="{{ draft_preview_url }}" target="_blank" rel="noopener noreferrer">
+                Previsualizar borrador completo
+            </a>
+        </p>
+    {% endif %}
+</section>

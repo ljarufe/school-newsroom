@@ -83,3 +83,12 @@ msgstr "No se pudo guardar la página debido a errores de validación."
 
 msgid "Go to the first error"
 msgstr "Ir al primer error"
+
+msgid "Your pages and snippets in a workflow"
+msgstr "Tus páginas y elementos editoriales en flujo de trabajo"
+
+msgid "Awaiting your review"
+msgstr "Pendientes de tu revisión"
+
+msgid "Privacy and access"
+msgstr "Privacidad y acceso"

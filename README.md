@@ -2,7 +2,10 @@
 
 School Newsroom is a school digital newsroom and editorial CMS built with Django, Wagtail, and PostgreSQL.
 
-Current status: initial editorial news core. The project includes Wagtail-managed news pages, editorial sections, schools, tags, featured images, and server-rendered public Home/detail pages. It does not yet include SEO workflows, editorial roles, public API, deployment, or final frontend work.
+Current status: editorial MVP. The project includes Wagtail-managed news pages,
+editorial sections, schools, tags, images, an SEO Assistant, adult CMS roles, a
+native editorial workflow, and server-rendered public pages. It does not include
+public accounts, custom authentication, deployment, or a public write API.
 
 ## Stack
 
@@ -112,6 +115,16 @@ Create a local Wagtail admin user if one does not already exist:
 make createsuperuser
 ```
 
+After migrations, configure the reproducible MVP roles and workflow:
+
+```bash
+docker compose exec web python manage.py bootstrap_mvp_access
+```
+
+The bootstrap does not create human users or passwords. Use the technical
+superuser to create users and assign the generated `Director/editor` and
+`Curador SEO` groups.
+
 Use Wagtail Admin at:
 
 ```text
@@ -129,6 +142,9 @@ Current editorial setup:
 
 The Spanish editor guide is available at
 [`docs/editorial/guia_de_uso.md`](docs/editorial/guia_de_uso.md).
+
+The canonical superadmin and access runbook is available at
+[`docs/operations/wagtail_access_mvp.md`](docs/operations/wagtail_access_mvp.md).
 
 ## VS Code Dev Container
 

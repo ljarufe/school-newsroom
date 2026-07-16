@@ -2,10 +2,32 @@ from django import forms
 from wagtail.admin.forms import WagtailAdminPageForm
 from wagtail.blocks.stream_block import StreamBlockValidationError
 
+from .access import FULL_EDITOR_PERMISSION
 from .image_metadata import REQUIRED_METADATA_PARTS, effective_text
 
 
-class NewsPageAdminForm(WagtailAdminPageForm):
+class MvpAccessPageAdminForm(WagtailAdminPageForm):
+    """Apply the MVP field boundary and protect child relations server-side."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if self.for_user and not self.for_user.has_perm(FULL_EDITOR_PERMISSION):
+            self.formsets.clear()
+
+    def save(self, commit=True):
+        if (
+            self.show_comments_toggle
+            and self.subscription
+            and "comment_notifications" not in self.cleaned_data
+        ):
+            self.cleaned_data["comment_notifications"] = (
+                self.subscription.comment_notifications
+            )
+        return super().save(commit=commit)
+
+
+class NewsPageAdminForm(MvpAccessPageAdminForm):
     class Media:
         js = ["news/js/caption_alt_sync.js"]
 

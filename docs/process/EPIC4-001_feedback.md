@@ -2,9 +2,9 @@
 
 ## Status
 
-Implementation Closing Draft — the code correction and focused automated
-validation are complete. The final general repository gate and maintainer
-browser UAT are recorded separately below.
+Closing Feedback Final — implementation, automated validation, maintainer
+browser UAT, commit, push, Pull Request CI, and PR review are complete. The
+ticket is ready for squash merge.
 
 ## Scope delivered
 
@@ -196,6 +196,37 @@ from rendered/source-verified navigation and labels, include complete
 copy-paste samples, distinguish preconditions from expected results, and define
 cleanup before maintainer execution.
 
+## Maintainer browser UAT
+
+The maintainer executed the browser UAT with separate non-superuser
+`Director/editor` and `Curador SEO` accounts.
+
+The initial UAT confirmed that the main permission matrix, direct publication,
+workflow progression, final automatic publication, privacy protections, image
+selection, combined-role operation, and account/password lifecycle worked. It
+also exposed the following valid findings:
+
+- obsolete historical groups remained visible;
+- the workflow name exposed the internal `MVP` label;
+- Curador SEO lacked sufficient read-only editorial context;
+- workflow actions that ended SEO task access redirected to a forbidden page;
+- workflow dashboard headings remained in English;
+- the first UAT instructions used approximate labels and incomplete sample data.
+
+The correction pass resolved those findings. The maintainer then completed the
+delta UAT successfully, including:
+
+- exact cleanup of historical access objects;
+- final workflow and task names;
+- read-only news context and draft preview for Curador SEO;
+- absence of internal minor data in the SEO surface;
+- safe redirects after `Solicitar cambios` and SEO approval;
+- exact Spanish dashboard headings and rendered action labels;
+- institutional-page and `Inicio` SEO context;
+- preservation of the public Home while its workflow test was cancelled.
+
+No required manual validation remains pending.
+
 ## Files added
 
 - `apps/home/forms.py`
@@ -269,23 +300,28 @@ git diff --check: passed
    later migrations. The cleanup migration's own safe and unsafe cases remain
    covered independently.
 
+## Operational closure
+
+- Implementation was committed and pushed on
+  `EPIC4-001-mvp-access-workflow`.
+- Pull Request #12, `EPIC4-001: Configure MVP editorial roles and workflow`,
+  targets `main`.
+- GitHub Actions `Pull Request Validation` completed successfully for the PR
+  head.
+- PR review completed with no findings or comments.
+- The PR contains only the reviewed implementation and documentation files;
+  temporary `tmp/` review artifacts are not included.
+- The PR is mergeable and ready for `Squash and merge`.
+
 ## Warnings and known limitations
 
 - `make migrate` emits the checkout's existing Treebeard 6 forward-compatibility
   manager warnings. EPIC4-001 does not alter page or collection tree managers.
-- Manual browser UAT has not been executed by Codex and is not reported as
-  passed.
 - Direct Director/editor publication is intentional, so workflow compliance is
   operational rather than absolute for that role.
 - The MVP has group/page/collection granularity, not row-level school or
   territory isolation.
 - Outgoing email and forced first-login password change are not implemented.
-
-## Deferred manual validation
-
-Maintainer browser UAT remains required. Use `Maintainer UAT (pending,
-Spanish)` in `docs/operations/wagtail_access_mvp.md` and record actual results
-without converting the documented expected results into evidence.
 
 ## New Work Discovered
 

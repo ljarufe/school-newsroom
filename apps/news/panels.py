@@ -1,5 +1,6 @@
 from django import forms
-from wagtail.admin.panels import FieldPanel, Panel
+from django.urls import reverse
+from wagtail.admin.panels import FieldPanel, ObjectList, Panel
 from wagtail.models import Site
 
 from .seo import analyze_page
@@ -13,6 +14,22 @@ def contextual_image_panels(image_field: str, metadata_prefix: str) -> list[Pane
         FieldPanel(f"{metadata_prefix}_alt_text"),
         FieldPanel(f"{metadata_prefix}_credit"),
     ]
+
+
+class RolePermissionObjectList(ObjectList):
+    """Apply a tab permission to its form fields and rendered panel."""
+
+    def get_form_options(self):
+        options = super().get_form_options()
+        if not self.permission:
+            return options
+
+        field_permissions = {
+            field_name: self.permission for field_name in options.get("fields", [])
+        }
+        field_permissions.update(options.get("field_permissions", {}))
+        options["field_permissions"] = field_permissions
+        return options
 
 
 class SeoAssistantPanel(Panel):
@@ -62,3 +79,31 @@ class SeoAssistantPanel(Panel):
                 css=self.Media.css,
                 js=self.Media.js,
             )
+
+
+class PageSeoContextPanel(Panel):
+    class BoundPanel(Panel.BoundPanel):
+        template_name = "news/admin/page_seo_context_panel.html"
+
+        def get_context_data(self, parent_context=None):
+            context = super().get_context_data(parent_context)
+            context["draft_preview_url"] = (
+                reverse("wagtailadmin_pages:view_draft", args=(self.instance.pk,))
+                if self.instance.pk
+                else None
+            )
+            return context
+
+
+class NewsSeoContextPanel(Panel):
+    class BoundPanel(Panel.BoundPanel):
+        template_name = "news/admin/news_seo_context_panel.html"
+
+        def get_context_data(self, parent_context=None):
+            context = super().get_context_data(parent_context)
+            context["draft_preview_url"] = (
+                reverse("wagtailadmin_pages:view_draft", args=(self.instance.pk,))
+                if self.instance.pk
+                else None
+            )
+            return context

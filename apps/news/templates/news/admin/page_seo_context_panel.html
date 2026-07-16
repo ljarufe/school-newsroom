@@ -1,0 +1,16 @@
+<section aria-labelledby="page-seo-context-heading">
+    <h2 id="page-seo-context-heading">Contexto de la página — solo lectura</h2>
+    <dl>
+        <dt>Título</dt>
+        <dd>{{ self.instance.title }}</dd>
+        <dt>Tipo de página</dt>
+        <dd>{{ self.instance.get_verbose_name }}</dd>
+    </dl>
+    {% if draft_preview_url %}
+        <p>
+            <a class="button button-secondary" href="{{ draft_preview_url }}" target="_blank" rel="noopener noreferrer">
+                Previsualizar borrador completo
+            </a>
+        </p>
+    {% endif %}
+</section>

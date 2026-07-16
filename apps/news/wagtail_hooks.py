@@ -1,3 +1,6 @@
+from django.shortcuts import redirect
+from wagtail import hooks
+from wagtail.models import Page
 from wagtail.snippets.models import register_snippet
 from wagtail.snippets.views.snippets import SnippetViewSet, SnippetViewSetGroup
 
@@ -45,3 +48,15 @@ class EditorialViewSetGroup(SnippetViewSetGroup):
 
 
 register_snippet(EditorialViewSetGroup)
+
+
+@hooks.register("after_edit_page")
+def redirect_after_workflow_action_when_edit_access_ends(request, page):
+    """Keep completed moderation actions away from a now-forbidden edit view."""
+    if request.method != "POST" or "action-workflow-action" not in request.POST:
+        return None
+
+    refreshed_page = Page.objects.get(pk=page.pk).specific
+    if refreshed_page.permissions_for_user(request.user).can_edit():
+        return None
+    return redirect("wagtailadmin_home")

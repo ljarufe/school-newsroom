@@ -8,12 +8,12 @@ from wagtail.admin.panels import (
     HelpPanel,
     InlinePanel,
     MultiFieldPanel,
-    ObjectList,
     TabbedInterface,
 )
 from wagtail.fields import StreamField
 from wagtail.models import Orderable, Page
 
+from .access import FULL_EDITOR_PERMISSION, SEO_EDITOR_PERMISSION
 from .blocks import (
     PARAGRAPH_FEATURES,
     ArticleImageBlock,
@@ -22,7 +22,12 @@ from .blocks import (
 )
 from .forms import NewsPageAdminForm
 from .image_metadata import contextual_metadata_field, effective_text
-from .panels import SeoAssistantPanel, contextual_image_panels
+from .panels import (
+    NewsSeoContextPanel,
+    RolePermissionObjectList,
+    SeoAssistantPanel,
+    contextual_image_panels,
+)
 from .seo_metadata import (
     build_news_article_data,
     build_public_metadata,
@@ -365,6 +370,7 @@ class NewsPage(Page):
     ]
 
     promote_panels = [
+        NewsSeoContextPanel(),
         MultiFieldPanel(
             [
                 FieldPanel("slug", heading="Slug de la URL"),
@@ -401,17 +407,30 @@ class NewsPage(Page):
                         "no afecta el análisis ni el estado SEO.</strong></p>"
                     ),
                 ),
-                FieldPanel("show_in_menus"),
+                FieldPanel("show_in_menus", permission=FULL_EDITOR_PERMISSION),
             ],
             heading="Navegación y menús",
+            permission=FULL_EDITOR_PERMISSION,
         ),
     ]
 
     edit_handler = TabbedInterface(
         [
-            ObjectList(content_panels, heading="Contenido"),
-            ObjectList(promote_panels, heading="Asistente SEO"),
-            ObjectList(Page.settings_panels, heading="Propiedades"),
+            RolePermissionObjectList(
+                content_panels,
+                heading="Contenido",
+                permission=FULL_EDITOR_PERMISSION,
+            ),
+            RolePermissionObjectList(
+                promote_panels,
+                heading="Asistente SEO",
+                permission=SEO_EDITOR_PERMISSION,
+            ),
+            RolePermissionObjectList(
+                Page.settings_panels,
+                heading="Propiedades",
+                permission=FULL_EDITOR_PERMISSION,
+            ),
         ],
     )
 
@@ -442,6 +461,16 @@ class NewsPage(Page):
         return effective_text(self.featured_image_credit)
 
     class Meta:
+        permissions = [
+            (
+                "access_full_editorial_surfaces",
+                "Puede acceder a todas las superficies editoriales del MVP",
+            ),
+            (
+                "access_seo_editorial_surface",
+                "Puede acceder a la superficie editorial SEO del MVP",
+            ),
+        ]
         verbose_name = "Noticia"
         verbose_name_plural = "Noticias"
 

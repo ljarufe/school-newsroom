@@ -1,0 +1,30 @@
+{
+	admin off
+	email {$ACME_EMAIL}
+}
+
+{$STAGING_HOSTNAME} {
+	encode zstd gzip
+
+	header {
+		-Server
+		Permissions-Policy "camera=(), geolocation=(), microphone=()"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Content-Type-Options "nosniff"
+	}
+
+	@media path /media/*
+	handle @media {
+		root * /srv
+		file_server
+	}
+
+	handle {
+		reverse_proxy web:8000
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

@@ -1,6 +1,10 @@
 .env
 *.env
 !.env.example
+*.key
+*.pem
+*.dump
+backups/
 .venv/
 
 __pycache__/

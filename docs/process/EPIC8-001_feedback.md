@@ -2,19 +2,19 @@
 
 ## Status
 
-Implementation Closing Draft. Repository implementation and local technical validation are complete. Oracle provisioning, native VM validation, DNS, public HTTPS, real persistence/backup evidence, and browser/editorial UAT remain maintainer work and are not claimed as passed.
+Implementation Closing Draft. Repository implementation and local technical validation are complete. The approved Individual Pay As You Go account upgrade, Oracle provisioning, native VM validation, DNS, public HTTPS, real persistence/backup evidence, and browser/editorial UAT remain maintainer work and are not claimed as passed.
 
 ## Summary
 
-EPIC8-001 adds a standalone production-like staging path for a manual Oracle Always Free deployment while leaving the development Compose topology unchanged.
+EPIC8-001 adds a standalone production-like staging path for a manual Oracle Always Free deployment while leaving the development Compose topology unchanged. A maintainer-approved material scope amendment now permits upgrading the account from Free Tier to **Individual Pay As You Go** solely to improve A1 capacity access while continuing to consume only Always Free resources at an expected zero cost. It does not authorize paid resources or usage above Always Free limits.
 
 The staging topology uses Caddy as the only host-published service, Gunicorn for Django/Wagtail, PostgreSQL on an internal Compose network, a stable database volume, and a persistent host media directory shared read-write with the application and read-only with Caddy. Docker JSON logs for all three services use bounded rotation. The web startup waits for PostgreSQL, runs `collectstatic`, and then starts Gunicorn. It deliberately does not run migrations, bootstrap access, or create users during an ordinary restart.
 
 Production settings now fail closed for the secret key, database URL, explicit hosts, HTTPS CSRF origins, HTTPS Wagtail Admin base URL, and controlled console log level. Staging remains `DEBUG=False`, uses secure cookies and HTTPS redirect behavior, and keeps conservative noindex behavior. The image has a fixed non-root application identity and retains the existing development bind-mount ownership behavior through the entrypoint.
 
-The operator runbook documents current Oracle checks conservatively, with official source links and mandatory live Console verification before every resource creation. It includes account and home-region checks, compartment creation, a USD 1 monthly budget with low-threshold alerts, Cost Analysis, limits/usage, resource stop conditions, a dedicated subnet security list plus independently reviewed VNIC NSG boundary, VM/network/storage provisioning, Docker installation, host firewall, UUID mounts, DuckDNS token handling and HTTPS updater, manual deployment, migrations, access bootstrap, Wagtail Site reconciliation, HTTPS-only nominal adult user administration, bounded logs, persistence, backup/restore, access deactivation, and periodic cost/activity review.
+The operator runbook documents current Oracle checks conservatively, with official source links and mandatory live Console verification before every resource creation. It includes the controlled Individual Pay As You Go procedure, a root-owned hard quota policy, USD 1 project and tenancy-root budgets with low-threshold alerts, project/root Cost Analysis and inventory schedules, limits/usage, zero-cost stop conditions, exact A1 and storage sizing, a dedicated subnet security list plus independently reviewed VNIC NSG boundary, VM/network/storage provisioning, Docker installation, host firewall, UUID mounts, DuckDNS token handling and HTTPS updater, manual deployment, migrations, access bootstrap, Wagtail Site reconciliation, HTTPS-only nominal adult user administration, bounded logs, persistence, backup/restore, access deactivation, and periodic cost/activity review.
 
-No Oracle resource, real hostname, DNS record, certificate, cloud account, real user, password, token, private key, or production value was created or added to the checkout.
+No real hostname, DNS record, certificate, user, password, token, private key, backup, or production value was added to the checkout. The maintainer has already created or configured external OCI account, governance, compartment, and networking resources outside Git; their detailed operational evidence remains private and will be consolidated once before merge.
 
 ## Implemented files
 
@@ -67,7 +67,10 @@ The following checks passed locally using only dummy or fictional values:
 Technical-close gates:
 
 - `make check`: passed; Ruff passed, migration drift check reported `No changes detected`, and all `227` tests passed;
-- `make check` was not repeated after the focused Compose/documentation corrections because no Python, migration, or application behavior changed; the pre-push repository gate remains responsible for the next general run, and the prior `227`-test evidence remains applicable;
+- `make check` was not repeated after the focused Compose corrections and controlled-PAYG documentation amendment because no Python, migration, or application behavior changed; the pre-push repository gate remains responsible for the next general run, and the prior `227`-test evidence remains applicable;
+- the current official Oracle upgrade/payment, quotas, budgets, Cost Analysis, limits/usage, and Cost Reports guidance was reviewed, and volatile operational statements were date-qualified;
+- all 24 Bash-fenced runbook blocks passed non-executing `bash -n` syntax validation after the documentation amendment;
+- focused contradiction review confirmed that the account model, data-volume/combined-storage sizing, shape fallback, and list-price gates match the approved amendment in the touched documentation and README;
 - `git diff --check`: passed;
 - final secret/unsafe-value review: passed for all ticket files;
 - final ownership review: all repository ticket files remain owned by UID/GID `1000:1000`; no root/container-owned repository output was created.
@@ -76,7 +79,7 @@ Technical-close gates:
 
 The production deploy check reports the existing five Treebeard/Wagtail future-compatibility warnings. It also reports Django security warnings `security.W005` and `security.W021` because HSTS subdomain inclusion and preload are deliberately disabled for a temporary third-party staging hostname. HTTPS redirect, secure cookies, and a one-hour HSTS duration remain enabled. These warnings are intentional for this environment and are not evidence that public HTTPS works.
 
-The local image build proves only the current x86_64 host path. It does not prove Oracle Ampere ARM64 compatibility or that an AMD micro has enough memory/CPU for this stack. Image tags and Python dependency ranges are not immutable, so a future rebuild can resolve newer compatible patch versions even though the deploy procedure pins an approved repository commit.
+The local image build proves only the current x86_64 host path. It does not prove Oracle Ampere ARM64 compatibility or that the approved 1-OCPU/4-GB A1 target is sufficient for this stack. Image tags and Python dependency ranges are not immutable, so a future rebuild can resolve newer compatible patch versions even though the deploy procedure pins an approved repository commit.
 
 The local persistence checks used disposable Docker volumes and fictional media. They demonstrate the storage topology and normal container/redeploy behavior locally, not the Oracle block-volume mount, VM reboot persistence, or real public routing.
 
@@ -84,6 +87,7 @@ The local backup validation created and inspected disposable artifacts only. No 
 
 ## Failures, retries, and classification
 
+- Repeated real `VM.Standard.A1.Flex` launch attempts while the account was Free Tier returned `Out of capacity` in the only available Availability Domain in Chile Central (Santiago). This is an external OCI capacity condition; the repository implementation and network configuration were not the cause. The approved Individual Pay As You Go amendment may improve capacity access but does not guarantee it, and no successful upgrade or VM launch is claimed here.
 - Initial sandboxed Docker/build access could not write Buildx state or reach the Docker socket. Approved Docker access completed the same build and runtime checks. This was an execution-permission boundary, not a repository defect.
 - Initial host-side access to a disposable published media port was blocked by the sandbox. The same fictional media request succeeded with approved local Docker/network access.
 - The first disposable backup attempt could not reach Docker under the sandbox and left no usable evidence. The approved rerun replaced it and produced valid non-empty mode-0600 artifacts.
@@ -94,11 +98,12 @@ The local backup validation created and inspected disposable artifacts only. No 
 
 The following are explicitly pending on the real Oracle environment and must not be marked passed from this repository work:
 
-- current Free Tier/account-not-upgraded state and current home region;
-- current **Always Free-eligible** labels, USD 0 estimates, limits, usage, and actual capacity for every resource;
-- real compartment, USD 1 budget, alert delivery, and Cost Analysis evidence;
-- VM, VCN/dedicated subnet security list/VNIC NSG, public IP, boot/block storage, and host firewall provisioning;
-- native build and resource-fit evidence on the selected Oracle ARM64 or AMD64 VM;
+- approved Free Tier to Individual Pay As You Go upgrade, completion email, final plan/account-type state, and current home region;
+- root quota policy creation, propagation, statement-order/effective-limit verification, and zero-backup enforcement;
+- both USD 1 budgets, all four alert rules/delivery, pre/post-upgrade project/root cost baselines, scheduled cost checks, settled Cost and Usage Report evidence, and full resource inventories;
+- current **Always Free-eligible** labels, estimator disclaimer where applicable, allowances, limits, usage, and actual capacity for every resource;
+- VM, VCN/dedicated subnet security list/VNIC NSG, public IP, approximately 46.6–50 GB boot volume, separate 50 GB data volume, and host firewall provisioning;
+- native build and resource-fit evidence on the approved Oracle ARM64 A1 VM with 1 OCPU/4 GB;
 - persistent storage mounted by UUID at `/srv/school-newsroom` and verified after a real reboot;
 - real `/etc/school-newsroom/staging.env` creation and safe secret custody;
 - DuckDNS account/update behavior, DNS propagation, Caddy certificate issuance/renewal, public HTTP-to-HTTPS redirect, and browser trust;
@@ -108,7 +113,7 @@ The following are explicitly pending on the real Oracle environment and must not
 - Home, news list/detail, media, secure Admin, workflow, permission-isolation, final-publication, and minors' privacy browser UAT;
 - database/media survival across real container restarts, redeploy, and VM reboot;
 - real Oracle database/media backup generation, checks, custody decision, and basic restore-procedure review;
-- adult-user deactivation and periodic Oracle cost/activity review.
+- adult-user deactivation and the required immediate, settled, daily-first-week, weekly, and infrastructure-deploy Oracle cost/activity reviews.
 
 Until DNS and browser-trusted HTTPS pass, no Wagtail Admin credential may be shared or used over the Internet.
 
@@ -122,8 +127,8 @@ Until DNS and browser-trusted HTTPS pass, no Wagtail Admin credential may be sha
 - The runbook requires independent inspection of the subnet security-list collection and every VNIC NSG because their rules are cumulative; the VCN default security list must not remain associated with the staging subnet.
 - Docker `json-file` logs are explicitly rotated for all services; systemd journal retention is documented separately for host services.
 - Media is public by design; the runbook and UAT require fictional/non-sensitive content and prohibit real minor data.
-- The budget is documented as a soft alerting control, never as a hard spending limit.
-- No Pay As You Go upgrade, trial-only dependency, paid load balancer, managed database, external object storage, AWS/R2, Kubernetes, Terraform, GitHub deployment workflow, staging-branch automation, scheduled backup, transactional email, or forced password-change feature was introduced.
+- Both budgets are documented as soft alerting controls, never as hard spending limits. Hard quotas constrain the named A1/storage resources but do not directly cap monetary cost.
+- The approved Individual Pay As You Go upgrade is limited to A1 capacity access under verified quotas, dual budgets, Always Free usage, and zero-cost acceptance. No Corporate conversion, paid shape/service, usage above Always Free limits, trial-only dependency, paid load balancer, managed database, external object storage, AWS/R2, Kubernetes, Terraform, GitHub deployment workflow, staging-branch automation, scheduled OCI backup, transactional email, or forced password-change feature was introduced.
 
 ## New Work Discovered
 

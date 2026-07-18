@@ -22,10 +22,18 @@ Use these companion procedures:
 
 The maintainer must confirm all of these before UAT:
 
-- the OCI account remains Free Tier/Always Free and has not been upgraded to Pay As You Go;
-- every created resource was labeled **Always Free-eligible** with zero estimated cost at creation;
-- the USD 1 monthly budget and low-threshold actual/forecast alerts are active, with the understanding that they are not hard spending limits;
-- the VM is in the home region and the selected Compute/storage resources remain inside current free limits;
+- the maintainer-approved controlled-Pay-As-You-Go amendment is the recorded operational basis: the account upgrade was solely for A1 capacity, only Always Free usage is permitted, and expected cost remains zero;
+- private evidence shows **Plan Type: Free Tier** before the approved operation, upgrade completion email receipt, then **Plan Type: Pay As You Go** with account type **Individual** before any project resource was created;
+- quota policy `school-newsroom-staging-payg-guardrails` was created in the tenancy root before upgrade, remained in the required statement order, targeted child compartment `school-newsroom-staging`, and was active/effective before resource creation;
+- effective quota evidence shows other Compute core/memory families blocked, A1 limited to 1 OCPU and 4 GB in `sa-santiago-1`, combined project boot/block storage limited to 100 GB, and OCI volume backups limited to zero;
+- every created resource was approved **Always Free-eligible** under current Oracle terms and its displayed estimate was recorded privately;
+- any non-zero list-price estimate explicitly stated that tier unit pricing was not reflected and passed the runbook's joint account/home-region/quota/add-on review before creation; a non-zero estimate without that disclaimer remained blocked;
+- the VM is `VM.Standard.A1.Flex` with exactly 1 OCPU/4 GB on Canonical Ubuntu 24.04 LTS ARM64, its boot volume is approximately 46.6–50 GB at Balanced / 10 VPU, and its separate data block volume is exactly 50 GB at Balanced / 10 VPU;
+- the private evidence shows the current **Free Tier Volume Quota** / Always Free storage allowance, effective quota, usage, and availability covered both volumes without exceeding 100 GB combined;
+- no trial-only or paid add-on, Marketplace image, image license, backup policy, support plan, paid performance tier, capacity reservation, Load Balancer, managed database, customer-managed Vault key, or other paid component was selected;
+- both USD 1 monthly budgets (`school-newsroom-staging-usd-1` and `school-newsroom-tenancy-usd-1`) and all four low-threshold Actual/Forecast alert rules are active with the approved adult recipient and incident-response message;
+- the VM is in home region `sa-santiago-1` / Chile Central (Santiago), and the selected Compute/storage resources remain inside current Always Free allowances;
+- no project resource exists outside `school-newsroom-staging`; only documented tenancy-level governance objects such as the root budget and root quota policy are exempt from that compartment boundary;
 - the data volume is mounted at `/srv/school-newsroom` by UUID;
 - `/srv/school-newsroom/media` and `/srv/school-newsroom/backups` exist with the documented ownership/modes;
 - DuckDNS resolves the staging hostname to the VM;
@@ -40,6 +48,8 @@ The maintainer must confirm all of these before UAT:
 - there is a known technical superuser and two distinct approved nominal adult staging users, one for each role, with private temporary passwords.
 
 If HTTPS or any cost/security precondition fails, stop before credential-based Admin UAT.
+
+Repeated real A1 launch attempts while the account was Free Tier returned **Out of capacity** in the only available Availability Domain; this was an external capacity condition, not a repository/network defect. The approved Individual Pay As You Go upgrade does not guarantee host capacity. If the same A1 request still returns **Out of capacity** or **Out of host capacity**, keep **Fault domain** set to **Let Oracle choose**, retry the unchanged 1-OCPU/4-GB request later, and stop instead of selecting a paid shape or larger resources. UAT remains blocked until the approved VM exists.
 
 ## UAT identities and fictional data
 
@@ -151,13 +161,18 @@ EPIC8-001 does not require a destructive restore drill. Review the basic restore
 
 After deployment/UAT:
 
-1. Open **Billing & Cost Management** -> **Cost Management** -> **Budgets** and confirm the USD 1 monthly budget and both low-threshold alerts remain active.
-2. Open **Billing & Cost Management** -> **Cost Management** -> **Cost Analysis**, filter to the staging compartment/current month, and record the observed cost without account identifiers.
-3. Open **Governance & Administration** -> **Tenancy Management** -> **Limits, Quotas and Usage** and review current Compute/block-volume usage in the home region.
-4. Review the instance metrics/activity and current Oracle idle-instance policy. Do not manufacture traffic to avoid reclamation.
-5. Confirm no unexpected Load Balancer, managed database, Object Storage, paid public IP, backup, snapshot, or trial-only resource exists.
+1. Confirm private zero-cost/inventory checkpoint evidence exists for before upgrade, after upgrade completion with no resources, immediately after VM creation, immediately after block-volume creation, immediately after first deployment, and after cost data had time to settle.
+2. Confirm the same complete check was performed daily for the first seven days, weekly afterward while staging remained active, and before/after any later manual deployment that changed infrastructure. Missing scheduled evidence remains pending; do not infer it from a current zero.
+3. Open **Billing & Cost Management** -> **Cost Management** -> **Budgets** and confirm both USD 1 monthly budgets and all four low-threshold Actual/Forecast alerts remain active. A budget is a soft monitor, not a spending stop, and a forecast needs consumption history.
+4. Open **Billing & Cost Management** -> **Cost Management** -> **Cost Analysis**. Filter to `school-newsroom-staging`, use both **Service and Product Description** and **Service and SKU (Part Number)** groupings, and confirm Actual Spend and Forecast Spend are zero.
+5. Run the second root-compartment query, group by compartment, and confirm zero cost with no resource outside `school-newsroom-staging` except the documented tenancy-level governance objects. Drill down by Product Description/SKU if any line appears.
+6. Open **Billing & Cost Management** -> **Cost Management** -> **Cost and Usage Reports** when reports are available. Confirm settled resource-level billed cost is zero and no paid SKU exists. Periodic/delayed cost data means an immediate zero is not final evidence.
+7. Open **Governance & Administration** -> **Tenancy Management** -> **Limits, Quotas and Usage** and confirm the effective 1-A1-OCPU, 4-GB-A1-memory, 100-GB-storage, and zero-backup guardrails, plus the current **Free Tier Volume Quota** / Always Free allowance, usage, and availability.
+8. Inventory all regions/compartments for Compute instances, boot volumes, block volumes, volume backups, public IPs, load balancers, databases, Object Storage buckets, and Vault resources. Confirm only the approved project inventory and tenancy governance controls exist.
+9. Confirm the private creation evidence records the displayed estimate, any explicit tier-pricing disclaimer, Individual Pay As You Go state, home region, quota/allowance/usage, requested sizes, and selected-component review.
+10. Review instance metrics/activity and the current Oracle idle-instance policy. Do not manufacture traffic to avoid reclamation.
 
-Any non-zero cost or unexpected resource is a failed acceptance item until investigated. Budget status alone never proves zero cost.
+Any non-zero Actual Spend, Forecast Spend, billed cost, unexpected paid SKU, or unexpected resource is a failed acceptance item until investigated. Budget status, quota status, and a tier-pricing disclaimer never prove zero actual cost.
 
 ## Result record template
 
@@ -179,8 +194,14 @@ Notes / follow-up:
 Do not fill this section in repository documentation. Use it in the maintainer's private execution record:
 
 ```text
-Oracle account/resource zero-cost verification: Pending
-Home-region and free-capacity verification: Pending
+Approved Individual PAYG upgrade boundary: Pending
+Both budgets and four alert rules: Pending
+Hard quota policy active/enforced: Pending
+Project/root zero-cost baselines and settled billed cost: Pending
+Home-region and Always Free capacity verification: Pending
+A1 capacity/launch result: Pending
+Estimator disclaimer and private quota/add-on evidence: Pending
+Settled actual/forecast Cost Analysis review: Pending
 Native VM architecture build: Pending
 Subnet security-list and VNIC NSG verification: Pending
 Public/guest firewall verification: Pending
@@ -197,7 +218,7 @@ VM reboot persistence: Pending
 Real staging backup generation: Pending
 Basic restore procedure reviewed: Pending
 Adult-user deactivation: Pending
-Final Cost Analysis review: Pending
+Scheduled project/root Cost Analysis and inventory reviews: Pending
 ```
 
 ## Cleanup

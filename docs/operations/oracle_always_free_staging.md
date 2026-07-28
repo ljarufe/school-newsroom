@@ -11,6 +11,27 @@ Internet -> Caddy:80/443 -> Gunicorn web:8000 -> PostgreSQL:5432
                     +-- /srv/school-newsroom/media (read-only)
 ```
 
+
+## Validated EPIC8-001 deployment state
+
+The first real staging deployment completed successfully under the maintainer-approved controlled Pay As You Go amendment. Private execution evidence confirmed the following final state:
+
+- account type **Individual Pay As You Go**, used only to improve access to Always Free A1 capacity;
+- home-region `VM.Standard.A1.Flex` with 1 OCPU, 4 GB RAM, native `aarch64`, and Ubuntu 24.04 LTS;
+- one approximately 50 GB boot volume plus one 50 GB Balanced data block volume, within the 100 GB project quota;
+- the data volume mounted by UUID at `/srv/school-newsroom` and preserved after a real VM reboot;
+- Docker Engine, Compose, and Buildx running natively on ARM64;
+- Caddy as the only host-published service on 80/443, with Gunicorn and PostgreSQL private;
+- DuckDNS resolution, browser-trusted HTTPS, HTTP-to-HTTPS redirect, public Home/news pages, and HTTPS Wagtail Admin;
+- migrations, Wagtail Site reconciliation, technical superuser creation, and idempotent `bootstrap_mvp_access`;
+- nominal adult `Director/editor` and `Curador SEO` UAT, workflow isolation, final publication, and privacy checks passed;
+- database/media persistence passed across service restarts, same-SHA redeploy, and VM reboot;
+- three maintainer-approved cost/inventory checkpoints completed with project and tenancy cost at zero, no paid SKU, and no unexpected resource.
+
+Real backup generation and restore validation were explicitly removed from the EPIC8-001 closure gate and remain EPIC8-003 work. Weekly cost/activity review while the staging environment remains active is normal operation after ticket closure, not a reason to keep EPIC8-001 open.
+
+This recorded state does not make Oracle labels, limits, Console paths, or third-party terms permanent. Recheck volatile provider facts before future infrastructure changes.
+
 Only Caddy publishes host ports. PostgreSQL and Gunicorn remain on private Compose networks. PostgreSQL uses the stable named volume `school_newsroom_staging_postgres_data`. Static assets are collected before Gunicorn starts and are served by WhiteNoise. Migrations, access bootstrap, site reconciliation, and user creation are deliberate operator actions, not container-restart side effects.
 
 ## Non-negotiable stop conditions
@@ -207,15 +228,14 @@ Required checkpoints:
 
 1. before the account upgrade, saving the zero-cost baseline;
 2. after the upgrade completes, confirming no project resources and the same zero-cost baseline;
-3. immediately after VM creation;
-4. immediately after block-volume creation;
-5. immediately after the first deployment;
-6. again after cost data has had time to settle;
-7. daily for the first seven days after creation;
-8. weekly while staging remains active;
-9. before and after every future manual deployment that changes infrastructure.
+3. immediately after VM creation and again after block-volume creation;
+4. immediately after the first deployment;
+5. after cost data has had time to settle;
+6. for EPIC8-001 closure, three maintainer-approved zero-cost/inventory checkpoints across the agreed closure window;
+7. weekly while staging remains active as normal post-ticket operation;
+8. before and after every future manual deployment that changes infrastructure.
 
-Cost reports are generated periodically and cost/forecast data can be delayed. An immediate zero is provisional, not final evidence. Any non-zero Actual Spend, Forecast Spend, billed cost, unexpected paid SKU, or unexpected resource is a failed acceptance item and stop-and-investigate event. Stop or terminate an unexpected resource when appropriate; preserve only the minimum non-sensitive incident evidence outside Git.
+The three EPIC8-001 closure checkpoints were completed successfully. Cost reports are generated periodically and cost/forecast data can be delayed, so the final accepted checkpoint used settled data rather than relying only on the immediate post-create zero. Any non-zero Actual Spend, Forecast Spend, billed cost, unexpected paid SKU, or unexpected resource is a failed acceptance item and stop-and-investigate event. Stop or terminate an unexpected resource when appropriate; preserve only the minimum non-sensitive incident evidence outside Git.
 
 Stop if required Always Free capacity is unavailable, the guardrail policy is not effective, the Console shows only trial/paid capacity, or inventory/cost evidence is unexpected. Do not request a paid limit increase.
 
@@ -312,6 +332,23 @@ OCI evaluates the union of the subnet security-list rules and all NSGs attached 
 
 Oracle's current [Creating an Instance](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/launchinginstance.htm) procedure is authoritative. Repeated real Free Tier launch attempts in the only available Availability Domain returned **Out of capacity**; the repository and network configuration were not the cause. The approved Individual Pay As You Go upgrade may improve access but does not guarantee host capacity. If the same A1 request still returns **Out of capacity** or **Out of host capacity**, keep **Fault domain** set to **Let Oracle choose**, record the external capacity block privately, and retry the unchanged eligible configuration later. Stop instead of increasing resources or choosing a paid shape.
 
+
+### Connect before running host commands
+
+Run VM commands only after opening the explicit SSH session below. Replace `<public-ip>` if the VM address changes. The two SSH options bypass an interfering desktop agent and force the approved key.
+
+```bash
+PUBLIC_IP='<public-ip>'
+ssh \
+  -o IdentityAgent=none \
+  -o IdentitiesOnly=yes \
+  -i ~/.ssh/school_newsroom_oracle_staging \
+  ubuntu@"$PUBLIC_IP"
+unset PUBLIC_IP
+```
+
+Do not store the private key or its passphrase in Git, shell scripts, the staging environment file, or evidence.
+
 ## 9. Create, attach, and mount persistent storage by UUID
 
 Create the separate data block volume for `/srv/school-newsroom` only after the VM exists and the complete immediate VM cost/inventory checkpoint passes. Its live creation page must display **Always Free-eligible**, and current Always Free allowance/usage plus the effective quota must cover the boot and data volumes without exceeding 100 GB combined. A non-zero list-price estimate requires the explicit tier-pricing disclaimer and is never sufficient evidence on its own. Otherwise stop and report; do not create paid storage.
@@ -363,7 +400,7 @@ Create the separate data block volume for `/srv/school-newsroom` only after the 
 
 Oracle recommends UUIDs because device ordering can change and documents `_netdev`/`nofail` in [Traditional fstab Options](https://docs.oracle.com/en-us/iaas/Content/Block/References/fstaboptions.htm). Also review [Creating a Block Volume](https://docs.oracle.com/en-us/iaas/Content/Block/Tasks/creatingavolume.htm) and [Attaching a Block Volume](https://docs.oracle.com/iaas/Content/Block/Tasks/attachingavolume.htm).
 
-Do not claim reboot persistence until the maintainer performs a real reboot and verifies `findmnt`, Docker, database, media, and HTTPS afterward.
+The initial deployment passed a real reboot check: the UUID mount, Docker services, database, media, DuckDNS, and HTTPS remained available. Repeat that check after future infrastructure or mount changes.
 
 ## 10. Prepare host directories and firewall
 
@@ -376,7 +413,7 @@ sudo install -d -m 0700 -o "$(id -u)" -g "$(id -g)" /srv/school-newsroom/backups
 sudo install -d -m 0750 /etc/school-newsroom
 ```
 
-Configure the Ubuntu firewall. Enter the maintainer's actual public CIDR when prompted; do not store it in Git:
+Configure the Ubuntu firewall only after preserving and reviewing the OCI platform image's provider-required firewall rules. OCI security lists and NSGs remain the primary public-ingress boundary; UFW must not replace them. Recheck current OCI platform-image known issues before changing UFW, and verify boot/block-volume connectivity plus SSH in a second session after every firewall change. Enter the maintainer's actual public CIDR when prompted; do not store it in Git:
 
 ```bash
 sudo apt-get update
@@ -712,10 +749,11 @@ Never use `down -v`, `docker volume rm`, or delete `/srv/school-newsroom/media` 
 
 For a manual code update:
 
-1. Run the database/media backup procedure below.
-2. Fetch and check out an explicitly approved commit.
-3. Review status and commit SHA.
-4. Build, migrate, bootstrap, reconcile the Wagtail Site, and start:
+1. Fetch and check out an explicitly approved commit.
+2. Review status and commit SHA.
+3. Build, migrate, bootstrap, reconcile the Wagtail Site, and start.
+
+Backup policy, scheduled backups, and restore drills remain EPIC8-003 scope and are not an EPIC8-001 deployment prerequisite:
 
 ```bash
 cd /opt/school-newsroom
@@ -800,103 +838,20 @@ Use only fictional/non-sensitive news and image data. Record the page URL, datab
    sudo find /srv/school-newsroom/media -xdev -printf '%U:%G %m %y\n' | sort -u
    ```
 
-7. A real VM reboot check is separate maintainer validation. After reboot, confirm `findmnt`, Docker services, Compose health, public HTTPS, page data, and media before marking it passed.
+7. The initial real VM reboot check passed. After future infrastructure, storage, or boot changes, repeat `findmnt`, Docker/Compose health, public HTTPS, page data, and media verification.
 
-## 21. Manual backup
+## 21. Backup and restore boundary
 
-Back up before every code/config/migration change. The approved 50 GB data volume contains both live media and `/srv/school-newsroom/backups`; verify sufficient free space before each backup and stop instead of increasing OCI storage or enabling OCI volume backups when it cannot safely fit. Backups contain private database data and must stay mode 0600 in the mode-0700 backup directory. A same-volume backup protects against operator error only; copy it to an adult maintainer-controlled encrypted destination if policy permits and that destination has verified zero cost.
+EPIC8-001 does not execute, require, or validate real staging backups or restores. That operational capability was explicitly deferred because it is not a priority for this first demo/staging closure. It remains owned by EPIC8-003 together with:
 
-Use a short maintenance window so the database and media archive are coherent:
+- scheduled database and media backups;
+- retention and encrypted off-server custody;
+- restore commands and a formal restore drill;
+- backup/restore observability and incident handling.
 
-```bash
-cd /opt/school-newsroom
-timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
-umask 077
-sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml stop proxy web
-sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml exec -T db sh -c 'pg_dump --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" --format=custom' > "/srv/school-newsroom/backups/database-${timestamp}.dump"
-tar --create --gzip --file "/srv/school-newsroom/backups/media-${timestamp}.tar.gz" --directory /srv/school-newsroom media
-sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml exec -T db pg_restore --list < "/srv/school-newsroom/backups/database-${timestamp}.dump" >/dev/null
-tar --list --gzip --file "/srv/school-newsroom/backups/media-${timestamp}.tar.gz" >/dev/null
-sha256sum "/srv/school-newsroom/backups/database-${timestamp}.dump" "/srv/school-newsroom/backups/media-${timestamp}.tar.gz" > "/srv/school-newsroom/backups/checksums-${timestamp}.txt"
-chmod 0600 "/srv/school-newsroom/backups/database-${timestamp}.dump" "/srv/school-newsroom/backups/media-${timestamp}.tar.gz" "/srv/school-newsroom/backups/checksums-${timestamp}.txt"
-sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml start web proxy
-```
+The `/srv/school-newsroom/backups` directory may exist as reserved host structure, but its presence is not evidence of a backup and no backup artifact is required for EPIC8-001 acceptance. Do not enable OCI volume backups, enlarge storage, create Object Storage dependencies, or improvise a restore procedure under this ticket.
 
-Confirm non-zero sizes and restrictive modes without printing contents:
-
-```bash
-stat -c '%a %U:%G %s %n' "/srv/school-newsroom/backups/database-${timestamp}.dump" "/srv/school-newsroom/backups/media-${timestamp}.tar.gz" "/srv/school-newsroom/backups/checksums-${timestamp}.txt"
-```
-
-Do not put backups in the repository, media directory, Caddy mount, Object Storage, or public file shares.
-
-## 22. Basic restore procedure
-
-Restore is destructive. EPIC8-001 documents the procedure; a formal restore drill belongs to EPIC8-003. Never test it against the maintainer's persistent database without an explicit maintenance decision and verified current backups.
-
-1. Confirm the target is demo/staging, not production.
-2. Confirm the selected database dump and media archive are a matching pair and pass their checksums/list commands.
-3. Record the current approved commit and create one more backup.
-4. Stop public/application writes:
-
-   ```bash
-   cd /opt/school-newsroom
-   sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml stop proxy web
-   ```
-
-5. Preserve the current media tree instead of deleting it:
-
-   ```bash
-   restore_timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
-   sudo mv /srv/school-newsroom/media "/srv/school-newsroom/media-before-restore-${restore_timestamp}"
-   sudo install -d -m 0755 -o 10001 -g 10001 /srv/school-newsroom/media
-   ```
-
-6. Recreate only the confirmed staging database and restore the dump:
-
-   ```bash
-   read -r -p "Confirmed database dump basename: " DATABASE_DUMP_NAME
-   case "$DATABASE_DUMP_NAME" in
-       "" | */*) echo "STOP: enter a basename from the backup directory." >&2; exit 1 ;;
-   esac
-   DATABASE_DUMP="/srv/school-newsroom/backups/${DATABASE_DUMP_NAME}"
-   test -f "$DATABASE_DUMP"
-   sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml exec -T db sh -c 'dropdb --force --if-exists --username "$POSTGRES_USER" "$POSTGRES_DB" && createdb --username "$POSTGRES_USER" "$POSTGRES_DB"'
-   sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml exec -T db sh -c 'pg_restore --exit-on-error --no-owner --no-privileges --username "$POSTGRES_USER" --dbname "$POSTGRES_DB"' < "$DATABASE_DUMP"
-   unset DATABASE_DUMP_NAME
-   unset DATABASE_DUMP
-   ```
-
-7. Extract the matching media archive, restore ownership/modes, and do not follow unreviewed archive paths:
-
-   ```bash
-   read -r -p "Confirmed media archive basename: " MEDIA_ARCHIVE_NAME
-   case "$MEDIA_ARCHIVE_NAME" in
-       "" | */*) echo "STOP: enter a basename from the backup directory." >&2; exit 1 ;;
-   esac
-   MEDIA_ARCHIVE="/srv/school-newsroom/backups/${MEDIA_ARCHIVE_NAME}"
-   test -f "$MEDIA_ARCHIVE"
-   tar --list --gzip --file "$MEDIA_ARCHIVE"
-   sudo tar --extract --gzip --file "$MEDIA_ARCHIVE" --directory /srv/school-newsroom
-   unset MEDIA_ARCHIVE_NAME
-   unset MEDIA_ARCHIVE
-   sudo chown -R 10001:10001 /srv/school-newsroom/media
-   sudo find /srv/school-newsroom/media -type d -exec chmod 0755 {} +
-   sudo find /srv/school-newsroom/media -type f -exec chmod 0644 {} +
-   ```
-
-8. Apply forward migrations, reconcile owned access, and restore the current hostname:
-
-   ```bash
-   sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml run --rm web python manage.py migrate --noinput
-   sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml run --rm web python manage.py bootstrap_mvp_access
-   sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml run --rm web python manage.py shell -c 'import os; from wagtail.models import Site; site = Site.objects.get(is_default_site=True); site.hostname = os.environ["STAGING_HOSTNAME"]; site.port = 443; site.save(update_fields=["hostname", "port"]); print(f"Default Wagtail Site: {site.hostname}:{site.port}")'
-   sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml up -d
-   ```
-
-9. Run HTTPS, page, role, workflow, privacy, and media smoke checks before removing the preserved pre-restore media tree. Its removal is a later explicit maintenance action, not part of restore.
-
-## 23. Deactivate an adult user's access
+## 22. Deactivate an adult user's access
 
 Through valid HTTPS as the technical superuser:
 
@@ -908,9 +863,9 @@ Through valid HTTPS as the technical superuser:
 
 To change roles without deactivation, change only the **Grupos** selection. Do not grant individual permissions or delete the owned groups.
 
-## 24. Periodic zero-cost and activity review
+## 23. Periodic zero-cost and activity review
 
-Use the complete checkpoint procedure and schedule in section 5: immediately after each creation/deployment milestone, after billing data settles, daily for the first seven days, weekly while staging remains active, and before/after any future manual deployment that changes infrastructure.
+Use the complete checkpoint procedure in section 5. EPIC8-001 closed after three approved zero-cost/inventory checkpoints. Continue weekly while staging remains active and before/after any future manual deployment that changes infrastructure; these later reviews are operational maintenance, not an open EPIC8-001 gate.
 
 1. **Billing & Cost Management** -> **Cost Management** -> **Budgets**: confirm `school-newsroom-staging-usd-1`, `school-newsroom-tenancy-usd-1`, and all four Actual/Forecast rules are active with the approved adult recipient and incident message.
 2. **Billing & Cost Management** -> **Cost Management** -> **Cost Analysis**: run the project Service/Product Description and Service/SKU queries plus the root-compartment query; confirm Actual Spend and Forecast Spend remain zero.
@@ -924,14 +879,26 @@ Use the complete checkpoint procedure and schedule in section 5: immediately aft
 
 Any non-zero Actual Spend, Forecast Spend, billed cost, paid SKU, unexpected resource, eligibility-label change, quota widening, or account-model change is a failed acceptance item and a stop-and-investigate event. **Out of capacity** is an external capacity block: retry the same 1-OCPU/4-GB A1 configuration later with **Let Oracle choose**, never by increasing resources or selecting a paid shape. A budget alert is evidence to investigate, not proof that spending was blocked.
 
-## 25. Acceptance evidence boundary
+## 24. Acceptance evidence boundary
 
-Repository-local validation can establish settings, Compose shape, x86_64 build, non-root execution, static collection, disposable migrations/bootstrap, and fictional media routing. It cannot establish:
+EPIC8-001 acceptance combines repository-local validation with real maintainer execution. The completed evidence established:
 
-- current Oracle A1 capacity or native ARM64 success;
-- real OCI labels, estimates, cost, public IP, subnet security-list/NSG union, UFW, or mounted-volume reboot persistence;
-- real DuckDNS account behavior, DNS propagation, certificate issuance/renewal, or Internet HTTPS;
-- real backup generation on Oracle storage;
-- browser-based public/editorial UAT.
+- production settings and Compose topology;
+- native ARM64 build and runtime on the approved A1 VM;
+- real OCI network, security-list/NSG, storage, quota, budget, and zero-cost boundaries;
+- UUID-mounted persistent media storage and PostgreSQL named-volume persistence;
+- DuckDNS, browser-trusted HTTPS, HTTP redirect, public pages, and secure Admin access;
+- migrations, idempotent access bootstrap, Wagtail Site reconciliation, and nominal adult role setup;
+- Director/editor and Curador SEO workflow/permission UAT;
+- minors' privacy checks using fictional/non-sensitive content;
+- service restart, same-SHA redeploy, and VM reboot persistence;
+- bounded container logging;
+- three settled project/root cost and inventory checkpoints with zero cost, no paid SKU, and no unexpected resource.
 
-Record those items as pending until the maintainer actually performs them. Use [Oracle staging UAT](oracle_staging_uat.md) for evidence, and use [Wagtail MVP Access Runbook](wagtail_access_mvp.md) for the canonical role/workflow procedure.
+The following remain outside this ticket and must not be represented as EPIC8-001 evidence:
+
+- automated deployment or a permanent `staging` branch (EPIC8-002);
+- backup generation, retention, off-server custody, restore procedures, and restore drills (EPIC8-003);
+- production-grade monitoring, transactional email, a real-domain lifecycle, or production readiness.
+
+Use [Oracle staging UAT](oracle_staging_uat.md) for the completed acceptance matrix and [Wagtail MVP Access Runbook](wagtail_access_mvp.md) for the canonical role/workflow procedure.

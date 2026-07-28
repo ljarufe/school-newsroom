@@ -171,6 +171,29 @@ test("direct smart paste preserves content and contextual table editing", async 
     "true",
   );
 
+  // setState() restores Draftail controllers before their hidden form values
+  // are guaranteed to be synchronized on a slower browser runner.
+  await expect
+    .poll(async () => {
+      const state = await persistentBodyState(writingMode);
+      return [0, 1, 3].map((index) => {
+        const value = state[index]?.value;
+        if (
+          !value ||
+          typeof value !== "object" ||
+          !Array.isArray(value.blocks)
+        ) {
+          return null;
+        }
+        return value.blocks.map((block) => block.text).join("\n");
+      });
+    })
+    .toEqual([
+      "Bloque anterior.",
+      "Bloque seleccionado.",
+      "Bloque posterior.",
+    ]);
+
   // A response from a closed writing-mode session must not survive a reopen.
   const stateBeforeStalePaste = await persistentBodyState(writingMode);
   let releaseStaleResponse;

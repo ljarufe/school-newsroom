@@ -92,6 +92,35 @@ def test_supported_inline_styles_and_safe_links_are_preserved() -> None:
     assert "style=" not in values(result)[0]
 
 
+def test_supported_styles_declared_on_block_elements_are_preserved() -> None:
+    result = normalize_paste(
+        html_source=(
+            '<p style="font-weight: 700">Párrafo destacado</p>'
+            '<h3 style="font-style: italic">Encabezado enfatizado</h3>'
+        ),
+    )
+
+    assert values(result) == [
+        "<p><strong>Párrafo destacado</strong></p>",
+        "<h3><em>Encabezado enfatizado</em></h3>",
+    ]
+
+
+def test_normal_weight_overrides_semantic_bold_elements() -> None:
+    result = normalize_paste(
+        html_source=(
+            '<p><b style="font-weight: normal">Texto normal</b> y '
+            '<strong style="font-weight: 400">otro texto normal</strong>; '
+            '<strong style="font-weight: normal; font-style: italic">'
+            "sólo cursiva</strong>.</p>"
+        ),
+    )
+
+    assert values(result) == [
+        "<p>Texto normal y otro texto normal; <em>sólo cursiva</em>.</p>"
+    ]
+
+
 def test_blockquote_and_horizontal_rule_remain_supported_blocks() -> None:
     result = normalize_paste(
         html_source=(

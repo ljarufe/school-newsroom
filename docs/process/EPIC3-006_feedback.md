@@ -2,14 +2,16 @@
 
 ## Status
 
-Implementation Closing Draft.
+Implementation Closing Draft — Pull Request review follow-up.
 
 The maintainer confirmed that the final UAT passed with no pending functional
 or visual deviations. The implementation and its final visual corrections are
 therefore approved for technical closing.
 
-The local closing validations are complete. Commit, push, Pull Request, CI,
-review, and merge remain pending and are not claimed in this draft.
+Pull Request #15 is open. Two non-blocking P2 review threads and one failing
+browser-regression run were investigated and corrected locally. The follow-up
+changes have not been committed or pushed, the review threads remain open, and
+the updated GitHub Actions run, review completion, and merge remain pending.
 
 ## Root cause
 
@@ -51,6 +53,12 @@ Successful responses are inserted through Wagtail's StreamField client API and
 produce a short Spanish live notification. A table-degradation warning is
 summarized as `Una tabla fue simplificada.` Failures leave the existing body
 unchanged and report a retry message.
+
+Supported bold and italic styles declared directly on paragraph and heading
+elements are applied to their normalized contents. Inline semantic elements
+also honor explicit CSS overrides: `font-weight: normal` or a numeric weight
+below 600 suppresses `<b>`/`<strong>` conversion, and `font-style: normal`
+suppresses `<em>`/`<i>` conversion.
 
 The listener does not intercept image inputs, captions, alternative text,
 credits, other administrative inputs or selectors, table cells, or fields
@@ -245,15 +253,24 @@ must not be staged or committed.
 
 ## Automated validation
 
+### Focused smart-paste coverage
+
+```text
+apps/news/tests/test_smart_paste.py
+38 passed in 4.57s
+```
+
+The two added cases cover supported styles declared on block elements and
+normal-weight overrides on semantic bold elements.
+
 ### Browser regression
 
-The closing browser regression passed on the exact implementation approved in
-UAT:
+The Pull Request follow-up browser regression passed locally:
 
 ```text
 make browser-test
-1 passed (3.3s)
-total command duration: 26.71s
+1 passed (3.8s)
+total command duration: 25.53s
 passed; disposable services and volumes removed
 ```
 
@@ -268,8 +285,7 @@ narrow viewport geometry, save/reopen persistence, and retained table data.
 make check
 ruff: All checks passed!
 makemigrations --check --skip-checks: No changes detected
-pytest: 274 passed in 32.82s
-total command duration: approximately 33s
+pytest: 276 passed in 32.35s
 ```
 
 ### JavaScript and browser Compose configuration
@@ -295,6 +311,15 @@ passed after the final feedback update; under 0.1s
 
 ## Validation failures and retries
 
+- GitHub Actions Browser Regression run `30403272783` failed while comparing
+  the stale-response snapshot. On the slower hosted runner, the snapshot was
+  captured immediately after StreamField `setState()` restored the blocks but
+  before three non-empty Draftail controllers synchronized their hidden form
+  values. The expected state therefore contained `"null"` strings while the
+  later state contained equivalent Draftail JSON. The browser test now waits
+  for those known non-empty form values before capturing the unchanged-state
+  snapshot; the complete comparison remains in place and the same regression
+  passes locally.
 - The first closing `make browser-test` attempt failed because its narrow-table
   assertion compared a contextual control with the outer selected block. The
   approved visual delta added a 0.75-rem content inset, so the assertion was
@@ -315,10 +340,9 @@ passed after the final feedback update; under 0.1s
   has no Node version configured for this checkout. The same four commands were
   rerun successfully in the repository's browser-test container.
 
-These closing changes are confined to the browser regression and this feedback
-file. They do not change application behavior and do not invalidate any part of
-the approved UAT. No `make check`, Compose configuration, or containerized
-JavaScript retry was required.
+The Pull Request follow-up changes preserve supported formatting more
+accurately and stabilize only the precondition for the browser snapshot. They
+do not invalidate any part of the approved UAT.
 
 ## Manual validation
 
@@ -331,10 +355,10 @@ hover behavior.
 
 ## Deferred validation
 
-- Commit and push.
-- Pull Request creation.
-- CI execution and evidence.
-- Review and merge.
+- Commit and push of the Pull Request review follow-up.
+- GitHub Actions rerun on the updated Pull Request head.
+- Review-thread replies or resolution.
+- Review completion and merge.
 
 ## Persistent database state
 

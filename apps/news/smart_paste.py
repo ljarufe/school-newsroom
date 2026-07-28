@@ -454,7 +454,13 @@ class HtmlPasteNormalizer:
         return "".join(self._render_inline(child) for child in node.children)
 
     def _render_trimmed_children(self, node: Tag) -> str:
-        return self._trim_rendered_boundaries(self._render_children(node))
+        rendered = self._trim_rendered_boundaries(self._render_children(node))
+        style_bold, style_italic = self._semantic_inline_styles(node.get("style", ""))
+        return self._apply_supported_styles(
+            rendered,
+            is_bold=style_bold is True,
+            is_italic=style_italic is True,
+        )
 
     @classmethod
     def _trim_rendered_boundaries(cls, rendered: str) -> str:
@@ -538,23 +544,20 @@ class HtmlPasteNormalizer:
         if name == "a":
             href = (node.get("href") or "").strip()
             if self._is_safe_href(href):
-                return f'<a href="{escape(href, quote=True)}">{rendered}</a>'
-            self.discarded["unsafe_links"] += 1
-            return rendered
-        if name in {"b", "strong"}:
-            return f"<strong>{rendered}</strong>"
-        if name in {"em", "i"}:
-            return f"<em>{rendered}</em>"
-        if name == "ins":
+                rendered = f'<a href="{escape(href, quote=True)}">{rendered}</a>'
+            else:
+                self.discarded["unsafe_links"] += 1
+        elif name == "ins":
             self.discarded["tracked_changes"] += 1
-            return rendered
 
-        is_bold, is_italic = self._semantic_inline_styles(node.get("style", ""))
-        if is_italic:
-            rendered = f"<em>{rendered}</em>"
-        if is_bold:
-            rendered = f"<strong>{rendered}</strong>"
-        return rendered
+        style_bold, style_italic = self._semantic_inline_styles(node.get("style", ""))
+        semantic_bold = name in {"b", "strong"}
+        semantic_italic = name in {"em", "i"}
+        return self._apply_supported_styles(
+            rendered,
+            is_bold=semantic_bold if style_bold is None else style_bold,
+            is_italic=(semantic_italic if style_italic is None else style_italic),
+        )
 
     def _safe_plain_text(self, node: Tag | None) -> str:
         if node is None:
@@ -638,19 +641,49 @@ class HtmlPasteNormalizer:
         return parsed.scheme.lower() in SAFE_LINK_SCHEMES
 
     @staticmethod
-    def _semantic_inline_styles(style: str) -> tuple[bool, bool]:
+    def _semantic_inline_styles(
+        style: str,
+    ) -> tuple[bool | None, bool | None]:
         declarations = {}
         for item in style.split(";"):
             key, separator, value = item.partition(":")
             if separator:
-                declarations[key.strip().lower()] = value.strip().lower()
+                normalized_value = re.sub(
+                    r"\s*!important\s*$",
+                    "",
+                    value.strip().lower(),
+                )
+                declarations[key.strip().lower()] = normalized_value
 
         weight = declarations.get("font-weight", "")
-        is_bold = weight in {"bold", "bolder"}
+        is_bold = None
+        if weight in {"bold", "bolder"}:
+            is_bold = True
+        elif weight in {"normal", "lighter"}:
+            is_bold = False
         if weight.isdigit():
             is_bold = int(weight) >= 600
-        is_italic = declarations.get("font-style", "") in {"italic", "oblique"}
+
+        font_style = declarations.get("font-style", "")
+        is_italic = None
+        if font_style in {"italic", "oblique"}:
+            is_italic = True
+        elif font_style == "normal":
+            is_italic = False
         return is_bold, is_italic
+
+    @staticmethod
+    def _apply_supported_styles(
+        rendered: str,
+        *,
+        is_bold: bool,
+        is_italic: bool,
+    ) -> str:
+        if is_italic:
+            rendered = f"<em>{rendered}</em>"
+        if is_bold:
+            rendered = f"<strong>{rendered}</strong>"
+        return rendered
 
     @staticmethod
     def _positive_span(raw_value: object) -> int:

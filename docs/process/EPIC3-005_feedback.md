@@ -2,238 +2,171 @@
 
 ## Status
 
-Implementation Closing Draft
+Closing Feedback Final
 
-The implementation, automated technical close, and focused browser regression
-are complete. The maintainer reported that the detailed visual and functional
-UAT passed except for one `article_image` Tab-traversal defect. That deviation
-is fixed and has focused real-browser evidence. The maintainer has not manually
-repeated the complete UAT after this narrow correction.
+EPIC3-005 reached its stable implementation and operational review boundary.
+The implementation was committed and pushed, Pull Request #14 was opened,
+GitHub Actions passed, maintainer UAT passed under the project's
+deviation-based reporting rule, and the Codex Pull Request review was
+completed.
 
-Real commit, push, pull request, CI, and review evidence remain pending. This
-document is therefore not Stage B closing feedback.
+The review produced one keyboard-accessibility finding concerning forward and
+reverse Tab traversal through visible `article_image` metadata fields. The
+maintainer reviewed the finding and explicitly chose not to change the
+implementation in this Pull Request. The limitation is documented below and
+is handed off as follow-up work; it is not represented as fixed or as a false
+positive.
+
+This file replaces the earlier `Implementation Closing Draft`.
 
 ## Source and checkout
 
-- Final source of truth: the approved `EPIC3-005` ticket supplied directly by
-  the maintainer.
-- Active branch: `EPIC3-005-wagtail-writing-mode`.
-- This was a continuation of an intentionally dirty worktree. Existing valid
-  summary-removal, migration, public/SEO, writing-mode, test, and documentation
-  work was preserved.
-- No spike patch was applied and no existing work was reset or reimplemented.
-- Runtime exercised: Wagtail 7.4.2 through the repository's Docker-first test
-  workflow.
+- Source of truth: the approved `EPIC3-005` ticket supplied directly by the
+  maintainer.
+- Working branch: `EPIC3-005-wagtail-writing-mode`.
+- Published implementation commit:
+  `aae79bff6231f30e1f28db44b89d622d1768cf46`.
+- Pull Request:
+  `https://github.com/ljarufe/school-newsroom/pull/14`.
+- Runtime exercised during implementation: Wagtail 7.4.2 through the
+  repository's Docker-first workflow.
+- The implementation continued from an intentionally non-clean worktree.
+  Existing valid summary-removal, migration, public/SEO, writing-mode, test,
+  and documentation work was preserved.
+- No spike patch was applied and no existing implementation was reset or
+  recreated.
 
 ## Final architecture
 
-`NewsPage.body` remains the original and only `StreamField` instance and source
-of truth. A field-specific `WritingModeFieldPanel` renders that original field
+`NewsPage.body` remains the original and only body `StreamField` and source of
+truth. A field-specific `WritingModeFieldPanel` renders that original field
 once inside a native Wagtail full-screen dialog. There is no copied body,
 parallel editor state, hidden clone, or save-synchronization layer.
 
 The normal `Edición de la noticia` surface retains a compact `Contenido` card
 with `Sin contenido` or `Con contenido` and `Abrir modo redacción` or
-`Revisar errores`. The dialog uses the exact labels `Modo redacción` and
-`Volver`. Normal Wagtail editing remains available outside the writing dialog.
+`Revisar errores`. The dialog uses the visible labels `Modo redacción` and
+`Volver`. The original Wagtail field and its native save behavior remain in the
+same page-edit form.
 
 The native contextual Draftail toolbar remains the only text-formatting
-toolbar. No shared top toolbar or synthetic formatting controls were added.
-The CSS and JavaScript are loaded only by the custom `NewsPage.body` panel, so
-unrelated Admin StreamFields are not affected.
+toolbar. No shared top toolbar, copied React control, or synthetic formatting
+toolbar was introduced.
 
-The approved continuous-document presentation keeps separate paragraph,
-`article_image`, YouTube, and Spotify blocks while reducing persistent panel
-chrome. Images keep their chooser and editable caption, alt, and credit fields;
-inactive images retain a compact figure-like presentation. YouTube and Spotify
-retain compact provider-and-URL cards. The existing
-`caption_alt_sync.js` integration and customized-alt protection are unchanged.
+The implementation is scoped through the custom `NewsPage.body` panel template
+and its `BoundPanel.Media`. Its CSS and JavaScript do not load on unrelated
+Admin StreamFields.
 
-## Maintainer UAT state
+The writing surface keeps separate `paragraph`, `article_image`, `youtube`, and
+`spotify` blocks while presenting them as a compact continuous document.
+Images retain the Wagtail chooser and the contextual `Pie de foto`,
+`Texto alternativo`, and `Crédito de imagen` fields. The existing
+caption-to-alt synchronization and manually customized-alt protection remain
+unchanged.
 
-Under the project's deviation-based UAT rule, the maintainer approved the
-current visual presentation and every previously described UAT item except the
-image traversal deviation below. The approved CSS was not changed during the
-closing correction.
+## Summary removal and description policy
 
-The maintainer did not manually repeat the full visual and functional UAT after
-the narrow JavaScript correction. The correction instead received the focused
-browser regression described below. A maintainer may optionally smoke-test the
-corrected Tab sequence before staging; a new full UAT pass is not represented
-as having occurred.
+`NewsPage.summary` was removed from:
 
-## Image Tab-traversal defect and correction
+- the model and Admin editing surface;
+- Home hero and secondary cards;
+- shared news cards;
+- `/noticias/` listing;
+- article detail;
+- Admin SEO read-only context;
+- SEO live preview and analysis;
+- Open Graph;
+- Twitter/X;
+- JSON-LD.
 
-### Observed defect
+No replacement excerpt is synthesized from `NewsPage.body`.
 
-Content-first `Tab` worked between text blocks but became stuck when traversal
-reached an `article_image`.
-
-### Root cause
-
-The image target lookup accepted chooser actions without checking whether they
-were rendered. For a chosen image, Wagtail keeps an empty-state
-`chooser__choose-button` in a hidden `.unchosen` branch while rendering the
-actual chosen-image dropdown toggle. The hidden button appeared earlier in the
-DOM, so it was selected as the destination. The handler had already called
-`preventDefault()` before trying to focus it; the hidden control could not
-receive focus, leaving focus on the previous paragraph and creating the
-apparent trap.
-
-### Implemented correction
-
-`static/news/js/writing_mode.js` now:
-
-- accepts an image traversal target only when it is enabled, not hidden or
-  `aria-hidden`, has a non-negative tab index, has rendered client rectangles,
-  and is not CSS-hidden;
-- resolves the meaningful image stop inside the actual image field, marking
-  the current rendered chooser control for content traversal;
-- refreshes that marker when Wagtail changes image chooser markup, preserving
-  dynamically inserted, duplicated, deleted, and reordered blocks;
-- supports forward and reverse traversal through paragraph, image, paragraph,
-  YouTube, Spotify, and paragraph primary surfaces;
-- preserves native ordering within visible image metadata fields and moves to
-  the following block only after the final visible metadata control;
-- leaves Tab events outside marked primary controls and the final visible image
-  metadata control untouched, including chooser dialogs, Draftail chrome,
-  menus, and popovers;
-- calls `preventDefault()` only after both a live destination block and a valid
-  destination control have been resolved.
-
-No CSS, template, Python, migration, public, SEO, permission, workflow, or
-privacy implementation changed for this correction.
-
-## Focused real-browser regression
-
-A disposable Chrome 123 session, Django live server, isolated test database,
-fictional superuser, fictional article, and fictional one-pixel image exercised
-the exact sequence:
-
-```text
-Párrafo → Imagen → Párrafo → YouTube → Spotify → Párrafo
-```
-
-The focused browser test passed:
-
-```text
-1 passed in 13.34s
-```
-
-Evidence confirms:
-
-- forward `Tab` visited all six primary surfaces in the expected order;
-- reverse `Shift+Tab` visited the same sequence in reverse;
-- the selected image target was the rendered chosen-image dropdown toggle, not
-  the hidden empty-state choose button;
-- no insertion control, block action, or hidden image field entered the
-  content-to-content sequence;
-- visible image metadata followed `Pie de foto` → `Texto alternativo` →
-  `Crédito de imagen`, then exited to the following paragraph;
-- opening the real image chooser placed focus inside the nested modal;
-- `Escape` closed only the nested chooser, kept `Modo redacción` open, and
-  restored useful focus inside the image block;
-- the approved `writing_mode.css` remained unchanged, recorded with SHA-256
-  `c1d6cb243ee0b9541378f6c7f2e8f086dee2dfeb399f3efbea6a7f99dc36c7bf`.
-
-Retained untracked evidence:
-
-- `tmp/EPIC3-005-image-tab-regression/pre-fix-dom.json`;
-- `tmp/EPIC3-005-image-tab-regression/focused-browser-evidence.json`;
-- `tmp/EPIC3-005-image-tab-regression/focused-image-tab.png`.
-
-The disposable browser harness was removed after the successful run. No
-permanent browser dependency or source-string pseudo-browser test was added.
-
-## Test-delta audit
-
-Only tests added or materially changed by EPIC3-005 were audited.
-
-- Summary removal and model/Admin absence are protected by language,
-  form-surface, and role-surface tests.
-- Migration and history compatibility are protected by the migration
-  regression that crosses `0009` to `0010`, verifies the live column removal,
-  preserves immutable revision JSON, and reconstructs the historical page and
-  original body blocks.
-- The prohibition on fabricated body excerpts is protected by Home, card, list,
-  detail, and metadata output assertions.
-- SEO, Open Graph, Twitter/X, and JSON-LD omission and explicit-field fallback
-  rules are protected by public response tests.
-- Permissions, workflow, and minor-privacy boundaries are protected by the
-  existing role-specific Admin and manipulated-POST tests.
-- Admin panel order, field absence, writing-mode asset wiring, Spanish labels,
-  and nested validation rendering are protected through actual Django/Wagtail
-  configuration or rendered HTML.
-
-Two brittle tests were consolidated out:
-
-1. a writing-mode test that searched many CSS and JavaScript implementation
-   literals while claiming dynamic and browser behavior;
-2. a materially rewritten SEO-assistant test that searched JavaScript source
-   strings for the removed `summary` dependency.
-
-Their distinct product risks remain covered by rendered Admin, model,
-migration, and public metadata tests. No existing unrelated repository test was
-removed, and no Python test was added for the image JavaScript source.
-
-The affected test file passed before the general gate:
-
-```text
-apps/news/tests/test_admin_uat.py
-10 passed in 5.12s
-```
-
-## Summary removal, migration, public output, and SEO
-
-`NewsPage.summary` is absent from the model and Admin. Home hero, shared cards,
-listing, detail, Admin SEO context, SEO live preview, Open Graph, Twitter/X,
-and JSON-LD no longer depend on it. No replacement is synthesized from
-`NewsPage.body`.
-
-`search_description` is the only public base description source.
-`og_description` may fall back only to that explicit field. When neither is
-available, description metadata is omitted safely. Explicit SEO title, social
-title, canonical, robots, image, sitemap, and public-credit behavior remain.
+`search_description` is the only public base-description source.
+`og_description` may fall back only to that explicit field. When the explicit
+description fields are empty, description metadata is omitted safely.
 
 Migration `0010_remove_newspage_summary_and_more` depends on
 `0009_reconcile_mvp_access` and contains only:
 
-1. `RemoveField` for `NewsPage.summary`;
-2. `AlterField` for the Spanish `og_description` help text.
+1. removal of `NewsPage.summary`;
+2. the approved Spanish help-text adjustment for `og_description`.
 
-No published migration was rewritten. The `paragraph` block identity and the
-single original body `StreamField` remain unchanged. Historical revision JSON
-may retain its old `summary` key; Wagtail reconstructs the current model while
-ignoring that obsolete key. No migration was applied to the maintainer's
-persistent database.
+No published migration was rewritten. Historical Wagtail revision JSON may
+retain the obsolete `summary` key; current reconstruction ignores that key
+while preserving the historical body content.
 
 ## Permissions, workflow, and privacy
 
-No group, page, collection, task, workflow, moderation, or publication
-permission changed. The technical superuser and `Director/editor` retain the
-content surface. `Curador SEO` remains limited to its authorized SEO surface
-and cannot bind body, privacy, contributor, menu, or publication fields.
-`Revisión editorial` behavior is unchanged.
+No group, page, collection, task, workflow, moderation, publication, or
+collection permission changed.
+
+- The technical superuser and `Director/editor` retain the content surface.
+- `Curador SEO` remains restricted to its authorized SEO surface and cannot
+  bind body, privacy, contributor, menu, or publication fields.
+- `Revisión editorial` behavior remains unchanged.
 
 No internal minor contributor, age band, privacy flag, consent state, or
-authorization state was introduced into the writing dialog or public output.
+authorization state was added to the writing dialog, SEO context, preview, or
+public output.
 
-## Automated validation
+## Maintainer UAT
 
-Immediate JavaScript syntax:
+The maintainer completed the detailed visual and functional UAT using the
+project's deviation-based reporting rule. All described areas were accepted
+after the scoped visual corrections.
+
+The maintainer also manually repeated the final focused delta-UAT for the
+previously observed image-block traversal trap. The affected forward and
+reverse sequence passed: focus could enter and leave the image block without
+becoming stuck on a hidden chooser control. A complete UAT was not repeated
+after that narrow correction because only the affected delta required
+revalidation.
+
+The later Pull Request review identified a narrower path that the UAT and
+temporary browser evidence had not proved: normal Tab traversal from the
+marked image chooser into each visible metadata input. That limitation is
+recorded in the review section and must not be confused with the earlier hidden
+chooser-control trap, which was fixed.
+
+## Automated and focused validation
+
+Immediate JavaScript syntax validation:
 
 ```text
 node --check static/news/js/writing_mode.js
 passed
 ```
 
-Focused test after the test-delta consolidation:
+Focused Admin test after the test-delta audit:
 
 ```text
+apps/news/tests/test_admin_uat.py
 10 passed in 5.12s
 ```
 
-Final repository gate:
+Focused disposable browser regression:
+
+```text
+1 passed in 13.34s
+```
+
+That probe proved:
+
+- forward and reverse traversal through the primary paragraph, image,
+  paragraph, YouTube, Spotify, and paragraph surfaces;
+- rejection of the hidden Wagtail empty-state chooser button as a focus
+  destination;
+- absence of insertion controls and hidden block actions from the
+  content-to-content sequence;
+- image chooser opening, nested-dialog focus, `Escape`, parent-dialog
+  persistence, and useful focus restoration;
+- preservation of the approved CSS.
+
+The Pull Request review subsequently narrowed the claim: the probe did not
+prove that ordinary Tab from the selected image chooser enters the first
+visible caption/alt/credit control before leaving the block.
+
+Final local repository gate before the implementation commit:
 
 ```text
 make check
@@ -242,35 +175,85 @@ makemigrations --check: No changes detected
 pytest: 202 passed in 33.18s
 ```
 
-Final whitespace validation:
+Whitespace validation:
 
 ```text
 git diff --check
 passed
 ```
 
-## Post-UAT delta review
+GitHub Actions:
 
-The post-UAT template, CSS, and JavaScript delta was reviewed against the
-approved scope.
+```text
+Workflow: Pull Request Validation
+Run: 29
+Conclusion: success
+```
 
-- The writing panel template is unchanged by the final correction.
-- The visual UAT refinements in `writing_mode.css` remain scoped to the writing
-  dialog and were not altered during closure.
-- The only production change in the final correction is the image-aware
-  traversal logic in `writing_mode.js`.
-- No actionable regression, broad selector leak, duplicate body field, hidden
-  focus destination, permission change, or privacy exposure was found.
+No executable code changed after the Pull Request review. Therefore the
+existing local and CI evidence was not invalidated and was not repeated by
+ceremony.
 
-`tmp/EPIC3-005_diff_review.txt` is regenerated after all repository changes and
-contains the active branch, status, statistics, changed-file lists, complete
-tracked unstaged diff, staged state, and complete relevant untracked ticket
-files. Temporary browser and spike evidence is excluded from that review
-artifact and remains untracked.
+## Test-delta audit
 
-## Files in the complete ticket delta
+Only tests added or materially changed by EPIC3-005 were audited.
 
-Model, Admin, and migration:
+The retained tests protect distinct risks:
+
+- removal of `summary` from the model and Admin;
+- migration and historical-revision compatibility;
+- absence of fabricated body excerpts in public rendering;
+- explicit description omission and fallback behavior for SEO, Open Graph,
+  Twitter/X, and JSON-LD;
+- role, workflow, authorization, and minor-privacy boundaries;
+- Admin panel configuration, Spanish labels, assets, and validation wiring.
+
+Two brittle source-literal tests were consolidated out:
+
+1. a writing-mode test that searched CSS and JavaScript implementation
+   literals while claiming dynamic browser behavior;
+2. a materially rewritten SEO-assistant test that searched JavaScript source
+   strings for the removed `summary` dependency.
+
+Their product risks remain covered by model, migration, rendered Admin, and
+public metadata tests. No unrelated repository test was removed, and no
+Python source-string test was added for the image keyboard behavior.
+
+## Pull Request review and finding disposition
+
+Codex reviewed implementation commit `aae79bff62` on Pull Request #14 and
+reported one P1 finding in `static/news/js/writing_mode.js`:
+
+> Let Tab enter the image metadata fields.
+
+The finding established that:
+
+- the image chooser is marked as the primary content traversal target;
+- the next normal Tab is redirected directly to the following StreamField
+  block;
+- visible caption, alt-text, and credit inputs are therefore skipped by
+  ordinary forward keyboard traversal;
+- reverse traversal has the analogous limitation;
+- keyboard-only editors cannot complete all image metadata through the normal
+  Tab sequence.
+
+Disposition:
+
+- The maintainer reviewed the behavior and chose not to change the
+  implementation in EPIC3-005.
+- The finding is accepted as a known keyboard-accessibility limitation for
+  this ticket.
+- It is not classified as fixed, false positive, or fully covered by the
+  earlier browser probe.
+- The limitation must be considered by the ticket-definition chat and retained
+  in the roadmap until it receives an explicit disposition.
+
+No code, CSS, migration, test, permission, workflow, privacy, or public-output
+delta was introduced after review.
+
+## Files in the complete implementation delta
+
+### Model, Admin, and migration
 
 - `apps/news/models.py`
 - `apps/news/panels.py`
@@ -279,7 +262,7 @@ Model, Admin, and migration:
 - `static/news/css/writing_mode.css`
 - `static/news/js/writing_mode.js`
 
-Public and SEO behavior:
+### Public and SEO behavior
 
 - `apps/news/seo.py`
 - `apps/news/seo_metadata.py`
@@ -290,7 +273,7 @@ Public and SEO behavior:
 - `templates/includes/news_card.html`
 - `templates/news/news_page.html`
 
-Tests and documentation:
+### Tests and documentation
 
 - `apps/news/tests/test_admin_uat.py`
 - `apps/news/tests/test_forms.py`
@@ -306,60 +289,110 @@ Tests and documentation:
 - `docs/product/UX-001_public_site_design_handoff_guide.md`
 - `docs/process/EPIC3-005_feedback.md`
 
-## Warnings and limitations
+Temporary diff-review and browser-evidence artifacts under `tmp/` remain local
+and untracked. They are not part of the Pull Request.
 
-- The maintainer did not repeat the complete UAT after the narrow image
-  traversal correction. The exact corrected sequence has focused automated
-  browser evidence.
-- The final browser probe activated the visible Wagtail chooser menu action in
-  page after a raw WebDriver element click reported that overlay element as not
-  interactable. The chooser, focus placement, real `Escape` key handling, modal
-  closure, parent-dialog persistence, and focus restoration were then observed
-  in Chrome.
-- Writing-mode selectors and focus behavior depend on Wagtail 7.4.2 markup and
-  supported dialog behavior. A future major Wagtail upgrade should repeat these
-  browser regressions.
-- No user preference, product-wide default, shared toolbar, alternate body
-  editor, or permanent browser-test dependency was added.
+## Warnings and known limitations
+
+### Accepted image metadata keyboard limitation
+
+Normal Tab and Shift+Tab traversal does not enter all visible
+`article_image` caption, alt-text, and credit controls from the marked chooser
+stop. Pointer users and users who directly focus those controls can edit them,
+but the ordinary keyboard-only path is incomplete.
+
+Recommended follow-up acceptance boundary:
+
+1. Tab from the preceding block reaches one meaningful image chooser stop.
+2. The next Tab enters the first visible metadata control.
+3. Caption, alt text, and credit follow their visible native order.
+4. Tab after the final visible metadata control reaches the next block.
+5. Shift+Tab traverses the same sequence in reverse.
+6. Hidden, disabled, collapsed, and non-rendered chooser controls are skipped.
+7. Nested chooser, `Escape`, dynamic block insertion, and focus restoration
+   remain intact.
+8. The transition is protected by a real browser regression at an appropriate
+   tracked test boundary.
+
+### Wagtail compatibility
+
+Writing-mode selectors and focus behavior depend on Wagtail 7.4.2 panel,
+StreamField, Telepath, Draftail, chooser, and native dialog markup. A future
+major Wagtail upgrade should repeat focused browser regressions for:
+
+- chosen and empty image chooser branches;
+- content-first forward and reverse traversal;
+- Telepath insertion overlays;
+- nested dialog focus boundaries;
+- Draftail contextual toolbar behavior;
+- the scoped continuous-document presentation.
+
+### Scope boundaries retained
+
+No per-user preference, product-wide default, shared toolbar, parallel body
+editor, permanent browser-test dependency, smart paste, automatic block
+normalization, new block type, reusable block system, advanced authorship, SEO
+v2, sharing, notifications, live coverage, advertising, workshops, or deploy
+work was introduced.
 
 ## New Work Discovered
 
-No blocking new product work was discovered.
+### Article-image metadata keyboard accessibility
 
-A future Wagtail upgrade should include browser regressions for:
+Evidence:
 
-- chosen and empty image chooser markup;
-- content-first forward and reverse traversal;
-- Telepath insertion overlays and nested dialog focus boundaries;
-- Draftail contextual toolbar behavior;
-- the scoped continuous-document panel selectors.
+- Codex Pull Request review on implementation commit `aae79bff62`;
+- the normal Tab sequence skips visible caption, alt-text, and credit inputs.
 
-This is upgrade-compatibility work, not unfinished EPIC3-005 scope. Smart
-paste, new block types, reusable blocks, taxonomy, advanced authorship, SEO v2,
-sharing, notifications, live coverage, advertising, workshops, and deployment
-remain out of scope.
+Impact:
+
+- incomplete keyboard-only authoring for a block whose caption and alt fields
+  are required when an image is present;
+- the temporary browser probe did not protect the exact transition that
+  failed;
+- further behavior-critical Wagtail Admin JavaScript would increase risk
+  without an explicit browser-test strategy.
+
+Suggested disposition:
+
+- retain as high-priority accessibility debt;
+- define a focused follow-up before broadening or reusing the writing mode;
+- decide whether it belongs in a dedicated Admin accessibility ticket or in
+  the existing Admin JS/browser-testing prerequisite;
+- do not lose it inside a generic future Wagtail-upgrade task.
+
+No other blocking new product work was discovered.
 
 ## Durable knowledge candidates
 
-- Wagtail image choosers retain both chosen and empty-state DOM branches.
-  Keyboard destination logic must validate rendered state instead of trusting
-  the first matching chooser action.
-- `preventDefault()` for content-first Tab traversal must occur only after a
-  live destination and focusable rendered control are resolved.
-- A field-specific `BoundPanel.Media` plus native `{% dialog %}` is a narrow
-  supported boundary for a full-screen authoring surface around one original
-  Wagtail field.
-- Immutable revision JSON can retain removed page-field keys. Current Wagtail
-  reconstruction ignores the obsolete key while preserving historical body
-  data.
-- Public News description policy is explicit-field-only; body content is not a
-  card or metadata excerpt without a future approved product change.
+- `NewsPage.body` can be presented as a full-screen continuous writing surface
+  through a field-specific `BoundPanel.Media` and native Wagtail dialog without
+  creating a second body field or synchronization layer.
+- Wagtail image choosers retain chosen and empty-state DOM branches. Focus
+  destination logic must validate rendered state rather than trusting the first
+  matching chooser action.
+- `preventDefault()` in content-first Tab handling must occur only after a live
+  destination has been resolved.
+- A browser test that proves block-to-block traversal does not necessarily
+  prove native traversal through every visible control inside a complex block.
+  Coverage and claims must name the exact transition.
+- Immutable Wagtail revision JSON may retain a removed concrete page-field key;
+  current reconstruction can ignore the obsolete key while preserving
+  historical body data.
+- Public News description policy is explicit-field-only. Body content is not a
+  card or metadata excerpt without a future approved product decision.
+- Review comments displayed by a VS Code GitHub extension are not automatically
+  available to an existing Codex session. The session must fetch the Pull
+  Request threads or receive the comment explicitly.
 
-## Publication state
+## Operational publication state
 
-- Pending real commit.
-- Pending real push.
-- Pending PR/CI evidence.
-- Pending PR review.
-- No files are staged.
-- No commit, push, pull request, or merge was performed by Codex.
+- Implementation commit: published.
+- Remote branch: published.
+- Pull Request #14: open against `main`.
+- Pull Request Validation run #29: passed.
+- Codex Pull Request review: completed with one finding.
+- Finding disposition: accepted known limitation; no code change requested by
+  the maintainer.
+- Final feedback replacement: ready for the final documentation-only commit.
+- Final merge remains a maintainer action using `Squash and merge`.

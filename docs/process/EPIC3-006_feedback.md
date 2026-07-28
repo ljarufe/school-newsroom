@@ -2,16 +2,25 @@
 
 ## Status
 
-Implementation Closing Draft — Pull Request review follow-up.
+Closing Feedback Final — ready for the pre-merge documentation commit.
 
-The maintainer confirmed that the final UAT passed with no pending functional
-or visual deviations. The implementation and its final visual corrections are
-therefore approved for technical closing.
+The maintainer approved the final functional and visual UAT with no pending
+deviations. Pull Request #15 contains the reviewed implementation commit
+`10fddefae43cde3c42a863ddb28cb953beab055d` and the review-follow-up commit
+`0ef9b7c9adbe4135b235282d5e3a61ad3f8adedd`.
 
-Pull Request #15 is open. Two non-blocking P2 review threads and one failing
-browser-regression run were investigated and corrected locally. The follow-up
-changes have not been committed or pushed, the review threads remain open, and
-the updated GitHub Actions run, review completion, and merge remain pending.
+The two P2 review findings were addressed by the follow-up commit and their
+GitHub review threads were replied to and resolved during pre-merge closure.
+The latest code head passed both configured GitHub Actions workflows:
+
+- Pull Request Validation run `30406659383`;
+- Browser Regression run `30406659401`.
+
+No implementation, UAT, CI, or review finding remains open. The only remaining
+operations are to commit and push this factual documentation delta, allow the
+required documentation-triggered CI to complete, perform `Squash and merge`,
+synchronize local `main`, remove the ticket branches and temporary review
+artifact, and move the Planka card from `Review` to `Done`.
 
 ## Root cause
 
@@ -111,10 +120,10 @@ for internal controls.
 
 Wagtail's StreamField panel pseudo-elements, nested-panel divider decoration,
 and Draftail focus border were the overlapping sources of the horizontal
-selection lines. Their writing-mode rules are now consolidated at the owning
-panel and editor selectors, while buttons, fields, cells, and other internal
-controls keep their own focus indication. Draftail's populated editor minimum
-was reduced from 40 pixels to one line, while empty paragraphs retain a one-line
+selection lines. Their writing-mode rules are consolidated at the owning panel
+and editor selectors, while buttons, fields, cells, and other internal controls
+keep their own focus indication. Draftail's populated editor minimum was
+reduced from 40 pixels to one line, while empty paragraphs retain a one-line
 editable target.
 
 Only one block owns the contextual toolbar at a time. Pointer and keyboard
@@ -153,7 +162,7 @@ altering Handsontable's cell focus, data, rows, or scrollbars.
 
 ### Table localization
 
-Project-level Django translations now cover all visible contributed TableBlock
+Project-level Django translations cover all visible contributed TableBlock
 labels, help text, and selector options while preserving the underlying stored
 values:
 
@@ -309,6 +318,24 @@ git diff --check
 passed after the final feedback update; under 0.1s
 ```
 
+### Pull Request validation
+
+For code head `0ef9b7c9adbe4135b235282d5e3a61ad3f8adedd`, GitHub Actions
+completed successfully:
+
+```text
+Pull Request Validation run 30406659383
+status: completed
+conclusion: success
+
+Browser Regression run 30406659401
+status: completed
+conclusion: success
+```
+
+No local suite was repeated after the successful remote runs because the code
+did not change.
+
 ## Validation failures and retries
 
 - GitHub Actions Browser Regression run `30403272783` failed while comparing
@@ -318,8 +345,8 @@ passed after the final feedback update; under 0.1s
   values. The expected state therefore contained `"null"` strings while the
   later state contained equivalent Draftail JSON. The browser test now waits
   for those known non-empty form values before capturing the unchanged-state
-  snapshot; the complete comparison remains in place and the same regression
-  passes locally.
+  snapshot; the complete comparison remains in place. The replacement remote
+  Browser Regression run `30406659401` passed.
 - The first closing `make browser-test` attempt failed because its narrow-table
   assertion compared a contextual control with the outer selected block. The
   approved visual delta added a 0.75-rem content inset, so the assertion was
@@ -327,10 +354,10 @@ passed after the final feedback update; under 0.1s
   25.73 seconds.
 - The second attempt exposed an intermittent test-only race after reopening the
   writing-mode dialog: visibility could resolve before the application handled
-  `w-dialog:shown`, allowing the synthetic paste to begin during request-version
-  invalidation. The test now waits for the launcher's application-owned
-  `aria-expanded="true"` state and the next animation frame. The attempt took
-  approximately 30 seconds.
+  `w-dialog:shown`, allowing the synthetic paste to begin during
+  request-version invalidation. The test now waits for the launcher's
+  application-owned `aria-expanded="true"` state and the next animation frame.
+  The attempt took approximately 30 seconds.
 - The third attempt reached the corrected narrow-table assertion and showed the
   native field chrome consumed 12 pixels rather than the old 8-pixel allowance.
   The assertion now uses a 16-pixel tolerance while still requiring the control
@@ -344,6 +371,28 @@ The Pull Request follow-up changes preserve supported formatting more
 accurately and stabilize only the precondition for the browser snapshot. They
 do not invalidate any part of the approved UAT.
 
+## Pull Request review
+
+Codex reviewed implementation commit
+`10fddefae43cde3c42a863ddb28cb953beab055d` and reported two P2
+findings:
+
+1. supported bold and italic styles declared directly on paragraph and heading
+   elements were not applied to their normalized contents;
+2. `font-weight: normal`, `lighter`, and numeric weights below 600 on semantic
+   bold elements did not suppress the `<strong>` conversion.
+
+Both findings were valid. Commit
+`0ef9b7c9adbe4135b235282d5e3a61ad3f8adedd` addresses them and adds
+focused regression coverage. The same commit stabilizes the browser snapshot
+precondition without weakening the complete state comparison.
+
+The follow-up delta was independently reviewed and found correctly scoped, with
+no blocking finding. A new full Codex re-review was not required because the
+delta was localized to the two accepted formatting findings and a browser-test
+race, and it did not affect security, privacy, authorization, migrations, or
+data integrity.
+
 ## Manual validation
 
 The maintainer confirmed that the final UAT passed without pending deviations.
@@ -353,12 +402,27 @@ image caption and credit typography, left-only block selection, visible table
 grids, selected-table header and controls, table spacing, and non-selecting
 hover behavior.
 
-## Deferred validation
+The review-follow-up delta does not invalidate the approved UAT: it preserves
+additional source formatting and changes only a synchronization precondition in
+the browser regression.
 
-- Commit and push of the Pull Request review follow-up.
-- GitHub Actions rerun on the updated Pull Request head.
-- Review-thread replies or resolution.
-- Review completion and merge.
+## Deferred operations
+
+No required implementation, validation, UAT, or review work remains.
+
+The following mechanical closure operations intentionally occur after this
+replacement is prepared:
+
+- commit and push the complete feedback replacement;
+- allow the required CI for the documentation-only head to complete;
+- perform `Squash and merge`;
+- synchronize local `main`;
+- delete the remote and local ticket branches;
+- remove `tmp/EPIC3-006_diff_review.txt`;
+- move the Planka card from `Review` to `Done`.
+
+These operations do not require another implementation review, full local
+suite, or UAT unless they introduce an unexpected delta or failure.
 
 ## Persistent database state
 
@@ -378,12 +442,47 @@ requiring a migration.
   as documented above.
 - Django/Wagtail continues to emit five pre-existing Treebeard `E001` warnings
   during migration and browser startup.
-- The Admin JavaScript boundary is tied to the inspected Wagtail 7.4 StreamField
-  and TableBlock controller behavior and must be rerun after a Wagtail upgrade.
+- The Admin JavaScript boundary is tied to the inspected Wagtail 7.4
+  StreamField and TableBlock controller behavior and must be rerun after a
+  Wagtail upgrade.
 - The isolated browser path performs fresh migrations on each run and can incur
   a large cold Playwright image download.
 
 ## New Work Discovered
 
-- Investigate the existing Treebeard `E001` warnings before upgrading to
-  Treebeard 6.
+### Existing Treebeard warnings
+
+- Finding: five pre-existing Treebeard `E001` warnings remain visible during
+  migration and browser startup.
+- Evidence: the warnings persisted through the final local repository and
+  browser gates and were not introduced by the ticket.
+- Impact: they can obscure future migration or tree-integrity diagnostics.
+- Suggested disposition: investigate before upgrading to Treebeard 6.
+
+### Reconcile the future base-block ticket
+
+- Finding: EPIC3-006 introduced a production `NewsTableBlock`, its migration,
+  Admin interaction, localization, public rendering, validation, and browser
+  regression.
+- Evidence: `NewsPage.body` now includes the `table` StreamField block and the
+  feature is covered by migration `news.0011_alter_newspage_body`.
+- Impact: a future ticket that still proposes adding a base table block would
+  duplicate delivered work and could create conflicting migrations or editor
+  behavior.
+- Suggested disposition: reconcile EPIC3-007 before implementation, remove the
+  already-delivered table scope, and reassess only the remaining quote/code
+  capability against the current rich-text features.
+
+## Durable knowledge candidates
+
+- Technical context: direct authenticated smart paste, normalized table support,
+  the permanent `make browser-test` entry point, disposable browser Compose
+  topology, and the Browser Regression workflow are now part of the repository.
+- Roadmap: EPIC3-007 must be reconciled because its table capability was
+  delivered by EPIC3-006.
+- Execution guide: preserve explicit action ownership, continuous delivery of
+  deterministic closure steps, UAT-pass accounting, root-cause escalation for
+  repeated visual regressions, factual artifact custody, and per-prompt
+  proportional Codex model/reasoning selection.
+- Product and editorial/privacy context: no privacy, role, workflow, or
+  publication-boundary decision changed.

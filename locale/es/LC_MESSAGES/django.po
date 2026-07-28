@@ -92,3 +92,39 @@ msgstr "Pendientes de tu revisión"
 
 msgid "Privacy and access"
 msgstr "Privacidad y acceso"
+
+msgid "Row header"
+msgstr "Encabezado de fila"
+
+msgid "Table headers"
+msgstr "Encabezados de tabla"
+
+msgid "Display the first row as a header"
+msgstr "Mostrar la primera fila como encabezado"
+
+msgid "Display the first column as a header"
+msgstr "Mostrar la primera columna como encabezado"
+
+msgid "Column header"
+msgstr "Encabezado de columna"
+
+msgid "Display the first row AND first column as headers"
+msgstr "Mostrar la primera fila y la primera columna como encabezados"
+
+msgid "No headers"
+msgstr "Sin encabezados"
+
+msgid "Which cells should be displayed as headers?"
+msgstr "¿Qué celdas deben mostrarse como encabezados?"
+
+msgid "Table caption"
+msgstr "Descripción de la tabla"
+
+msgid "A heading that identifies the overall topic of the table, and is useful for screen reader users."
+msgstr "Un texto que identifica el tema general de la tabla y facilita su comprensión a quienes utilizan lectores de pantalla."
+
+msgid "Table"
+msgstr "Tabla"
+
+msgid "Select a header option"
+msgstr "Selecciona una opción de encabezado"

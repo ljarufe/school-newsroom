@@ -204,6 +204,39 @@ h3,
   border-left: 0.3rem solid var(--editorial-accent);
 }
 
+.article-body .block-table {
+  max-width: 100%;
+  margin-block: 2rem;
+  overflow-x: auto;
+}
+
+.article-body table {
+  width: 100%;
+  min-width: 32rem;
+  border-collapse: collapse;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.article-body table caption {
+  padding-bottom: 0.75rem;
+  font-weight: 700;
+  text-align: start;
+}
+
+.article-body table :is(th, td) {
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--editorial-rule);
+  text-align: start;
+  vertical-align: top;
+}
+
+.article-body table th {
+  background: var(--editorial-paper);
+  font-weight: 700;
+}
+
 .article-body iframe {
   display: block;
   width: 100%;

@@ -196,6 +196,21 @@ make check
 
 Use `make check` as the general validation command before reviewing a change or preparing a commit.
 
+### Browser Regression
+
+Run the browser regression from the host, outside the Dev Container:
+
+```bash
+make browser-test
+```
+
+This command uses `docker-compose.browser.yml` to create completely disposable
+application services and a disposable database. It does not use or modify the
+project's persistent database, and it removes its containers and volumes when
+the run finishes, including after a test failure. No host `npm install` is
+required. The first run can take longer while Docker downloads or builds the
+required images.
+
 ### Targeted Tests In VS Code
 
 Use the Testing/Test Explorer panel for focused investigation:
@@ -267,26 +282,28 @@ make lint
 make format
 make migration-check
 make check
+make browser-test
 ```
 
 Command summary:
 
-| Command                | Description                                   |
-| ---------------------- | --------------------------------------------- |
-| `make build`           | Build Docker images.                          |
-| `make up`              | Start the local web and database services.    |
-| `make down`            | Stop local services.                          |
-| `make logs`            | Show service logs.                            |
-| `make shell`           | Open a Django shell inside the web container. |
-| `make bash`            | Open a Bash shell inside the web container.   |
-| `make migrate`         | Run database migrations.                      |
-| `make makemigrations`  | Create Django migrations.                     |
-| `make createsuperuser` | Create a local Wagtail/Django admin user.     |
-| `make test`            | Run pytest.                                   |
-| `make lint`            | Run Ruff checks.                              |
-| `make format`          | Format code with Ruff.                        |
-| `make migration-check` | Check for model changes missing migrations.   |
-| `make check`           | Run linting, migration drift, and tests.      |
+| Command                | Description                                        |
+| ---------------------- | -------------------------------------------------- |
+| `make build`           | Build Docker images.                               |
+| `make up`              | Start the local web and database services.         |
+| `make down`            | Stop local services.                               |
+| `make logs`            | Show service logs.                                 |
+| `make shell`           | Open a Django shell inside the web container.      |
+| `make bash`            | Open a Bash shell inside the web container.        |
+| `make migrate`         | Run database migrations.                           |
+| `make makemigrations`  | Create Django migrations.                          |
+| `make createsuperuser` | Create a local Wagtail/Django admin user.          |
+| `make test`            | Run pytest.                                        |
+| `make lint`            | Run Ruff checks.                                   |
+| `make format`          | Format code with Ruff.                             |
+| `make migration-check` | Check for model changes missing migrations.        |
+| `make check`           | Run linting, migration drift, and tests.           |
+| `make browser-test`    | Run the disposable host-side browser regression.   |
 
 ## Quality Tools
 

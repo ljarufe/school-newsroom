@@ -1,0 +1,10 @@
+{
+  "name": "school-newsroom-browser-tests",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Isolated Playwright regression tests for Wagtail Admin.",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@playwright/test": "1.61.1"
+  }
+}

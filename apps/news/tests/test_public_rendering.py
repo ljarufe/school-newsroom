@@ -18,6 +18,7 @@ from apps.news.models import (
     NewsSection,
     School,
 )
+from apps.news.smart_paste import normalize_paste
 
 GIF_BYTES = (
     b"GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!"
@@ -338,6 +339,47 @@ def test_news_detail_renders_required_content(public_site, section) -> None:
     assert b"Etiquetas" in response.content
     assert b"student-reporting" in response.content
     assert b"local-news" in response.content
+
+
+@pytest.mark.django_db
+def test_news_detail_renders_normalized_paste_and_accessible_table(
+    public_site,
+    section,
+) -> None:
+    normalized = normalize_paste(
+        html_source=(
+            "<h1>Contexto importado</h1>"
+            "<p>Texto <strong>normalizado</strong>.</p>"
+            "<table><caption>Resultados del taller</caption>"
+            "<thead><tr><th>Zona</th><th>Total</th></tr></thead>"
+            "<tbody><tr><th scope='row'>Norte</th><td>4</td></tr></tbody>"
+            "</table>"
+        ),
+    )
+    page = create_news_page(
+        public_site,
+        section,
+        title="Noticia importada",
+        slug="noticia-importada",
+        publication_date=dt.date(2026, 7, 28),
+        body=[(block.block_type, block.value) for block in normalized.blocks],
+    )
+
+    response = Client().get(page.url)
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "<h2>Contexto importado</h2>" in content
+    assert "<strong>normalizado</strong>" in content
+    assert '<div class="w-block-table block-table">' in content
+    assert "<caption>Resultados del taller</caption>" in content
+    assert "<thead>" in content
+    assert 'scope="col"' in content
+    assert 'scope="row"' in content
+    assert "<td" in content
+    assert "alert(" not in content
+    assert 'name="summary"' not in content
+    assert '<meta name="description"' not in content
 
 
 @pytest.mark.django_db

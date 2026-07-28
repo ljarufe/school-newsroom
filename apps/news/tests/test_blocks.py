@@ -14,8 +14,13 @@ from wagtail.images.widgets import AdminImageChooser
 import apps.news.blocks as news_blocks
 from apps.news.blocks import (
     PARAGRAPH_FEATURES,
+    TABLE_MAX_CAPTION_LENGTH,
+    TABLE_MAX_CELL_LENGTH,
+    TABLE_MAX_COLUMNS,
+    TABLE_MAX_ROWS,
     ArticleImageBlock,
     ArticleImageBlockAdapter,
+    NewsTableBlock,
     SpotifyEmbedBlock,
     YouTubeEmbedBlock,
 )
@@ -68,6 +73,7 @@ def test_news_body_uses_final_native_block_configuration() -> None:
     assert list(stream_block.child_blocks) == [
         "paragraph",
         "article_image",
+        "table",
         "youtube",
         "spotify",
     ]
@@ -94,6 +100,62 @@ def test_news_body_uses_final_native_block_configuration() -> None:
     assert "image" not in paragraph.features
     assert "embed" not in paragraph.features
     assert "html" not in paragraph.features
+
+
+def test_news_table_block_uses_wagtail_editor_with_bounded_plain_text() -> None:
+    table = NewsPage._meta.get_field("body").stream_block.child_blocks["table"]
+
+    assert isinstance(table, NewsTableBlock)
+    assert table.label == "Tabla"
+    assert table.table_options["renderer"] == "text"
+    assert table.table_options["maxRows"] == TABLE_MAX_ROWS
+    assert table.table_options["maxCols"] == TABLE_MAX_COLUMNS
+
+    cleaned = table.clean(
+        {
+            "data": [[None, 10]],
+            "table_caption": "Resultados",
+            "table_header_choice": "neither",
+        }
+    )
+
+    assert cleaned["data"] == [["", "10"]]
+    assert cleaned["table_caption"] == "Resultados"
+
+    overridden = NewsTableBlock(
+        table_options={"maxRows": TABLE_MAX_ROWS + 1, "maxCols": 1}
+    )
+    assert overridden.table_options["maxRows"] == TABLE_MAX_ROWS
+    assert overridden.table_options["maxCols"] == TABLE_MAX_COLUMNS
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        {
+            "data": [["x"]] * (TABLE_MAX_ROWS + 1),
+            "table_header_choice": "neither",
+        },
+        {
+            "data": [["x"] * (TABLE_MAX_COLUMNS + 1)],
+            "table_header_choice": "neither",
+        },
+        {
+            "data": [["x" * (TABLE_MAX_CELL_LENGTH + 1)]],
+            "table_header_choice": "neither",
+        },
+        {
+            "data": [["x"]],
+            "table_caption": "x" * (TABLE_MAX_CAPTION_LENGTH + 1),
+            "table_header_choice": "neither",
+        },
+    ],
+)
+def test_news_table_block_rejects_values_over_approved_limits(value) -> None:
+    table = NewsPage._meta.get_field("body").stream_block.child_blocks["table"]
+
+    with pytest.raises(ValidationError):
+        table.clean(value)
 
 
 def test_native_paragraph_widget_exposes_only_final_features() -> None:

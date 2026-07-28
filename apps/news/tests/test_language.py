@@ -143,6 +143,7 @@ def test_custom_editor_visible_labels_are_spanish() -> None:
     body = NewsPage._meta.get_field("body")
     assert body.stream_block.child_blocks["paragraph"].label == "Párrafo"
     assert body.stream_block.child_blocks["article_image"].label == "Imagen"
+    assert body.stream_block.child_blocks["table"].label == "Tabla"
     assert body.stream_block.child_blocks["youtube"].label == "Video de YouTube"
     assert body.stream_block.child_blocks["spotify"].label == (
         "Audio o pódcast de Spotify"

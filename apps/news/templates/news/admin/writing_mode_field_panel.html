@@ -27,7 +27,11 @@
     </div>
 
     {% dialog id=writing_dialog_id title="Modo redacción" classname="news-writing-dialog" dialog_root_selector="[data-edit-form]" %}
-        <div class="news-writing-mode" data-news-writing-mode>
+        <div
+            class="news-writing-mode"
+            data-news-writing-mode
+            data-news-smart-paste-url="{{ smart_paste_url }}"
+        >
             <header class="news-writing-mode__header">
                 <div>
                     <h2 class="news-writing-mode__heading">Modo redacción</h2>
@@ -35,15 +39,17 @@
                         {{ self.instance.title|default:"Noticia sin título" }}
                     </p>
                 </div>
-                <button
-                    type="button"
-                    class="button button-secondary button-small news-writing-mode__exit"
-                    data-action="w-dialog#hide"
-                    data-news-writing-exit
-                    aria-label="Volver a la edición de la noticia"
-                >
-                    Volver
-                </button>
+                <div class="news-writing-mode__actions">
+                    <button
+                        type="button"
+                        class="button button-secondary button-small news-writing-mode__exit"
+                        data-action="w-dialog#hide"
+                        data-news-writing-exit
+                        aria-label="Volver a la edición de la noticia"
+                    >
+                        Volver
+                    </button>
+                </div>
             </header>
 
             {% if self.bound_field.errors %}
@@ -51,6 +57,14 @@
                     Revisa los bloques marcados con errores.
                 </div>
             {% endif %}
+
+            <div
+                class="news-writing-mode__paste-notice"
+                data-news-smart-paste-notice
+                role="status"
+                aria-live="polite"
+                hidden
+            ></div>
 
             <main class="news-writing-mode__document">
                 {% include "wagtailadmin/shared/field.html" with show_label=False help_text=self.help_text %}

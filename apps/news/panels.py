@@ -40,7 +40,15 @@ class WritingModeFieldPanel(FieldPanel):
 
         class Media:
             css = {"all": ["news/css/writing_mode.css"]}
-            js = ["news/js/writing_mode.js"]
+            js = [
+                "news/js/writing_mode.js",
+                "news/js/smart_paste.js",
+            ]
+
+        def get_context_data(self, parent_context=None):
+            context = super().get_context_data(parent_context)
+            context["smart_paste_url"] = reverse("news_smart_paste_normalize")
+            return context
 
         @property
         def media(self):

@@ -384,6 +384,8 @@ def test_seo_curator_edit_surface_hides_content_properties_and_minor_data() -> N
     assert 'name="summary"' not in content
     assert 'name="body"' not in content
     assert "data-news-writing-mode" not in content
+    assert "Pegar nota como bloques" not in content
+    assert "news/js/smart_paste.js" not in content
     assert 'name="show_in_menus"' not in content
     assert 'name="contains_identifiable_minors"' not in content
     assert "Colaboradores internos" not in content

@@ -32,17 +32,6 @@ def assert_not_contains_text(response, text: str) -> None:
     assert text not in response.content.decode()
 
 
-def test_seo_assistant_javascript_observes_summary_for_fallback_previews() -> None:
-    source = Path("static/news/js/seo_assistant.js").read_text()
-    watched_ids = source.split("const watchedIds = [", maxsplit=1)[1].split(
-        "];",
-        maxsplit=1,
-    )[0]
-
-    assert '"id_summary"' in watched_ids
-    assert 'const summary = valueOf("id_summary")' in source
-
-
 def test_seo_assistant_javascript_restores_served_url_after_canonical_clear() -> None:
     source = Path("static/news/js/seo_assistant.js").read_text()
 
@@ -107,7 +96,6 @@ def test_seo_assistant_keeps_served_url_separate_from_external_canonical(
         title="Canonical Preview News",
         slug="canonical-preview-news",
         publication_date=dt.date(2026, 7, 12),
-        summary="Resumen ficticio para la vista previa canonical.",
         body=[("paragraph", "<p>Contenido ficticio.</p>")],
         section=NewsSection.objects.get(slug="politica"),
         coverage_province="Arequipa",
@@ -193,6 +181,24 @@ def test_news_page_create_surface_contains_contributor_and_privacy_copy(
         "Confirmo que se verificaron las autorizaciones requeridas",
     )
     assert_contains_text(response, "Contenido sensible")
+    assert_contains_text(response, "Edición de la noticia")
+    assert_contains_text(response, "Abrir modo redacción")
+    assert_contains_text(response, "Sin contenido")
+    assert_contains_text(response, "Modo redacción")
+    assert_contains_text(response, "Volver")
+    assert_contains_text(response, "Volver a la edición de la noticia")
+    assert 'data-controller="w-dialog"' in response.content.decode()
+    assert 'data-w-dialog-target="body"' in response.content.decode()
+    assert 'class="w-dialog news-writing-dialog"' in response.content.decode()
+    assert 'data-controller="w-teleport"' in response.content.decode()
+    assert (
+        'data-w-teleport-target-value="[data-edit-form]"' in response.content.decode()
+    )
+    assert_not_contains_text(response, "Vista de contenido")
+    assert_not_contains_text(response, "Modo normal")
+    assert 'name="summary"' not in response.content.decode()
+    assert "news/js/writing_mode.js" in response.content.decode()
+    assert "news/css/writing_mode.css" in response.content.decode()
     assert_contains_text(response, "Reglamento de la Ley N.º 29733")
     assert_contains_text(
         response,
@@ -230,7 +236,7 @@ def test_news_page_create_surface_transforms_promote_tab_into_seo_assistant(
     ]
 
     assert response.status_code == 200
-    assert visible_tabs == ["Contenido", "Asistente SEO"]
+    assert visible_tabs == ["Edición de la noticia", "Asistente SEO"]
     assert_contains_text(response, "Asistente SEO")
     assert_contains_text(response, "Configuración SEO")
     assert_contains_text(response, "Vista previa en buscador")

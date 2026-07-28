@@ -70,7 +70,6 @@ def create_news_page(
         slug=slug,
         live=live,
         publication_date=publication_date,
-        summary=f"Summary for {title}.",
         body=body
         or [
             (
@@ -243,7 +242,7 @@ def test_home_renders_published_news_metadata(public_site, section) -> None:
     assert b"July" not in response.content
     assert b"Secci\xc3\xb3n" in response.content
     assert b"Published News" in response.content
-    assert b"Summary for Published News." in response.content
+    assert b"Detailed public body text." not in response.content
     assert "Política".encode() in response.content
     assert b"Fictional School" in response.content
     assert b"Colegio" in response.content
@@ -327,7 +326,6 @@ def test_news_detail_renders_required_content(public_site, section) -> None:
     assert b'<html lang="es">' in response.content
     assert b"<article" in response.content
     assert b"Detail News" in response.content
-    assert b"Summary for Detail News." in response.content
     assert b"Fecha de publicaci\xc3\xb3n" in response.content
     assert b"julio" in response.content
     assert b"July" not in response.content
@@ -498,6 +496,7 @@ def test_home_and_news_list_use_contextual_featured_alt_without_visible_caption(
         content = Client().get(url).content.decode()
         assert 'alt="Mesa de redacción escolar ficticia."' in content
         assert "Pie visible sólo en el detalle." not in content
+        assert "Detailed public body text." not in content
 
 
 @pytest.mark.django_db
@@ -715,6 +714,7 @@ def test_news_list_without_filter_uses_editorial_order(
 
     assert response.status_code == 200
     assert content.index("Newest listed story") < content.index("Older listed story")
+    assert "Detailed public body text." not in content
 
 
 @pytest.mark.django_db

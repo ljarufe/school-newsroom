@@ -32,6 +32,24 @@ class RolePermissionObjectList(ObjectList):
         return options
 
 
+class WritingModeFieldPanel(FieldPanel):
+    """Load the News body writing-mode UI only for its bound field panel."""
+
+    class BoundPanel(FieldPanel.BoundPanel):
+        template_name = "news/admin/writing_mode_field_panel.html"
+
+        class Media:
+            css = {"all": ["news/css/writing_mode.css"]}
+            js = ["news/js/writing_mode.js"]
+
+        @property
+        def media(self):
+            return super().media + forms.Media(
+                css=self.Media.css,
+                js=self.Media.js,
+            )
+
+
 class SeoAssistantPanel(Panel):
     class BoundPanel(Panel.BoundPanel):
         template_name = "news/admin/seo_assistant_panel.html"

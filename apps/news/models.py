@@ -26,6 +26,7 @@ from .panels import (
     NewsSeoContextPanel,
     RolePermissionObjectList,
     SeoAssistantPanel,
+    WritingModeFieldPanel,
     contextual_image_panels,
 )
 from .seo_metadata import (
@@ -57,8 +58,8 @@ MINOR_PRIVACY_NOTICE = """
 """
 
 CONTENT_AUTHORING_HELP = (
-    "Selecciona texto para mostrar la barra de formato. Usa el pin para mantenerla "
-    'visible y "/" para insertar o dividir bloques.'
+    "Selecciona texto para mostrar la barra contextual de formato. "
+    'Usa "/" para insertar o dividir bloques.'
 )
 
 PUBLIC_CREDIT_HELP = (
@@ -195,7 +196,6 @@ class NewsPage(Page):
     subpage_types: list[str] = []
 
     publication_date = models.DateField("Fecha de publicación")
-    summary = models.TextField("Resumen", max_length=500)
     body = StreamField(
         [
             (
@@ -267,7 +267,8 @@ class NewsPage(Page):
         max_length=500,
         blank=True,
         help_text=(
-            "Si queda vacía, se usa la descripción meta o el resumen de la noticia."
+            "Si queda vacía, se usa la descripción meta. Si ambas están vacías, "
+            "se omite la descripción social."
         ),
     )
     og_image = models.ForeignKey(
@@ -335,21 +336,12 @@ class NewsPage(Page):
     )
 
     content_panels = Page.content_panels + [
-        FieldPanel("publication_date"),
-        FieldPanel("summary"),
         MultiFieldPanel(
             contextual_image_panels("featured_image", "featured_image"),
             heading="Imagen destacada",
         ),
-        FieldPanel("body", help_text=CONTENT_AUTHORING_HELP),
-        InlinePanel(
-            "public_credits",
-            label="Firma pública",
-            help_text=PUBLIC_CREDIT_HELP,
-        ),
-        InlinePanel("internal_contributors", label="Colaboradores internos"),
+        WritingModeFieldPanel("body", help_text=CONTENT_AUTHORING_HELP),
         FieldPanel("section"),
-        FieldPanel("school"),
         MultiFieldPanel(
             [
                 FieldPanel("coverage_province"),
@@ -357,7 +349,15 @@ class NewsPage(Page):
             ],
             heading="Cobertura",
         ),
+        FieldPanel("publication_date"),
         FieldPanel("tags"),
+        FieldPanel("school"),
+        InlinePanel("internal_contributors", label="Colaboradores internos"),
+        InlinePanel(
+            "public_credits",
+            label="Firma pública",
+            help_text=PUBLIC_CREDIT_HELP,
+        ),
         MultiFieldPanel(
             [
                 HelpPanel(content=MINOR_PRIVACY_NOTICE),
@@ -418,7 +418,7 @@ class NewsPage(Page):
         [
             RolePermissionObjectList(
                 content_panels,
-                heading="Contenido",
+                heading="Edición de la noticia",
                 permission=FULL_EDITOR_PERMISSION,
             ),
             RolePermissionObjectList(

@@ -1,0 +1,60 @@
+{% load wagtailadmin_tags i18n %}
+{% fragment as writing_dialog_id %}{{ self.prefix }}-writing-dialog{% endfragment %}
+<div
+    class="news-writing-launcher"
+    data-news-writing-launcher
+    data-news-writing-dialog-id="{{ writing_dialog_id }}"
+    data-news-writing-has-errors="{% if self.bound_field.errors %}true{% else %}false{% endif %}"
+>
+    <div class="news-writing-launcher__summary">
+        <p class="news-writing-launcher__status" data-news-writing-status>Sin contenido</p>
+        {% if self.bound_field.errors %}
+            <p class="news-writing-launcher__error" data-news-writing-card-error>
+                El contenido de la noticia contiene errores. Abre el modo redacción para revisarlos.
+            </p>
+        {% endif %}
+        <button
+            type="button"
+            class="button button-secondary"
+            data-a11y-dialog-show="{{ writing_dialog_id }}"
+            data-news-writing-open
+            aria-controls="{{ writing_dialog_id }}"
+            aria-expanded="false"
+        >
+            {% if self.bound_field.errors %}Revisar errores{% else %}Abrir modo redacción{% endif %}
+        </button>
+        <p class="w-sr-only" data-news-writing-live-status aria-live="polite"></p>
+    </div>
+
+    {% dialog id=writing_dialog_id title="Modo redacción" classname="news-writing-dialog" dialog_root_selector="[data-edit-form]" %}
+        <div class="news-writing-mode" data-news-writing-mode>
+            <header class="news-writing-mode__header">
+                <div>
+                    <h2 class="news-writing-mode__heading">Modo redacción</h2>
+                    <p class="news-writing-mode__page-title" data-news-writing-page-title>
+                        {{ self.instance.title|default:"Noticia sin título" }}
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    class="button button-secondary button-small news-writing-mode__exit"
+                    data-action="w-dialog#hide"
+                    data-news-writing-exit
+                    aria-label="Volver a la edición de la noticia"
+                >
+                    Volver
+                </button>
+            </header>
+
+            {% if self.bound_field.errors %}
+                <div class="news-writing-mode__error" data-news-writing-dialog-error role="alert">
+                    Revisa los bloques marcados con errores.
+                </div>
+            {% endif %}
+
+            <main class="news-writing-mode__document">
+                {% include "wagtailadmin/shared/field.html" with show_label=False help_text=self.help_text %}
+            </main>
+        </div>
+    {% enddialog %}
+</div>

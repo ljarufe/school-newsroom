@@ -375,11 +375,7 @@ def _seo_checks(
     keyphrase = (page.focus_keyphrase or "").strip()
     seo_title = (page.seo_title or "").strip()
     meta_description = (page.search_description or "").strip()
-    introduction = " ".join(
-        value
-        for value in ((page.summary or "").strip(), snapshot.introduction)
-        if value
-    )
+    introduction = snapshot.introduction
 
     checks: list[CheckResult] = []
     if keyphrase:
@@ -418,7 +414,7 @@ def _seo_checks(
             _keyphrase_location_check(
                 keyphrase,
                 introduction,
-                label="Frase clave en el resumen o introducción",
+                label="Frase clave en la introducción",
                 missing_status="warning",
             ),
         ],

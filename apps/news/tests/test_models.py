@@ -61,7 +61,6 @@ def create_news_page(
         slug=slug,
         live=live,
         publication_date=publication_date,
-        summary="A concise public summary for a fictional news item.",
         body=[
             ("paragraph", "<p>Reported context</p>"),
             ("paragraph", "<p>Structured body paragraph.</p>"),
@@ -155,7 +154,6 @@ def test_section_is_required_by_model_validation() -> None:
         title="Missing Section",
         slug="missing-section",
         publication_date=dt.date(2026, 7, 1),
-        summary="A concise public summary for a fictional news item.",
         body=[("paragraph", "<p>Body.</p>")],
         coverage_province="Arequipa",
     )

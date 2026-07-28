@@ -264,7 +264,7 @@ Each reusable component must be defined through its variants and states. A separ
 | **Group** | **Components** |
 |---|---|
 | Navigation | Header, desktop navigation, mobile menu, active link if used, brand identity, and footer. |
-| News | Primary card, secondary card, listing card/item, with-image and without-image variants, section badge, date, credits, and summary when applicable. |
+| News | Primary card, secondary card, listing card/item, with-image and without-image variants, section badge, date, and credits; News cards do not include an article summary. |
 | Editorial content | Article header, featured image, reading body, H2, H3, links, figure, caption, credit, YouTube, and Spotify. |
 | Interaction | Primary button, secondary button if used, text link, hover, focus, and active when applicable. |
 | States | General empty state and filter-with-no-results state. |

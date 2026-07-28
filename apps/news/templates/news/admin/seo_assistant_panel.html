@@ -30,7 +30,7 @@
         Se está usando el título de la noticia como fallback.
       </p>
       <p class="seo-assistant__fallback" data-seo-description-fallback{% if not description_uses_fallback %} hidden{% endif %}>
-        Se está usando el resumen como fallback.
+        No hay descripción meta; la metadata pública omite la descripción.
       </p>
       <p class="help-block help-info">La vista usa caracteres como aproximación; no replica el ancho exacto de un buscador.</p>
     </section>
@@ -51,7 +51,7 @@
         El título social usa el título SEO o el título de la noticia.
       </p>
       <p class="seo-assistant__fallback" data-seo-og-description-fallback{% if not og_description_uses_fallback %} hidden{% endif %}>
-        La descripción social usa la descripción meta o el resumen.
+        La descripción social usa la descripción meta; si también está vacía, se omite.
       </p>
       {% if og_image_uses_fallback %}
         <p class="seo-assistant__fallback">La imagen social usa la imagen destacada.</p>

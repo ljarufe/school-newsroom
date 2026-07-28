@@ -46,6 +46,7 @@ NEWS_0006 = ("news", "0006_newspage_seo_assistant_fields")
 NEWS_0007 = ("news", "0007_newspage_featured_image_alt_text_and_more")
 NEWS_0008 = ("news", "0008_alter_newspage_options")
 NEWS_0009 = ("news", "0009_reconcile_mvp_access")
+NEWS_0010 = ("news", "0010_remove_newspage_summary_and_more")
 HOME_0001 = ("home", "0001_initial")
 BEFORE_NEWS_0002 = [HOME_0001, NEWS_0001]
 
@@ -789,6 +790,7 @@ def test_epic3_003_body_migrations_preserve_then_convert_historical_content():
             "pk": page_id,
             "title": "Scheduled Historical Structured News",
             "slug": "historical-structured-news",
+            "summary": "Historical revision summary kept only in revision JSON.",
             "body": json.dumps(mixed_revision_body),
             "custom_top_level_key": ["preserved", 2],
         }
@@ -941,12 +943,26 @@ def test_epic3_003_body_migrations_preserve_then_convert_historical_content():
             "document-link",
         ]
 
-        migrate_to(NEWS_0007)
+        migrate_to(NEWS_0010)
+        with connection.cursor() as cursor:
+            columns = {
+                column.name
+                for column in connection.introspection.get_table_description(
+                    cursor,
+                    "news_newspage",
+                )
+            }
+        assert "summary" not in columns
+        assert (
+            Revision.objects.get(pk=mixed_revision.pk).content["summary"]
+            == "Historical revision summary kept only in revision JSON."
+        )
         reconstructed_page = Revision.objects.get(pk=mixed_revision.pk).as_object()
         reconstructed_body = list(reconstructed_page.body.raw_data)
 
         assert reconstructed_body == json.loads(final_mixed_revision.content["body"])
         assert all(item.get("type") != "heading" for item in reconstructed_body)
+        assert not hasattr(reconstructed_page, "summary")
         assert reconstructed_page.featured_image_caption == ""
         assert reconstructed_page.featured_image_alt_text == ""
         assert reconstructed_page.featured_image_credit == ""

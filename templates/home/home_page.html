@@ -21,7 +21,6 @@
             <div class="{% if featured_news.featured_image %}col-lg-5{% else %}col-12{% endif %} p-4 p-lg-5 d-flex flex-column justify-content-center">
               <p class="eyebrow mb-2">{{ featured_news.section.name }}</p>
               <h2 class="display-6"><a href="{% pageurl featured_news %}">{{ featured_news.title }}</a></h2>
-              <p class="lead">{{ featured_news.summary }}</p>
               {% with public_credits=featured_news.public_credits.all %}
                 {% if public_credits %}
                   <p class="byline">Por

@@ -11,7 +11,6 @@
     {% else %}
       <h3 class="h4 card-title"><a class="stretched-link" href="{% pageurl news %}">{{ news.title }}</a></h3>
     {% endif %}
-    <p class="card-text">{{ news.summary }}</p>
     {% with public_credits=news.public_credits.all %}
       {% if public_credits %}
         <p class="byline mb-2">Por

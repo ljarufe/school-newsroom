@@ -34,11 +34,11 @@ usuarios, grupos ni permisos y no es superusuario.
 
 `Curador SEO` puede entrar al Admin, abrir una tarea activa de `Revisión SEO`,
 editar la superficie SEO permitida y elegir una imagen social existente. No ve
-la pestaña `Contenido`, `Propiedades`, `Navegación y menús`, colaboradores
-internos ni snippets editoriales; tampoco puede publicar. En noticias dispone
-del Asistente SEO completo. En `Inicio` y páginas institucionales dispone sólo
-de `Slug de la URL`, `Título SEO` y `Descripción meta`, porque esos tipos no
-tienen el checklist ampliado de la noticia.
+la pestaña `Edición de la noticia`, `Propiedades`, `Navegación y menús`,
+colaboradores internos ni snippets editoriales; tampoco puede publicar. En
+noticias dispone del Asistente SEO completo. En `Inicio` y páginas
+institucionales dispone sólo de `Slug de la URL`, `Título SEO` y `Descripción
+meta`, porque esos tipos no tienen el checklist ampliado de la noticia.
 
 El `Superadmin técnico` crea, desactiva y asigna usuarios y grupos, ejecuta el
 bootstrap y atiende configuración técnica. No uses una cuenta superuser para
@@ -184,14 +184,13 @@ Páginas -> Inicio -> Añadir página hija -> Noticia
 Campos principales:
 
 - Título
-- Fecha de publicación
-- Resumen
+- Imagen destacada
 - Contenido
 - Sección
-- Colegio
 - Cobertura
-- Imagen destacada
+- Fecha de publicación
 - Etiquetas
+- Colegio
 - Colaboradores internos
 - Firma pública
 - Privacidad de menores
@@ -200,12 +199,18 @@ La ubicación del colegio describe dónde está la institución educativa asocia
 La cobertura editorial describe el territorio sobre el que trata la noticia.
 Pueden coincidir, pero no son el mismo dato.
 
+`Resumen` ya no forma parte del modelo ni del flujo editorial de una noticia.
+La Home, el listado, las tarjetas y el detalle no fabrican una bajada desde
+`Contenido`. Si se necesita una descripción para buscadores o redes, se escribe
+de forma explícita en `Descripción meta` o `Descripción para redes sociales`
+dentro de `Asistente SEO`.
+
 ## Imágenes y datos editoriales por uso
 
-En la pestaña `Contenido`, `Imagen destacada` aparece inmediatamente después de
-`Resumen` y antes del editor de `Contenido`. Esta imagen se usa en la portada,
-el listado, las tarjetas, el detalle de la noticia y como fallback social. Junto
-a la imagen se completan:
+En la pestaña `Edición de la noticia`, `Imagen destacada` aparece
+inmediatamente antes de la tarjeta `Contenido`. Esta imagen se usa en la
+portada, el listado, las tarjetas, el detalle de la noticia y como fallback
+social. Junto a la imagen se completan:
 
 - `Pie de foto`: contexto visible que se muestra en el detalle público;
 - `Texto alternativo`: descripción contextual para el atributo `alt`;
@@ -296,18 +301,40 @@ política del proyecto. Esta guía no sustituye revisión legal profesional.
 
 ## Contenido estructurado
 
-El campo Contenido acepta estos bloques:
+El título principal se escribe en `Título`, fuera del cuerpo. El campo
+`Contenido` mantiene bloques separados y acepta:
 
 - Párrafo
 - Imagen
 - Video de YouTube
 - Audio o pódcast de Spotify
 
-`Párrafo` permite escribir o pegar una noticia completa dentro de un solo bloque
-RichText. No hace falta crear un bloque de StreamField por cada párrafo. Dentro
-del mismo bloque pueden convivir varios párrafos, encabezados H2, H3 y H4,
-negrita, cursiva, enlaces, listas numeradas, listas con viñetas, citas, líneas
-horizontales y enlaces a documentos del CMS.
+En el formulario normal, `Contenido` aparece como una tarjeta compacta. La
+tarjeta muestra `Sin contenido` o `Con contenido`, sin contar bloques, y ofrece
+`Abrir modo redacción`. Los bloques reales quedan ocultos detrás de la tarjeta,
+pero continúan dentro del mismo formulario de Wagtail.
+
+`Abrir modo redacción` abre una superficie que cubre el Admin completo. Su
+encabezado muestra `Modo redacción`, el título actual de la noticia y `Volver`.
+La superficie tiene scroll propio para artículos largos y presenta los bloques
+en una columna documental centrada. `Volver` regresa al formulario sin guardar
+automáticamente, conserva los cambios no guardados y devuelve el foco a la
+acción de la tarjeta.
+
+Los bloques siguen siendo unidades independientes. Los botones `+` permiten
+insertarlos entre segmentos, y las acciones nativas para seleccionar, mover,
+arrastrar, duplicar, eliminar y plegar continúan disponibles. Para no
+interrumpir la escritura, esos controles se atenúan cuando el bloque está
+inactivo y recuperan presencia con hover, selección, foco, teclado o error. Usa
+`Tab` y `Shift+Tab` para recorrerlos; el foco visible no depende del mouse.
+
+Para mantener una noticia fácil de reorganizar, crea bloques `Párrafo`
+separados para los segmentos que necesites mover o entre los que quieras
+insertar una imagen o multimedia. Cada bloque `Párrafo` sigue siendo RichText y
+puede contener más de un párrafo cuando formen una sola unidad editorial.
+Dentro del bloque pueden convivir encabezados H2, H3 y H4, negrita, cursiva,
+enlaces, listas numeradas, listas con viñetas, citas, líneas horizontales y
+enlaces a documentos del CMS. No existe un bloque de encabezado separado.
 
 H2, H3 y H4 son formatos de párrafo completo, no estilos aplicados sólo a una
 selección de palabras. Coloca el cursor en un párrafo independiente que contenga
@@ -320,11 +347,12 @@ esos casos, varias líneas siguen siendo un único párrafo y aplicar H2, H3 o H
 puede transformar todas esas líneas. Si ocurre, reemplaza los saltos suaves por
 saltos de párrafo con `Enter` antes de aplicar el formato.
 
-Selecciona texto para mostrar la barra contextual de formato. El pin de esa
-barra permite mantenerla visible; Wagtail recuerda la preferencia en ese
-navegador. Pulsa `/` para abrir la paleta de comandos y las acciones de bloque
-disponibles. La acción `Split block` se encuentra en esa superficie y divide el
-bloque en la posición del cursor; no aparece como botón permanente.
+Selecciona texto para mostrar la barra contextual nativa de formato del párrafo
+activo. Al cambiar de párrafo, el formato se aplica sólo al editor que contiene
+la selección; no existe una barra superior compartida. Pulsa `/` para abrir la
+paleta de comandos y las acciones de bloque disponibles. La acción `Split
+block` se encuentra en esa superficie y divide el bloque en la posición del
+cursor; no aparece como botón permanente.
 
 El editor reconoce algunos atajos de escritura tipo Markdown para los formatos
 habilitados, pero no es un editor Markdown general. Escribe estos patrones al
@@ -366,6 +394,14 @@ crédito opcional. Sus campos son:
 `alt` de la imagen y no se imprime como texto visible adicional. `Crédito de
 imagen` es opcional y sólo se muestra cuando tiene contenido.
 
+En `Modo redacción`, el bloque `Imagen` se presenta como una figura compacta
+dentro del flujo, con una previsualización proporcional de hasta unos 260 px de
+alto. Cuando está inactivo prioriza la imagen, el pie y el crédito disponibles.
+Al seleccionarlo muestra los controles para elegir o reemplazar la imagen y los
+campos `Pie de foto`, `Texto alternativo` y `Crédito de imagen`. Un error
+también despliega automáticamente esos controles. El modo no cambia la
+validación ni convierte esos datos en campos sueltos.
+
 La ayuda compartida de pie de foto y texto alternativo descrita en la sección de
 imágenes también se aplica al crear bloques nuevos y al reabrir bloques
 existentes del cuerpo.
@@ -376,11 +412,19 @@ alternativo deben estar completos; espacios en blanco no cuentan como contenido
 efectivo.
 
 `Video de YouTube` acepta URLs compatibles de YouTube. `Audio o pódcast de
-Spotify` acepta URLs compatibles de Spotify. Si una URL no pertenece al
-proveedor del bloque, la validación la rechaza. Si una URL previamente válida
-deja de resolverse como contenido multimedia público, la noticia muestra un
-enlace a la URL original con una etiqueta del proveedor. No uses una inserción
+Spotify` acepta URLs compatibles de Spotify. En `Modo redacción` se muestran
+como tarjetas compactas con el proveedor y la URL; seleccionarlas revela su
+campo editable. No cargan un embed grande ni reproducen contenido
+automáticamente. Si una URL no pertenece al proveedor del bloque, la validación
+la rechaza y revela el control con el error. Si una URL previamente válida deja
+de resolverse como contenido multimedia público, la noticia muestra un enlace
+a la URL original con una etiqueta del proveedor. No uses una inserción
 multimedia genérica dentro de `Párrafo`.
+
+Después de guardar y reabrir la noticia, los bloques existentes vuelven a
+funcionar desde la misma tarjeta y superficie de redacción. Usa `Previsualizar`
+para comprobar el resultado final: el modo redacción sólo afecta el Admin y no
+cambia el detalle público.
 
 ## Borrador y publicación
 
@@ -401,9 +445,16 @@ La publicación, programación o envío a workflow se bloquea cuando:
 - `Contiene menores identificables` está marcado y no se confirmó la
   verificación de autorizaciones.
 
-Cuando `Contenido` tiene un error, el resumen de la página indica que se deben
-revisar los bloques marcados. El bloque afectado muestra el detalle específico,
-por ejemplo qué campo falta en una imagen.
+Cuando `Contenido` tiene un error, la tarjeta muestra:
+
+```text
+El contenido de la noticia contiene errores. Abre el modo redacción para revisarlos.
+```
+
+La acción cambia a `Revisar errores`. Al abrirla, la superficie muestra
+`Revisa los bloques marcados con errores.`, despliega el bloque afectado y lleva
+el foco al primer control inválido cuando es seguro. Los enlaces del resumen
+general de errores abren esta misma ruta; no envían a contenido oculto.
 
 ## Workflow editorial MVP
 
@@ -467,18 +518,18 @@ envíes contraseñas por canales públicos ni las guardes en el repositorio.
 
 ## Asistente SEO
 
-Para Director/editor, cada noticia muestra `Contenido` y `Asistente SEO`. Para
-Curador SEO durante su tarea activa, sólo se muestra `Asistente SEO`. La
-configuración de página de Wagtail permanece fuera de la superficie SEO y no
-queda editable para Curador SEO.
+Para Director/editor, cada noticia muestra `Edición de la noticia` y `Asistente
+SEO`. Para Curador SEO durante su tarea activa, sólo se muestra `Asistente SEO`.
+La configuración de página de Wagtail permanece fuera de la superficie SEO y
+no queda editable para Curador SEO.
 
 La pestaña `Asistente SEO` reutiliza los
 campos nativos de Wagtail para la URL, el título SEO y la descripción meta, y
 añade herramientas editoriales para revisar la noticia antes de publicarla.
 
 Al inicio de la pestaña, `Contexto de la noticia — solo lectura` muestra el
-título, la sección, la fecha, el resumen, una representación fiel del cuerpo,
-la imagen destacada con su metadata contextual pública y las firmas públicas.
+título, la sección, la fecha, una representación fiel del cuerpo, la imagen
+destacada con su metadata contextual pública y las firmas públicas.
 `Previsualizar borrador completo` abre la revisión completa en otra pestaña.
 Este contexto no contiene campos editables y nunca muestra colaboradores
 internos, franjas de edad, declaraciones de privacidad ni confirmaciones de
@@ -530,11 +581,11 @@ La vista previa muestra:
 
 - el título SEO o, como fallback, el título de la noticia;
 - la URL canonical disponible o una representación del slug;
-- la descripción meta o, como fallback, el resumen.
+- la descripción meta cuando tiene contenido.
 
-Los fallbacks permiten que una noticia antigua siga generando metadata pública,
-pero el checklist sigue recomendando completar el título SEO y la descripción
-meta de forma explícita.
+Si `Descripción meta` está vacía, la metadata pública omite la descripción. No
+se deriva un extracto desde `Contenido`. El checklist recomienda completar la
+descripción meta de forma explícita.
 
 El título, la descripción, el slug y la URL canonical actualizan esta vista
 previa mientras se editan. El análisis completo del cuerpo se recalcula en el
@@ -565,7 +616,7 @@ Título social
 
 Descripción social
 → descripción meta
-→ resumen
+→ se omite si ambas están vacías
 
 Imagen social
 → imagen destacada
@@ -584,8 +635,8 @@ forma autoritativa después de guardar o recargar.
 El análisis revisa de forma determinística:
 
 - presencia de la frase clave objetivo;
-- frase clave en título SEO, slug, descripción meta, resumen o introducción,
-  subtítulos y cuerpo;
+- frase clave en título SEO, slug, descripción meta, introducción, subtítulos y
+  cuerpo;
 - repetición evidente de la frase clave;
 - longitud del título SEO y de la descripción meta;
 - extensión del cuerpo;

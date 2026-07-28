@@ -90,6 +90,58 @@
     element.dataset[name] = String(Boolean(value));
   };
 
+  const setAccessibleTooltip = (control, label) => {
+    if (!control) {
+      return;
+    }
+    control.setAttribute("aria-label", label);
+    control.setAttribute("title", label);
+    control.dataset.wTooltipContentValue = label;
+    const controllers = new Set(
+      (control.getAttribute("data-controller") || "")
+        .split(/\s+/)
+        .filter(Boolean),
+    );
+    controllers.add("w-tooltip");
+    control.setAttribute("data-controller", Array.from(controllers).join(" "));
+  };
+
+  const updateBlockActionHelp = (block) => {
+    const header = block.querySelector(
+      ":scope > .w-panel > .w-panel__header",
+    );
+    if (!header) {
+      return;
+    }
+
+    setAccessibleTooltip(
+      header.querySelector(":scope > .w-panel__toggle"),
+      "Mostrar u ocultar el contenido del bloque",
+    );
+    header
+      .querySelectorAll(":scope > .w-panel__anchor")
+      .forEach((anchor) =>
+        setAccessibleTooltip(anchor, "Enlace directo a este bloque"),
+      );
+
+    const actionLabels = {
+      MOVE_UP: "Mover bloque hacia arriba",
+      MOVE_DOWN: "Mover bloque hacia abajo",
+      DRAG: "Reordenar bloque",
+      DUPLICATE: "Duplicar bloque",
+      DELETE: "Eliminar bloque",
+      SETTINGS: "Configurar bloque",
+    };
+    header
+      .querySelectorAll("[data-streamfield-action]")
+      .forEach((control) => {
+        const label = actionLabels[control.dataset.streamfieldAction];
+        if (label) {
+          setAccessibleTooltip(control, label);
+        }
+      });
+  };
+
   const mediaLabel = (type) => {
     if (type === "youtube") {
       return "Video de YouTube";
@@ -179,7 +231,51 @@
     content?.prepend(preview);
   };
 
-  const updateBlockPresentation = (block) => {
+  const updateTableContext = (block, onContextChange) => {
+    const isExpanded =
+      block.dataset.newsBlockSelected === "true" ||
+      block.dataset.newsBlockError === "true";
+    const contextChanged =
+      block.dataset.newsTableExpanded !== String(isExpanded);
+    block.dataset.newsTableExpanded = String(isExpanded);
+
+    const header = block.querySelector(
+      ":scope > .w-panel > .w-panel__header",
+    );
+    const panelToggle = header?.querySelector(
+      '.w-panel__toggle[aria-expanded="false"]',
+    );
+    if (panelToggle && !block.dataset.newsTablePanelOpening) {
+      block.dataset.newsTablePanelOpening = "true";
+      panelToggle.click();
+      window.requestAnimationFrame(() => {
+        delete block.dataset.newsTablePanelOpening;
+      });
+    }
+    if (header) {
+      header.inert =
+        !isExpanded && block.dataset.newsToolbarActive !== "true";
+    }
+    block
+      .querySelectorAll(
+        "select[id$='-table-header-choice'], " +
+          "input[id$='-handsontable-col-caption']",
+      )
+      .forEach((control) => {
+        const wrapper = control.closest(
+          ".w-field__wrapper[data-field-wrapper]",
+        );
+        if (wrapper) {
+          wrapper.dataset.newsTableContextControl = "";
+          wrapper.inert = !isExpanded;
+        }
+      });
+    if (contextChanged) {
+      onContextChange?.(block);
+    }
+  };
+
+  const updateBlockPresentation = (block, onTableContextChange) => {
     const type = blockTypeInput(block)?.value;
     if (!type) {
       return;
@@ -187,6 +283,7 @@
 
     block.dataset.newsBlockType = type;
     setBooleanData(block, "newsBlockError", hasBlockErrors(block));
+    updateBlockActionHelp(block);
 
     if (type === "paragraph") {
       const editor = block.querySelector('[contenteditable="true"]');
@@ -223,6 +320,10 @@
         previewUrl.textContent = nextPreviewUrl;
       }
       setBooleanData(block, "newsHasMediaUrl", urlInput?.value.trim());
+    }
+
+    if (type === "table") {
+      updateTableContext(block, onTableContextChange);
     }
   };
 
@@ -322,10 +423,142 @@
       launcher.dataset.newsWritingHasErrors === "true";
     let nestedDialogOpener = null;
     let nestedDialogBlock = null;
+    let tablePointerBlock = null;
+    let pointerToolbarOwner = null;
+    let keyboardToolbarOwner = null;
+    let interactionMode = "programmatic";
+    let toolbarPositionFrame = null;
+    let tableLayoutFrame = null;
+    const pendingTableLayouts = new Set();
 
     if (!writingRoot || !status || !openButton) {
       return;
     }
+
+    const writingDocument = writingRoot.querySelector(
+      ".news-writing-mode__document",
+    );
+
+    const positionActiveToolbar = () => {
+      toolbarPositionFrame = null;
+      const block = writingRoot.querySelector(
+        '[data-news-toolbar-active="true"]',
+      );
+      const header = block?.querySelector(
+        ":scope > .w-panel > .w-panel__header",
+      );
+      if (!block || !header || !writingDocument) {
+        return;
+      }
+
+      const blockRect = block.getBoundingClientRect();
+      const documentRect = writingDocument.getBoundingClientRect();
+      const toolbarHeight = header.getBoundingClientRect().height;
+      const fitsAbove =
+        blockRect.top - toolbarHeight >= documentRect.top + 4;
+      block.dataset.newsToolbarPlacement = fitsAbove ? "above" : "inside";
+    };
+
+    const scheduleToolbarPosition = () => {
+      if (toolbarPositionFrame !== null) {
+        return;
+      }
+      toolbarPositionFrame = window.requestAnimationFrame(
+        positionActiveToolbar,
+      );
+    };
+
+    const updateTableHeaderInteractivity = (block) => {
+      if (
+        (block.dataset.newsBlockType || blockTypeInput(block)?.value) !==
+        "table"
+      ) {
+        return;
+      }
+      const header = block.querySelector(
+        ":scope > .w-panel > .w-panel__header",
+      );
+      if (header) {
+        header.inert =
+          block.dataset.newsTableExpanded !== "true" &&
+          block.dataset.newsToolbarActive !== "true";
+      }
+    };
+
+    const syncToolbarOwner = () => {
+      const owner = pointerToolbarOwner || keyboardToolbarOwner;
+      activeBlocks(writingRoot).forEach((block) => {
+        block.dataset.newsToolbarActive = String(block === owner);
+        updateTableHeaderInteractivity(block);
+      });
+      scheduleToolbarPosition();
+    };
+
+    const compactVisibleTableGrid = (block) => {
+      const container = block.querySelector(
+        "[id$='-handsontable-container']",
+      );
+      const masterTable = container?.querySelector(".ht_master .htCore");
+      const masterHolder = container?.querySelector(".ht_master .wtHolder");
+      const rows = Array.from(
+        masterTable?.querySelectorAll("tbody > tr") || [],
+      );
+      const containerRect = container?.getBoundingClientRect();
+      if (
+        !container ||
+        !masterTable ||
+        !masterHolder ||
+        !containerRect ||
+        containerRect.width <= 0 ||
+        rows.length === 0 ||
+        rows.some((row) => row.getBoundingClientRect().height <= 0)
+      ) {
+        return;
+      }
+
+      const tableHeight = masterTable.getBoundingClientRect().height;
+      const horizontalScrollbarHeight = Math.max(
+        0,
+        masterHolder.offsetHeight - masterHolder.clientHeight,
+      );
+      const gridHeight = Math.ceil(
+        tableHeight + horizontalScrollbarHeight,
+      );
+      if (gridHeight <= 0) {
+        return;
+      }
+
+      [container, ...container.querySelectorAll(".wtHider, .wtHolder")].forEach(
+        (element) => {
+          element.style.height = `${gridHeight}px`;
+        },
+      );
+    };
+
+    const scheduleTableLayout = (block) => {
+      if (block) {
+        pendingTableLayouts.add(block);
+      } else {
+        activeBlocks(writingRoot)
+          .filter(
+            (candidate) =>
+              (candidate.dataset.newsBlockType ||
+                blockTypeInput(candidate)?.value) === "table",
+          )
+          .forEach((candidate) => pendingTableLayouts.add(candidate));
+      }
+      if (tableLayoutFrame !== null) {
+        return;
+      }
+      tableLayoutFrame = window.requestAnimationFrame(() => {
+        tableLayoutFrame = window.requestAnimationFrame(() => {
+          tableLayoutFrame = null;
+          const tables = Array.from(pendingTableLayouts);
+          pendingTableLayouts.clear();
+          tables.forEach(compactVisibleTableGrid);
+        });
+      });
+    };
 
     const updatePageTitle = () => {
       if (pageTitle) {
@@ -336,7 +569,9 @@
 
     const updatePresentation = () => {
       const blocks = activeBlocks(writingRoot);
-      blocks.forEach(updateBlockPresentation);
+      blocks.forEach((block) =>
+        updateBlockPresentation(block, scheduleTableLayout),
+      );
       const hasContent = blocks.some(blockHasContent);
       const nextStatus = hasContent ? "Con contenido" : "Sin contenido";
       if (status.textContent !== nextStatus) {
@@ -358,22 +593,138 @@
       if (block) {
         block.dataset.newsBlockSelected = "true";
       }
+      window.requestAnimationFrame(updatePresentation);
     };
 
-    writingRoot.addEventListener("focusin", (event) => {
-      if (!event.target.closest("[data-news-content-traversal-target]")) {
-        selectBlock(event.target.closest("[data-streamfield-child]"));
+    dialog.addEventListener(
+      "pointerdown",
+      () => {
+        interactionMode = "pointer";
+        keyboardToolbarOwner = null;
+        syncToolbarOwner();
+      },
+      true,
+    );
+    dialog.addEventListener(
+      "keydown",
+      (event) => {
+        interactionMode = "keyboard";
+        const block = event.target.closest("[data-streamfield-child]");
+        if (block) {
+          keyboardToolbarOwner = block;
+          syncToolbarOwner();
+        }
+      },
+      true,
+    );
+    writingRoot.addEventListener("pointerover", (event) => {
+      const block = event.target.closest("[data-streamfield-child]");
+      const relatedBlock = event.relatedTarget?.closest?.(
+        "[data-streamfield-child]",
+      );
+      if (!block || block === relatedBlock) {
+        return;
       }
+      pointerToolbarOwner = block;
+      syncToolbarOwner();
+    });
+    writingRoot.addEventListener("pointerout", (event) => {
+      const block = event.target.closest("[data-streamfield-child]");
+      const relatedBlock = event.relatedTarget?.closest?.(
+        "[data-streamfield-child]",
+      );
+      if (!block || block === relatedBlock) {
+        return;
+      }
+      pointerToolbarOwner =
+        relatedBlock && writingRoot.contains(relatedBlock)
+          ? relatedBlock
+          : null;
+      syncToolbarOwner();
+    });
+    writingRoot.addEventListener("focusin", (event) => {
+      const focusedBlock = event.target.closest("[data-streamfield-child]");
+      if (interactionMode === "keyboard") {
+        keyboardToolbarOwner = focusedBlock;
+      } else {
+        keyboardToolbarOwner = null;
+      }
+      if (
+        focusedBlock &&
+        !(
+          focusedBlock === tablePointerBlock &&
+          event.target.closest(
+            ".handsontable, [id$='-handsontable-container']",
+          )
+        ) &&
+        !event.target.closest("[data-news-content-traversal-target]")
+      ) {
+        selectBlock(focusedBlock);
+      }
+      syncToolbarOwner();
       updatePresentation();
     });
     writingRoot.addEventListener("focusout", () => {
-      window.requestAnimationFrame(updatePresentation);
+      window.requestAnimationFrame(() => {
+        if (interactionMode === "keyboard") {
+          keyboardToolbarOwner = document.activeElement?.closest?.(
+            "[data-streamfield-child]",
+          );
+          if (
+            keyboardToolbarOwner &&
+            !writingRoot.contains(keyboardToolbarOwner)
+          ) {
+            keyboardToolbarOwner = null;
+          }
+        } else {
+          keyboardToolbarOwner = null;
+        }
+        syncToolbarOwner();
+        updatePresentation();
+      });
     });
     writingRoot.addEventListener("pointerdown", (event) => {
-      selectBlock(event.target.closest("[data-streamfield-child]"));
+      const pointedBlock = event.target.closest("[data-streamfield-child]");
+      if (pointedBlock) {
+        if (
+          blockTypeInput(pointedBlock)?.value === "table" &&
+          event.target.closest(
+            ".handsontable, [id$='-handsontable-container']",
+          )
+        ) {
+          tablePointerBlock = pointedBlock;
+          return;
+        }
+        selectBlock(pointedBlock);
+      }
+    });
+    writingRoot.addEventListener("pointerup", () => {
+      if (tablePointerBlock) {
+        selectBlock(tablePointerBlock);
+        tablePointerBlock = null;
+      }
+    });
+    writingRoot.addEventListener("pointercancel", () => {
+      tablePointerBlock = null;
     });
     writingRoot.addEventListener("input", updatePresentation);
     writingRoot.addEventListener("change", updatePresentation);
+    writingDocument?.addEventListener("scroll", scheduleToolbarPosition, {
+      passive: true,
+    });
+
+    const writingResizeObserver = new ResizeObserver((entries) => {
+      if (entries[0]?.contentRect.width) {
+        scheduleToolbarPosition();
+        scheduleTableLayout();
+      }
+    });
+    writingResizeObserver.observe(writingRoot);
+    window.addEventListener("resize", () => {
+      if (dialog.getAttribute("aria-hidden") !== "true") {
+        scheduleTableLayout();
+      }
+    });
 
     const primaryTraversalTarget = (block) => {
       const type = block.dataset.newsBlockType || blockTypeInput(block)?.value;
@@ -462,6 +813,12 @@
         }
       }
       if (!sourceBlock) {
+        return;
+      }
+      if (
+        event.shiftKey &&
+        sourceBlock.dataset.newsToolbarActive === "true"
+      ) {
         return;
       }
 
@@ -635,6 +992,11 @@
       updatePresentation();
       window.requestAnimationFrame(() => {
         window.requestAnimationFrame(() => {
+          // TableBlock is initialised while this dialog is hidden. Let
+          // Wagtail establish the visible grid first, then remove the excess
+          // height its cloned Handsontable tables can reserve.
+          window.dispatchEvent(new Event("resize"));
+          scheduleTableLayout();
           const target = shouldFocusErrors
             ? firstInvalidControl(writingRoot)
             : firstAuthoringControl(writingRoot);
@@ -646,6 +1008,9 @@
 
     dialog.addEventListener("w-dialog:hidden", () => {
       openButton.setAttribute("aria-expanded", "false");
+      pointerToolbarOwner = null;
+      keyboardToolbarOwner = null;
+      syncToolbarOwner();
       updatePresentation();
       openButton.focus();
       window.requestAnimationFrame(() => openButton.focus());

@@ -1,0 +1,54 @@
+name: Browser Regression
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+    paths:
+      - ".github/workflows/browser-regression.yml"
+      - "Makefile"
+      - "package.json"
+      - "package-lock.json"
+      - "playwright.config.js"
+      - "docker-compose.browser.yml"
+      - "docker/browser/**"
+      - "tests/browser/**"
+      - "config/settings/base.py"
+      - "config/settings/browser_test.py"
+      - "apps/news/access.py"
+      - "apps/news/blocks.py"
+      - "apps/news/models.py"
+      - "apps/news/panels.py"
+      - "apps/news/smart_paste.py"
+      - "apps/news/views.py"
+      - "apps/news/wagtail_hooks.py"
+      - "apps/news/management/commands/setup_browser_test.py"
+      - "apps/news/migrations/**"
+      - "apps/news/templates/news/admin/writing_mode_field_panel.html"
+      - "static/news/css/writing_mode.css"
+      - "static/news/js/smart_paste.js"
+      - "static/news/js/writing_mode.js"
+      - "static/public/css/site.css"
+      - "templates/news/news_page.html"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-test:
+    name: Browser regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Run isolated Chromium regression
+        run: make browser-test

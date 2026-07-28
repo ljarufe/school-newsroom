@@ -36,6 +36,7 @@ from wagtail.models import (
 from wagtail.users.models import UserProfile
 
 from apps.home.models import HomePage as RuntimeHomePage
+from apps.news.models import NewsSection as RuntimeNewsSection
 
 NEWS_0001 = ("news", "0001_initial")
 NEWS_0002 = ("news", "0002_bootstrap_editorial_data")
@@ -47,6 +48,7 @@ NEWS_0007 = ("news", "0007_newspage_featured_image_alt_text_and_more")
 NEWS_0008 = ("news", "0008_alter_newspage_options")
 NEWS_0009 = ("news", "0009_reconcile_mvp_access")
 NEWS_0010 = ("news", "0010_remove_newspage_summary_and_more")
+NEWS_0011 = ("news", "0011_alter_newspage_body")
 HOME_0001 = ("home", "0001_initial")
 BEFORE_NEWS_0002 = [HOME_0001, NEWS_0001]
 
@@ -1187,3 +1189,144 @@ def test_epic5_001_migration_preserves_news_with_blank_safe_seo_defaults() -> No
         assert migrated_page.body[0].value.source == "<p>Historical fictional body.</p>"
     finally:
         migrate_to_latest()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_epic3_006_migration_preserves_body_and_adds_table_schema() -> None:
+    home_id = None
+    page_id = None
+    revision_id = None
+    section_id = None
+    try:
+        apps = migrate_to(NEWS_0010)
+        db_alias = connection.alias
+        ContentType = apps.get_model("contenttypes", "ContentType")
+        HistoricalNewsPage = apps.get_model("news", "NewsPage")
+        HistoricalNewsSection = apps.get_model("news", "NewsSection")
+        HistoricalPage = apps.get_model("wagtailcore", "Page")
+        HistoricalRevision = apps.get_model("wagtailcore", "Revision")
+        historical_body = HistoricalNewsPage._meta.get_field("body")
+        assert "table" not in historical_body.stream_block.child_blocks
+
+        # Historical Page models do not expose Treebeard's add_child API. Use
+        # runtime Page classes only to create the isolated tree nodes, then use
+        # the migration-state models for the NewsPage row and assertions.
+        RuntimeLocale.objects.get_or_create(language_code="es")
+        root = RuntimePage.get_first_root_node()
+        if root is None:
+            root = RuntimePage.add_root(
+                instance=RuntimePage(title="Root", slug="root"),
+            )
+        home = RuntimeHomePage(
+            title="Historical smart paste home",
+            slug="historical-smart-paste-home",
+        )
+        root.add_child(instance=home)
+        home_id = home.pk
+
+        base_child = RuntimePage(
+            title="Historical smart paste news",
+            slug="historical-smart-paste-news",
+            live=False,
+        )
+        home.add_child(instance=base_child)
+        page_id = base_child.pk
+        news_page_content_type = ContentType.objects.using(db_alias).get(
+            app_label="news",
+            model="newspage",
+        )
+        page_content_type = ContentType.objects.using(db_alias).get(
+            app_label="wagtailcore",
+            model="page",
+        )
+        HistoricalPage._base_manager.using(db_alias).filter(pk=page_id).update(
+            content_type_id=news_page_content_type.pk,
+        )
+
+        section, _ = HistoricalNewsSection.objects.using(db_alias).get_or_create(
+            slug="epic3-006-migration",
+            defaults={"name": "EPIC3-006 migration", "sort_order": 999},
+        )
+        section_id = section.pk
+        historical_body_data = [
+            {
+                "type": "paragraph",
+                "value": "<p>Existing historical body.</p>",
+                "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            }
+        ]
+        historical_page = HistoricalNewsPage(
+            page_ptr_id=page_id,
+            publication_date=timezone.datetime(2026, 7, 28).date(),
+            body=historical_body_data,
+            section_id=section.pk,
+            coverage_province="Arequipa",
+        )
+        historical_page.save_base(
+            raw=True,
+            using=db_alias,
+            force_insert=True,
+        )
+        revision = HistoricalRevision.objects.using(db_alias).create(
+            content_type_id=news_page_content_type.pk,
+            base_content_type_id=page_content_type.pk,
+            object_id=str(page_id),
+            created_at=timezone.now(),
+            object_str="Historical smart paste news",
+            content={
+                "pk": page_id,
+                "title": "Historical smart paste news",
+                "slug": "historical-smart-paste-news",
+                "body": json.dumps(historical_body_data),
+            },
+        )
+        revision_id = revision.pk
+
+        apps = migrate_to(NEWS_0011)
+        MigratedNewsPage = apps.get_model("news", "NewsPage")
+        migrated_body = MigratedNewsPage._meta.get_field("body")
+        migrated_page = MigratedNewsPage.objects.get(pk=page_id)
+
+        assert list(migrated_body.stream_block.child_blocks) == [
+            "paragraph",
+            "article_image",
+            "table",
+            "youtube",
+            "spotify",
+        ]
+        assert migrated_page.body[0].value.source == "<p>Existing historical body.</p>"
+        table_value = migrated_body.stream_block.to_python(
+            [
+                {
+                    "type": "table",
+                    "value": {
+                        "data": [["Nombre", "Valor"], ["Dato", "10"]],
+                        "table_caption": "Tabla histórica",
+                        "table_header_choice": "row",
+                        "first_row_is_table_header": True,
+                        "first_col_is_header": False,
+                    },
+                }
+            ]
+        )
+        assert table_value[0].block_type == "table"
+        assert table_value[0].value["data"][1] == ["Dato", "10"]
+        MigratedRevision = apps.get_model("wagtailcore", "Revision")
+        revision_body = json.loads(
+            MigratedRevision.objects.using(db_alias).get(pk=revision_id).content["body"]
+        )
+        assert revision_body[0]["value"] == "<p>Existing historical body.</p>"
+    finally:
+        migrate_to_latest()
+        if revision_id is not None:
+            Revision.objects.filter(pk=revision_id).delete()
+        if page_id is not None:
+            page = RuntimePage.objects.filter(pk=page_id).first()
+            if page is not None:
+                page.delete()
+        if home_id is not None:
+            home = RuntimePage.objects.filter(pk=home_id).first()
+            if home is not None:
+                home.delete()
+        if section_id is not None:
+            RuntimeNewsSection.objects.filter(pk=section_id).delete()

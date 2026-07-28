@@ -1,0 +1,77 @@
+name: school_newsroom_browser
+
+services:
+  browser-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: school_newsroom_browser
+      POSTGRES_USER: school_newsroom_browser
+      POSTGRES_PASSWORD: browser-test-password
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U school_newsroom_browser -d school_newsroom_browser
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  browser-web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    command:
+      - sh
+      - -c
+      - >-
+        set -eu;
+        until nc -z browser-db 5432; do sleep 1; done;
+        python manage.py migrate --noinput;
+        python manage.py setup_browser_test;
+        python manage.py runserver 0.0.0.0:8000 --noreload
+    environment:
+      DATABASE_URL: postgresql://school_newsroom_browser:browser-test-password@browser-db:5432/school_newsroom_browser
+      DJANGO_ALLOWED_HOSTS: browser-web,localhost,127.0.0.1
+      DJANGO_DEBUG: "true"
+      DJANGO_SECRET_KEY: browser-test-only-secret-key
+      DJANGO_SETTINGS_MODULE: config.settings.browser_test
+      DJANGO_WAGTAILADMIN_BASE_URL: http://browser-web:8000
+      BROWSER_TEST_PAGE_ID: "3"
+      BROWSER_TEST_USERNAME: epic3-006-browser
+      BROWSER_TEST_PASSWORD: browser-test-password
+      SEO_DEFAULT_NOINDEX: "true"
+    depends_on:
+      browser-db:
+        condition: service_healthy
+    volumes:
+      - .:/app:ro
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          from urllib.request import urlopen;
+          response = urlopen('http://127.0.0.1:8000/admin/login/');
+          raise SystemExit(0 if response.status == 200 else 1)
+      interval: 2s
+      timeout: 3s
+      retries: 60
+
+  browser-test:
+    build:
+      context: .
+      dockerfile: docker/browser/Dockerfile
+    init: true
+    ipc: host
+    environment:
+      BROWSER_TEST_PAGE_ID: "3"
+      BROWSER_TEST_USERNAME: epic3-006-browser
+      BROWSER_TEST_PASSWORD: browser-test-password
+      PLAYWRIGHT_BASE_URL: http://browser-web:8000
+    depends_on:
+      browser-web:
+        condition: service_healthy
+    volumes:
+      - .:/tests/repository:ro

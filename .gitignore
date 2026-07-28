@@ -16,6 +16,7 @@ __pycache__/
 .mypy_cache/
 .coverage
 htmlcov/
+node_modules/
 
 staticfiles/
 media/*

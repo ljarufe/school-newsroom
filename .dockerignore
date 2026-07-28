@@ -13,5 +13,6 @@ tmp
 .ruff_cache
 __pycache__
 *.pyc
+node_modules
 staticfiles
 media

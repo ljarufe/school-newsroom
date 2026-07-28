@@ -1,4 +1,5 @@
 import datetime as dt
+import json
 import re
 from pathlib import Path
 
@@ -30,6 +31,12 @@ def assert_contains_text(response, text: str) -> None:
 
 def assert_not_contains_text(response, text: str) -> None:
     assert text not in response.content.decode()
+
+
+def assert_contains_telepath_text(response, text: str) -> None:
+    content = response.content.decode()
+    json_encoded = json.dumps(text, ensure_ascii=True)[1:-1]
+    assert text in content or json_encoded in content
 
 
 def test_seo_assistant_javascript_restores_served_url_after_canonical_clear() -> None:
@@ -187,6 +194,39 @@ def test_news_page_create_surface_contains_contributor_and_privacy_copy(
     assert_contains_text(response, "Modo redacción")
     assert_contains_text(response, "Volver")
     assert_contains_text(response, "Volver a la edición de la noticia")
+    assert_contains_telepath_text(response, "Encabezados de tabla")
+    assert_contains_telepath_text(
+        response,
+        "¿Qué celdas deben mostrarse como encabezados?",
+    )
+    assert_contains_telepath_text(response, "Descripción de la tabla")
+    assert_contains_telepath_text(
+        response,
+        (
+            "Un texto que identifica el tema general de la tabla y facilita "
+            "su comprensión a quienes utilizan lectores de pantalla."
+        ),
+    )
+    assert_contains_telepath_text(
+        response,
+        "Selecciona una opción de encabezado",
+    )
+    assert_contains_telepath_text(
+        response,
+        "Mostrar la primera fila como encabezado",
+    )
+    assert_contains_telepath_text(
+        response,
+        "Mostrar la primera columna como encabezado",
+    )
+    assert_contains_telepath_text(
+        response,
+        "Mostrar la primera fila y la primera columna como encabezados",
+    )
+    assert_contains_telepath_text(response, "Sin encabezados")
+    assert_not_contains_text(response, "Pegar nota como bloques")
+    assert_not_contains_text(response, "Revisar importación")
+    assert_not_contains_text(response, "Insertar bloques")
     assert 'data-controller="w-dialog"' in response.content.decode()
     assert 'data-w-dialog-target="body"' in response.content.decode()
     assert 'class="w-dialog news-writing-dialog"' in response.content.decode()
@@ -198,7 +238,9 @@ def test_news_page_create_surface_contains_contributor_and_privacy_copy(
     assert_not_contains_text(response, "Modo normal")
     assert 'name="summary"' not in response.content.decode()
     assert "news/js/writing_mode.js" in response.content.decode()
+    assert "news/js/smart_paste.js" in response.content.decode()
     assert "news/css/writing_mode.css" in response.content.decode()
+    assert "news/css/smart_paste.css" not in response.content.decode()
     assert_contains_text(response, "Reglamento de la Ley N.º 29733")
     assert_contains_text(
         response,

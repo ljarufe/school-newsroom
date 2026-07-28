@@ -7,6 +7,7 @@ from django.utils.html import format_html
 from wagtail import blocks
 from wagtail.admin.telepath import register
 from wagtail.blocks.struct_block import StructBlockAdapter
+from wagtail.contrib.table_block.blocks import TableBlock
 from wagtail.embeds.blocks import EmbedBlock
 from wagtail.images.blocks import ImageChooserBlock
 
@@ -34,6 +35,76 @@ PARAGRAPH_FEATURES = [
 # Migration 0004 serializes this import path. Keep it as a native-class alias so
 # historical migration state remains loadable without retaining the old shim.
 ParagraphBlock = blocks.RichTextBlock
+
+TABLE_MAX_ROWS = 50
+TABLE_MAX_COLUMNS = 20
+TABLE_MAX_CELLS = 1_000
+TABLE_MAX_CELL_LENGTH = 2_000
+TABLE_MAX_CAPTION_LENGTH = 300
+
+
+class NewsTableBlock(TableBlock):
+    """Use Wagtail's table editor with bounded plain-text data."""
+
+    def __init__(self, *args, table_options=None, **kwargs):
+        bounded_options = dict(table_options or {})
+        bounded_options.update(
+            {
+                "maxRows": TABLE_MAX_ROWS,
+                "maxCols": TABLE_MAX_COLUMNS,
+            }
+        )
+        super().__init__(*args, table_options=bounded_options, **kwargs)
+
+    def clean(self, value):
+        cleaned = super().clean(value)
+        if not cleaned:
+            return cleaned
+
+        data = cleaned.get("data")
+        if not isinstance(data, list) or any(not isinstance(row, list) for row in data):
+            raise ValidationError("La tabla no tiene una estructura válida.")
+
+        row_count = len(data)
+        column_count = max((len(row) for row in data), default=0)
+        cell_count = sum(len(row) for row in data)
+        if row_count > TABLE_MAX_ROWS:
+            raise ValidationError(f"La tabla no puede superar {TABLE_MAX_ROWS} filas.")
+        if column_count > TABLE_MAX_COLUMNS:
+            raise ValidationError(
+                f"La tabla no puede superar {TABLE_MAX_COLUMNS} columnas."
+            )
+        if cell_count > TABLE_MAX_CELLS:
+            raise ValidationError(
+                f"La tabla no puede superar {TABLE_MAX_CELLS} celdas."
+            )
+
+        normalized_data = []
+        for row in data:
+            normalized_row = []
+            for cell in row:
+                cell_text = "" if cell is None else str(cell)
+                if len(cell_text) > TABLE_MAX_CELL_LENGTH:
+                    raise ValidationError(
+                        "Cada celda de la tabla puede tener como máximo "
+                        f"{TABLE_MAX_CELL_LENGTH} caracteres."
+                    )
+                normalized_row.append(cell_text)
+            normalized_data.append(normalized_row)
+
+        caption = str(cleaned.get("table_caption") or "")
+        if len(caption) > TABLE_MAX_CAPTION_LENGTH:
+            raise ValidationError(
+                "El título de la tabla puede tener como máximo "
+                f"{TABLE_MAX_CAPTION_LENGTH} caracteres."
+            )
+
+        cleaned["data"] = normalized_data
+        cleaned["table_caption"] = caption
+        return cleaned
+
+    class Meta:
+        label = "Tabla"
 
 
 class ArticleImageBlock(blocks.StructBlock):

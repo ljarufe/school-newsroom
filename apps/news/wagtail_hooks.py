@@ -1,10 +1,12 @@
 from django.shortcuts import redirect
+from django.urls import path
 from wagtail import hooks
 from wagtail.models import Page
 from wagtail.snippets.models import register_snippet
 from wagtail.snippets.views.snippets import SnippetViewSet, SnippetViewSetGroup
 
 from .models import ContributorGroup, MinorContributor, NewsSection, School
+from .views import normalize_smart_paste
 
 
 class NewsSectionViewSet(SnippetViewSet):
@@ -48,6 +50,17 @@ class EditorialViewSetGroup(SnippetViewSetGroup):
 
 
 register_snippet(EditorialViewSetGroup)
+
+
+@hooks.register("register_admin_urls")
+def register_news_admin_urls():
+    return [
+        path(
+            "news/smart-paste/normalize/",
+            normalize_smart_paste,
+            name="news_smart_paste_normalize",
+        ),
+    ]
 
 
 @hooks.register("after_edit_page")

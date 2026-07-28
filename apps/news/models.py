@@ -17,6 +17,7 @@ from .access import FULL_EDITOR_PERMISSION, SEO_EDITOR_PERMISSION
 from .blocks import (
     PARAGRAPH_FEATURES,
     ArticleImageBlock,
+    NewsTableBlock,
     SpotifyEmbedBlock,
     YouTubeEmbedBlock,
 )
@@ -206,6 +207,7 @@ class NewsPage(Page):
                 ),
             ),
             ("article_image", ArticleImageBlock()),
+            ("table", NewsTableBlock()),
             ("youtube", YouTubeEmbedBlock()),
             ("spotify", SpotifyEmbedBlock()),
         ],

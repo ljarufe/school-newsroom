@@ -306,6 +306,7 @@ El título principal se escribe en `Título`, fuera del cuerpo. El campo
 
 - Párrafo
 - Imagen
+- Tabla
 - Video de YouTube
 - Audio o pódcast de Spotify
 
@@ -375,10 +376,99 @@ Los enlaces normales y los enlaces a documentos se insertan desde la barra de
 formato. Las imágenes y el contenido multimedia externo no se insertan desde
 esa barra.
 
+### Pegar una nota como bloques
+
+El pegado inteligente funciona directamente dentro de `Modo redacción`; no hay
+un botón ni una ventana adicional. Selecciona la nota en Word, Google Docs u
+otro editor, cópiala con `Ctrl+C`, coloca el cursor o selecciona el bloque de
+destino dentro de `Contenido` y usa `Ctrl+V`. No se selecciona, sube ni procesa
+el archivo Word.
+
+Cuando el portapapeles contiene varios párrafos, subtítulos, listas, tablas,
+citas, separadores o varias líneas reales de texto plano, el sistema crea los
+bloques automáticamente. Una notificación confirma cuántos bloques se pegaron
+y avisa si algún elemento fue simplificado. No hay una revisión ni una
+confirmación intermedia: comprueba el resultado dentro del mismo modo redacción
+antes de guardar.
+
+Si el cuerpo está vacío, los bloques se insertan al inicio. Si el cursor está en
+un párrafo completamente vacío, ese párrafo se reemplaza. En un bloque con
+contenido, la secuencia se inserta inmediatamente después; los bloques que ya
+estaban a continuación conservan su orden. Si no se puede identificar un
+destino, la secuencia se agrega al final. Un error de procesamiento no modifica
+el contenido existente.
+
+Una palabra, frase, URL o fragmento inline ordinario dentro de un párrafo usa el
+pegado normal del editor, incluso si incluye negrita o cursiva. El pegado
+inteligente no actúa dentro de campos de imagen, pie, texto alternativo,
+crédito, selectores, inputs, áreas de texto ni celdas de tabla.
+
+La conversión separa párrafos, subtítulos, listas continuas, citas, líneas
+horizontales y tablas simples. Un H1 copiado se convierte en H2 porque el H1
+público corresponde al `Título` de la noticia; H2 se conserva como H2, H3 como
+H3 y H4, H5 o H6 se convierten en H4. Se conservan negrita, cursiva y enlaces
+seguros. Colores, fuentes, tamaños, clases y otros estilos propios del documento
+se descartan.
+
+Cuando la aplicación de origen sólo entrega texto plano, cada línea no vacía
+se convierte en un bloque `Párrafo` independiente. Las líneas vacías se omiten
+y no se intenta adivinar cuáles son títulos. El ajuste visual automático de una
+línea larga dentro de Word no crea un salto real y, por tanto, no divide el
+párrafo. El texto plano no permite recuperar negritas, cursivas ni jerarquías
+de títulos; aplica manualmente los formatos necesarios antes de publicar.
+
+No se importan imágenes, formularios, iframes, scripts, contenido multimedia,
+metadata del documento, autores, firmas, colaboradores, secciones, etiquetas ni
+declaraciones de privacidad. Las imágenes descartadas deben añadirse
+manualmente desde el CMS. Las listas anidadas, marcas de control de cambios,
+código enriquecido y estructuras no compatibles se simplifican o descartan con
+una advertencia.
+
+Los espacios auxiliares, saltos iniciales o finales y párrafos vacíos que Word
+añade alrededor del contenido no generan bloques ni líneas en blanco. Los
+saltos internos reales, estilos inline compatibles y enlaces seguros sí se
+conservan. Tras pegar, revisa el contenido y usa el guardado normal de Wagtail.
+
+### Tablas
+
+El bloque `Tabla` puede añadirse manualmente desde los controles `+` del
+contenido. También se crea un bloque independiente por cada tabla HTML simple
+detectada por el pegado inteligente. La importación conserva filas, columnas,
+la descripción de tabla y las cabeceras de primera fila o primera columna
+cuando el documento las identifica de forma inequívoca.
+
+En `Modo redacción`, una tabla no seleccionada muestra únicamente la cuadrícula.
+Haz clic en una celda o lleva el foco con el teclado para seleccionarla. La
+tabla activa muestra `Encabezados de tabla`, todas sus opciones, `Descripción de
+la tabla`, las ayudas y la barra de acciones. Al seleccionar otra tabla, la
+anterior vuelve a mostrar sólo su cuadrícula. Una tabla con errores muestra
+automáticamente sus controles. Este comportamiento contextual no cambia la
+edición normal fuera de `Modo redacción`.
+
+Las celdas se convierten siempre a texto seguro. Las continuaciones de celdas
+combinadas se representan con celdas vacías para conservar el orden
+rectangular. Las tablas anidadas se reducen a texto separado dentro de la celda
+exterior. Las filas irregulares se completan con celdas vacías. Todos estos
+casos muestran una advertencia para que revises el resultado. No se importan
+estilos, imágenes, formularios, contenido multimedia, fórmulas ni HTML
+enriquecido dentro de las celdas.
+
+Los límites de una tabla son 50 filas, 20 columnas, 1000 celdas, 2000
+caracteres por celda y 300 caracteres para la descripción. Durante una
+importación, el contenido que exceda esos límites se recorta de forma segura y
+se muestra una advertencia; la edición manual no permite guardar una tabla que
+los supere.
+
+En la noticia pública, la descripción y las cabeceras se muestran con semántica
+de tabla. En pantallas estrechas, la tabla permite desplazamiento horizontal
+dentro del cuerpo sin ampliar la página completa. Usa `Previsualizar` y
+comprueba el texto descriptivo, las cabeceras y todos los datos antes de
+publicar.
+
 El editor actual no ofrece un control para anidar listas y `Tab` desplaza el
 foco. La autoría de listas anidadas no aplica en esta interfaz. El análisis
-mantiene soporte defensivo para HTML anidado importado, pegado, histórico o
-generado fuera del Admin, sin añadir atajos propios.
+aplana cualquier lista anidada importada a un solo nivel, conserva el texto en
+orden y muestra una advertencia, sin añadir atajos propios.
 
 El bloque `Imagen` inserta una imagen dentro del cuerpo de la noticia, distinta
 de la `Imagen destacada`. Se usa este bloque separado para que cada uso tenga un

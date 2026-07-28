@@ -2,7 +2,9 @@ import datetime as dt
 import json
 
 import pytest
+from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import RequestFactory
 from wagtail.blocks.stream_block import StreamBlockValidationError
 from wagtail.blocks.struct_block import StructBlockValidationError
 from wagtail.images import get_image_model
@@ -66,7 +68,6 @@ def create_news_page(home_page, section, *, slug="form-news-existing"):
         slug=slug,
         live=False,
         publication_date=dt.date(2026, 7, 1),
-        summary="A concise public summary for a fictional news item.",
         body=[("paragraph", "<p>Reported context</p>")],
         section=section,
         coverage_province="Arequipa",
@@ -120,7 +121,6 @@ def admin_form_data(
         "title": title,
         "slug": slug,
         "publication_date": "2026-07-01",
-        "summary": "A concise public summary for a fictional news item.",
         "body-count": "1",
         "body-0-deleted": "",
         "body-0-order": "0",
@@ -377,6 +377,53 @@ def test_full_validation_requires_article_image_caption_and_alt(
     article_image_error = body_error.block_errors[0]
     assert isinstance(article_image_error, StructBlockValidationError)
     assert set(article_image_error.block_errors) == {"caption", "alt_text"}
+
+
+@pytest.mark.django_db
+def test_writing_mode_renders_body_and_nested_errors_in_the_native_dialog(
+    home_page,
+    section,
+    settings,
+    tmp_path,
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    image = create_uploaded_image()
+    form = make_admin_form(
+        home_page,
+        section,
+        slug="writing-mode-with-article-image-errors",
+        public_credits=["Fictional school newsroom team"],
+        body_block={
+            "type": "article_image",
+            "image": str(image.pk),
+            "caption": "",
+            "alt_text": "",
+            "credit": "",
+        },
+    )
+    assert not form.is_valid()
+
+    request = RequestFactory().post("/")
+    request.user = get_user_model().objects.create_superuser(
+        username="writing-mode-error-render",
+        email="writing-mode-error-render@example.com",
+        password="test-password",
+    )
+    bound_panel = NewsPage.get_edit_handler().get_bound_panel(
+        instance=form.instance,
+        request=request,
+        form=form,
+    )
+    html = bound_panel.render_html()
+
+    assert 'data-news-writing-has-errors="true"' in html
+    assert (
+        "El contenido de la noticia contiene errores. Abre el modo redacción "
+        "para revisarlos."
+    ) in html
+    assert "Revisar errores" in html
+    assert "Revisa los bloques marcados con errores." in html
+    assert NewsPageAdminForm.BODY_BLOCK_ERROR in html
 
 
 @pytest.mark.django_db

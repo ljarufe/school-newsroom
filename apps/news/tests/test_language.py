@@ -15,6 +15,7 @@ from apps.news.models import (
     NewsSection,
     School,
 )
+from apps.news.panels import WritingModeFieldPanel
 
 
 def test_primary_language_settings_are_spanish_only() -> None:
@@ -75,7 +76,7 @@ def test_custom_editor_visible_labels_are_spanish() -> None:
     assert NewsPage._meta.get_field("publication_date").verbose_name == (
         "Fecha de publicación"
     )
-    assert NewsPage._meta.get_field("summary").verbose_name == "Resumen"
+    assert "summary" not in {field.name for field in NewsPage._meta.get_fields()}
     assert NewsPage._meta.get_field("body").verbose_name == "Contenido"
     assert NewsPage._meta.get_field("section").verbose_name == "Sección"
     assert NewsPage._meta.get_field("school").verbose_name == "Colegio"
@@ -149,25 +150,45 @@ def test_custom_editor_visible_labels_are_spanish() -> None:
 
 
 def test_news_admin_panels_explain_content_authoring_and_public_credit() -> None:
-    summary_panel_index = next(
-        index
-        for index, panel in enumerate(NewsPage.content_panels)
-        if isinstance(panel, FieldPanel) and panel.field_name == "summary"
-    )
+    def panel_label(panel):
+        if isinstance(panel, FieldPanel):
+            return panel.field_name
+        if isinstance(panel, InlinePanel):
+            return panel.relation_name
+        if panel.__class__.__name__ == "PanelPlaceholder":
+            return panel.args[0]
+        return panel.heading
+
+    assert [panel_label(panel) for panel in NewsPage.content_panels] == [
+        "title",
+        "Imagen destacada",
+        "body",
+        "section",
+        "Cobertura",
+        "publication_date",
+        "tags",
+        "school",
+        "internal_contributors",
+        "public_credits",
+        "Privacidad de menores",
+    ]
+
     body_panel_index = next(
         index
         for index, panel in enumerate(NewsPage.content_panels)
         if isinstance(panel, FieldPanel) and panel.field_name == "body"
     )
     body_panel = NewsPage.content_panels[body_panel_index]
-    featured_panel = NewsPage.content_panels[summary_panel_index + 1]
+    featured_panel = NewsPage.content_panels[body_panel_index - 1]
     public_credit_panel = next(
         panel
         for panel in NewsPage.content_panels
         if isinstance(panel, InlinePanel) and panel.relation_name == "public_credits"
     )
 
-    assert isinstance(body_panel, FieldPanel)
+    assert isinstance(body_panel, WritingModeFieldPanel)
+    assert NewsPage.edit_handler.children[0].heading == "Edición de la noticia"
+    assert NewsPage._meta.get_field("body").verbose_name == "Contenido"
     assert isinstance(featured_panel, MultiFieldPanel)
     assert featured_panel.heading == "Imagen destacada"
     assert [
@@ -183,8 +204,8 @@ def test_news_admin_panels_explain_content_authoring_and_public_credit() -> None
     assert all(not isinstance(panel, HelpPanel) for panel in featured_panel.children)
     assert NewsPage.content_panels[body_panel_index - 1] is featured_panel
     assert body_panel.help_text == (
-        "Selecciona texto para mostrar la barra de formato. Usa el pin para "
-        'mantenerla visible y "/" para insertar o dividir bloques.'
+        "Selecciona texto para mostrar la barra contextual de formato. "
+        'Usa "/" para insertar o dividir bloques.'
     )
     assert "Cómo editar el contenido" not in body_panel.help_text
     assert "Markdown" not in body_panel.help_text

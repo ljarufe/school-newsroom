@@ -73,7 +73,6 @@ def create_news_page(*, slug: str = "noticia-workflow") -> NewsPage:
         slug=slug,
         live=False,
         publication_date=dt.date(2026, 7, 15),
-        summary="Resumen editorial original y protegido.",
         body=[("paragraph", "<p>Contenido editorial ficticio y seguro.</p>")],
         section=NewsSection.objects.get(slug="politica"),
         coverage_province="Arequipa",
@@ -384,6 +383,7 @@ def test_seo_curator_edit_surface_hides_content_properties_and_minor_data() -> N
     assert 'name="og_image"' in content
     assert 'name="summary"' not in content
     assert 'name="body"' not in content
+    assert "data-news-writing-mode" not in content
     assert 'name="show_in_menus"' not in content
     assert 'name="contains_identifiable_minors"' not in content
     assert "Colaboradores internos" not in content
@@ -393,7 +393,6 @@ def test_seo_curator_edit_surface_hides_content_properties_and_minor_data() -> N
     assert "Noticia ficticia para workflow" in content
     assert "Política" in context_fragment, context_fragment
     assert "15 de julio de 2026" in content
-    assert "Resumen editorial original y protegido." in content
     assert "Contenido editorial ficticio y seguro." in content
     assert "Taller ficticio preparando una noticia." in content
     assert "Cuadernos y grabadoras sobre una mesa." in content
@@ -445,7 +444,6 @@ def test_seo_curator_manipulated_post_cannot_change_non_seo_fields() -> None:
             "og_description": "Descripción social autorizada.",
             "canonical_url": "",
             "seo_noindex": "",
-            "summary": "RESUMEN MANIPULADO",
             "title": "TÍTULO MANIPULADO",
             "body": "CONTENIDO MANIPULADO",
             "show_in_menus": "on",
@@ -459,7 +457,6 @@ def test_seo_curator_manipulated_post_cannot_change_non_seo_fields() -> None:
     assert response.status_code == 302
     saved_page = NewsPage.objects.get(pk=page.pk).get_latest_revision_as_object()
     assert saved_page.seo_title == "Título SEO autorizado"
-    assert saved_page.summary == "Resumen editorial original y protegido."
     assert saved_page.title == "Noticia ficticia para workflow"
     assert "CONTENIDO MANIPULADO" not in str(saved_page.body)
     assert not saved_page.show_in_menus
@@ -613,6 +610,10 @@ def test_rendered_workflow_labels_match_the_documented_editor_actions() -> None:
     draft_content = draft_response.content.decode()
     assert "Enviar a Revisión editorial" in draft_content
     assert "Enviar para ser moderado" not in draft_content
+    assert "Edición de la noticia" in draft_content
+    assert "Abrir modo redacción" in draft_content
+    assert "Modo normal" not in draft_content
+    assert "Modo redacción" in draft_content
 
     state = start_workflow(page, director)
     state.current_task_state.task.specific.on_action(

@@ -195,10 +195,10 @@ permission-aware admin form removes unauthorized fields before binding POST
 data. Child formsets for public credits, internal contributors, and comments are
 also absent for users without the full editorial-surface permission.
 
-Consequently, a crafted POST from Curador SEO cannot change `title`, `summary`,
-`body`, privacy flags, `show_in_menus`, internal contributors, public credits,
-or page properties. This boundary does not rely on CSS or JavaScript. The SEO
-role can change:
+Consequently, a crafted POST from Curador SEO cannot change `title`, `body`,
+privacy flags, `show_in_menus`, internal contributors, public credits, or page
+properties. This boundary does not rely on CSS or JavaScript. The SEO role can
+change:
 
 - `slug`, `seo_title`, and `search_description` on every affected page type;
 - `focus_keyphrase`, social text/image and contextual social metadata,
@@ -209,8 +209,8 @@ social image without granting image upload, change, or deletion.
 
 The SEO tab starts with a server-rendered read-only context. For news it is
 labelled `Contexto de la noticia — solo lectura` and includes the public title,
-section, date, summary, faithful body rendering, featured image with contextual
-public metadata, public credits, and `Previsualizar borrador completo`. It does
+section, date, faithful body rendering, featured image with contextual public
+metadata, public credits, and `Previsualizar borrador completo`. It does
 not expose internal contributors, age bands, privacy declarations, or
 authorization flags. Home and institutional pages show `Contexto de la página
 — solo lectura` with their title and the same explicit draft-preview action.
@@ -289,7 +289,6 @@ Noticia de publicación directa:
 ```text
 Título: UAT directa: biblioteca escolar abre un rincón de lectura
 Fecha de publicación: 15/07/2026
-Resumen: La biblioteca ficticia habilitó un espacio de lectura para la comunidad educativa.
 Contenido: La comunidad del Colegio Horizonte Ficticio inauguró un rincón de lectura con libros de prueba y actividades editoriales simuladas.
 Firma pública: Redacción escolar ficticia UAT
 Sección: Política
@@ -325,7 +324,6 @@ Noticia para workflow y privacidad:
 ```text
 Título: UAT workflow: taller escolar prepara un boletín ficticio
 Fecha de publicación: 15/07/2026
-Resumen: Un taller escolar ficticio ensayó la preparación de un boletín para validar el flujo editorial.
 Contenido: El Taller de Periodismo Horizonte realizó una práctica simulada. Todo el contenido, las personas y los resultados de esta noticia son ficticios.
 Firma pública: Redacción del Taller Horizonte
 Colaborador interno: Ana Ficticia UAT
@@ -401,12 +399,13 @@ Resultado esperado: `uat_director` puede ver los cuatro destinos de
 1. Entra como `uat_director`.
 2. Ve a `Páginas` -> `Inicio` -> `Añadir página hija` -> `Noticia`.
 3. Copia todos los valores de “Noticia de publicación directa” en las pestañas
-   `Contenido` y `Asistente SEO`.
+   `Edición de la noticia` y `Asistente SEO`. Abre la tarjeta `Contenido` con
+   `Abrir modo redacción` para editar el cuerpo.
 4. Selecciona `Guardar borrador`. Verifica que la noticia no aparezca en la Home
    pública anónima.
 5. Reabre el borrador y selecciona `Publicar`.
 6. Abre la Home pública y el detalle
-   `/uat-directa-rincon-lectura/`. Verifica título, resumen, cuerpo, imagen, pie,
+   `/uat-directa-rincon-lectura/`. Verifica título, cuerpo, imagen, pie,
    crédito y firma pública.
 
 Resultado esperado: `Publicar` funciona como override directo autorizado para
@@ -430,8 +429,8 @@ Resultado esperado: el workflow está activo y la noticia aún no es pública.
    abre la noticia de workflow.
 2. Confirma que la única pestaña visible es `Asistente SEO`.
 3. En `Contexto de la noticia — solo lectura`, verifica título, `Política`,
-   fecha, resumen, cuerpo completo, imagen destacada, pie, texto alternativo,
-   crédito y `Redacción del Taller Horizonte`.
+   fecha, cuerpo completo, imagen destacada, pie, texto alternativo, crédito y
+   `Redacción del Taller Horizonte`.
 4. Selecciona `Previsualizar borrador completo` y verifica la revisión en una
    pestaña nueva.
 5. Confirma que el contexto no contiene `Ana Ficticia UAT`, `Menor de 14 años`,

@@ -32,7 +32,6 @@ def make_page(
         "escritura y la participación de equipos escolares en noticias locales."
     ),
     focus_keyphrase="periodismo escolar",
-    summary="El periodismo escolar abre nuevas oportunidades de aprendizaje.",
     body=None,
     featured_image=True,
     featured_image_caption="Redacción escolar trabajando.",
@@ -61,7 +60,6 @@ def make_page(
         seo_title=seo_title,
         search_description=search_description,
         focus_keyphrase=focus_keyphrase,
-        summary=summary,
         body=stream_value(raw_body),
         featured_image=featured_image,
         featured_image_caption=featured_image_caption,

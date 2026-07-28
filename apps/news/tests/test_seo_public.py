@@ -64,14 +64,12 @@ def create_news_page(
     live=True,
     featured_image=None,
     featured_image_alt_text="",
-    summary="Resumen público ficticio para comprobar metadata SEO.",
 ):
     page = NewsPage(
         title=title,
         slug=slug,
         live=live,
         publication_date=dt.date(2026, 7, 12),
-        summary=summary,
         body=[
             (
                 "paragraph",
@@ -106,7 +104,7 @@ def json_ld_from_response(response):
 
 
 @pytest.mark.django_db
-def test_news_public_metadata_uses_native_and_summary_fallbacks(
+def test_news_public_metadata_omits_descriptions_without_deriving_body_excerpt(
     public_site,
     section,
     settings,
@@ -120,10 +118,10 @@ def test_news_public_metadata_uses_native_and_summary_fallbacks(
 
     assert response.status_code == 200
     assert "<title>SEO Test News</title>" in content
-    assert (
-        '<meta name="description" content="Resumen público ficticio para '
-        'comprobar metadata SEO.">' in content
-    )
+    assert '<meta name="description"' not in content
+    assert '<meta property="og:description"' not in content
+    assert '<meta name="twitter:description"' not in content
+    assert "Contenido público ficticio para la noticia." in content
     assert f'<link rel="canonical" href="http://school.test{page_path}">' in content
     assert '<meta name="robots" content="index, follow">' in content
     assert '<meta property="og:title" content="SEO Test News">' in content
@@ -131,7 +129,7 @@ def test_news_public_metadata_uses_native_and_summary_fallbacks(
         f'<meta property="og:url" content="http://school.test{page_path}">' in content
     )
     assert '<meta name="twitter:card" content="summary">' in content
-    assert json_ld_from_response(response)["description"] == page.summary
+    assert "description" not in json_ld_from_response(response)
 
 
 @pytest.mark.django_db
@@ -146,7 +144,6 @@ def test_public_metadata_ignores_whitespace_only_seo_and_social_overrides(
         section,
         title="Fallback Metadata News",
         slug="fallback-metadata-news",
-        summary="Resumen público usado como fallback.",
     )
     page.seo_title = "   "
     page.search_description = "\n  "
@@ -160,25 +157,16 @@ def test_public_metadata_ignores_whitespace_only_seo_and_social_overrides(
 
     assert response.status_code == 200
     assert "<title>Fallback Metadata News</title>" in content
-    assert (
-        '<meta name="description" '
-        'content="Resumen público usado como fallback.">' in content
-    )
+    assert '<meta name="description"' not in content
     assert '<meta property="og:title" content="Fallback Metadata News">' in content
-    assert (
-        '<meta property="og:description" '
-        'content="Resumen público usado como fallback.">' in content
-    )
+    assert '<meta property="og:description"' not in content
     assert '<meta name="twitter:title" content="Fallback Metadata News">' in content
-    assert (
-        '<meta name="twitter:description" '
-        'content="Resumen público usado como fallback.">' in content
-    )
-    assert data["description"] == "Resumen público usado como fallback."
+    assert '<meta name="twitter:description"' not in content
+    assert "description" not in data
 
 
 @pytest.mark.django_db
-def test_news_public_metadata_omits_empty_optional_descriptions(
+def test_social_and_structured_descriptions_fall_back_to_explicit_meta_description(
     public_site,
     section,
     settings,
@@ -187,20 +175,28 @@ def test_news_public_metadata_omits_empty_optional_descriptions(
     page = create_news_page(
         public_site,
         section,
-        title="News Without Description",
-        slug="news-without-description",
-        summary="   ",
+        title="News With Explicit Description",
+        slug="news-with-explicit-description",
     )
+    page.search_description = "Descripción meta explícita."
+    page.og_description = "   "
+    page.save()
 
     response = site_client().get(page.url)
     content = response.content.decode()
     data = json_ld_from_response(response)
 
     assert response.status_code == 200
-    assert '<meta name="description"' not in content
-    assert '<meta property="og:description"' not in content
-    assert '<meta name="twitter:description"' not in content
-    assert "description" not in data
+    assert '<meta name="description" content="Descripción meta explícita.">' in content
+    assert (
+        '<meta property="og:description" content="Descripción meta explícita.">'
+        in content
+    )
+    assert (
+        '<meta name="twitter:description" content="Descripción meta explícita.">'
+        in content
+    )
+    assert data["description"] == "Descripción meta explícita."
 
 
 @pytest.mark.django_db

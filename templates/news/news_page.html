@@ -27,7 +27,6 @@
     <header class="article-header content-width mx-auto mb-5">
       <p class="eyebrow">{{ page.section.name }}</p>
       <h1 class="display-3">{{ page.title }}</h1>
-      <p class="lead">{{ page.summary }}</p>
       {% with public_credits=page.public_credits.all %}
         {% if public_credits %}
           <p class="byline">Por

@@ -122,7 +122,6 @@
     const watchedIds = [
       "id_title",
       "id_slug",
-      "id_summary",
       "id_seo_title",
       "id_search_description",
       "id_og_title",
@@ -133,14 +132,13 @@
     const update = () => {
       const pageTitle = valueOf("id_title");
       const seoTitle = valueOf("id_seo_title");
-      const summary = valueOf("id_summary");
       const description = valueOf("id_search_description");
       const ogTitle = valueOf("id_og_title");
       const ogDescription = valueOf("id_og_description");
       const canonical = valueOf("id_canonical_url");
       const slug = valueOf("id_slug");
       const effectiveTitle = seoTitle || pageTitle;
-      const effectiveDescription = description || summary;
+      const effectiveDescription = description;
       const currentSlug = root.dataset.currentSlug;
       const servedPublicUrl = root.dataset.publicUrl;
       let previewUrl = canonical;

@@ -2,6 +2,13 @@
 .agents
 .codex
 .env
+*.env
+.env.*
+*.dump
+*.key
+*.pem
+backups
+tmp
 .pytest_cache
 .ruff_cache
 __pycache__

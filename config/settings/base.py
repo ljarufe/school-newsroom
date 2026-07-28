@@ -11,7 +11,9 @@ env = environ.Env(
     DJANGO_SECRET_KEY=(str, "change-me"),
     DJANGO_DEBUG=(bool, False),
     DJANGO_ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
+    DJANGO_WAGTAILADMIN_BASE_URL=(str, "http://localhost:8000"),
     DATABASE_URL=(str, DEFAULT_DATABASE_URL),
+    DJANGO_LOG_LEVEL=(str, "INFO"),
     SEO_DEFAULT_NOINDEX=(bool, True),
 )
 
@@ -108,7 +110,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 WAGTAIL_SITE_NAME = "School Newsroom"
-WAGTAILADMIN_BASE_URL = "http://localhost:8000"
+WAGTAILADMIN_BASE_URL = env("DJANGO_WAGTAILADMIN_BASE_URL")
 WAGTAILADMIN_PERMITTED_LANGUAGES = LANGUAGES
 WAGTAIL_CONTENT_LANGUAGES = LANGUAGES
 

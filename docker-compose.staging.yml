@@ -1,0 +1,120 @@
+name: ${COMPOSE_PROJECT_NAME:-school_newsroom_staging}
+
+x-default-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+# Sensitive pass-through values come from the mandatory external --env-file;
+# never embed them in this Compose file.
+services:
+  proxy:
+    image: caddy:2-alpine
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in the staging environment file}
+      STAGING_HOSTNAME: ${STAGING_HOSTNAME:?Set STAGING_HOSTNAME in the staging environment file}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/staging/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /srv/school-newsroom/media:/srv/media:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+    logging: *default-logging
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - frontend
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    user: "10001:10001"
+    command: ["/app/docker/staging/start-web.sh"]
+    environment:
+      DATABASE_URL:
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?Set DJANGO_ALLOWED_HOSTS in the staging environment file}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:?Set DJANGO_CSRF_TRUSTED_ORIGINS in the staging environment file}
+      DJANGO_DEBUG: "false"
+      DJANGO_LOG_LEVEL: ${DJANGO_LOG_LEVEL:?Set DJANGO_LOG_LEVEL in the staging environment file}
+      DJANGO_SECRET_KEY:
+      DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS: ${DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS:-false}
+      DJANGO_SECURE_HSTS_PRELOAD: ${DJANGO_SECURE_HSTS_PRELOAD:-false}
+      DJANGO_SECURE_HSTS_SECONDS: ${DJANGO_SECURE_HSTS_SECONDS:-3600}
+      DJANGO_SECURE_SSL_REDIRECT: ${DJANGO_SECURE_SSL_REDIRECT:-true}
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      DJANGO_WAGTAILADMIN_BASE_URL: ${DJANGO_WAGTAILADMIN_BASE_URL:?Set DJANGO_WAGTAILADMIN_BASE_URL in the staging environment file}
+      GUNICORN_LOG_LEVEL: ${GUNICORN_LOG_LEVEL:-info}
+      GUNICORN_THREADS: ${GUNICORN_THREADS:-2}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-60}
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-2}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      SEO_DEFAULT_NOINDEX: ${SEO_DEFAULT_NOINDEX:-true}
+      STAGING_HOSTNAME: ${STAGING_HOSTNAME:?Set STAGING_HOSTNAME in the staging environment file}
+    volumes:
+      - /srv/school-newsroom/media:/app/media
+    expose:
+      - "8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import socket; socket.create_connection(("127.0.0.1", 8000), 5).close()
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    init: true
+    restart: unless-stopped
+    logging: *default-logging
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - frontend
+      - backend
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in the staging environment file}
+      POSTGRES_PASSWORD:
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in the staging environment file}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready --username "$$POSTGRES_USER" --dbname "$$POSTGRES_DB"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - backend
+
+volumes:
+  postgres_data:
+    name: school_newsroom_staging_postgres_data
+  caddy_data:
+    name: school_newsroom_staging_caddy_data
+  caddy_config:
+    name: school_newsroom_staging_caddy_config
+
+networks:
+  frontend:
+  backend:
+    internal: true

@@ -5,7 +5,7 @@ School Newsroom is a school digital newsroom and editorial CMS built with Django
 Current status: editorial MVP. The project includes Wagtail-managed news pages,
 editorial sections, schools, tags, images, an SEO Assistant, adult CMS roles, a
 native editorial workflow, and server-rendered public pages. It does not include
-public accounts, custom authentication, deployment, or a public write API.
+public accounts, custom authentication, automatic deployment, or a public write API.
 
 ## Stack
 
@@ -14,6 +14,7 @@ public accounts, custom authentication, deployment, or a public write API.
 - Wagtail 7.x
 - PostgreSQL 16
 - Docker Compose
+- Gunicorn, WhiteNoise, and Caddy for manual staging deployment
 - Ruff
 - pytest
 - pre-commit
@@ -458,6 +459,21 @@ Use `Dev Containers: Reopen in Container` so VS Code uses the Python environment
 
 Wagtail system checks may report Treebeard compatibility warnings in the current dependency set. These warnings do not block migrations, admin startup, or tests in the current setup.
 
+## Manual Demo/Staging Operations
+
+The repository includes a standalone, production-like staging topology for a
+manual Oracle Always Free deployment. It does not modify the local development
+Compose topology and does not deploy automatically.
+
+- [Oracle Always Free staging runbook](docs/operations/oracle_always_free_staging.md)
+- [Oracle staging UAT](docs/operations/oracle_staging_uat.md)
+- [Wagtail MVP access runbook](docs/operations/wagtail_access_mvp.md)
+
+Real staging secrets belong in `/etc/school-newsroom/staging.env`, never in the
+repository. Oracle capacity, cost eligibility, DNS, HTTPS, public firewall,
+reboot persistence, and browser UAT require maintainer validation on the real
+environment.
+
 ## Current Scope
 
 Included in the current base setup:
@@ -470,13 +486,12 @@ Included in the current base setup:
 - Initial editorial news core with Wagtail snippets and pages
 - Minimal `home` app and focused editorial tests
 - VS Code recommendations and tasks
+- Manual Oracle demo/staging Compose, proxy, and operations documentation
 
 Not included yet:
 
-- SEO assistant or Yoast-like workflow
-- Editorial roles and permissions
 - Public API
 - Redis/Celery workers
 - External media storage
-- Deployment configuration
+- Automatic deployment
 - Final public frontend design

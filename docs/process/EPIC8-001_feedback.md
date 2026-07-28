@@ -1,146 +1,206 @@
-# EPIC8-001 Implementation Closing Draft
+# EPIC8-001 Closing Feedback Final
 
 ## Status
 
-Implementation Closing Draft. Repository implementation and local technical validation are complete. The approved Individual Pay As You Go account upgrade, Oracle provisioning, native VM validation, DNS, public HTTPS, real persistence/backup evidence, and browser/editorial UAT remain maintainer work and are not claimed as passed.
+**Closing Feedback Final — implementation and real Oracle staging acceptance complete; ready for final PR checks and squash merge.**
+
+The repository implementation, local validation, real OCI provisioning, native ARM64 deployment, HTTPS, editorial UAT, persistence, and the agreed zero-cost closure checks passed. Backup and restore execution were explicitly deferred to EPIC8-003 and are accepted as non-blocking for EPIC8-001.
 
 ## Summary
 
-EPIC8-001 adds a standalone production-like staging path for a manual Oracle Always Free deployment while leaving the development Compose topology unchanged. A maintainer-approved material scope amendment now permits upgrading the account from Free Tier to **Individual Pay As You Go** solely to improve A1 capacity access while continuing to consume only Always Free resources at an expected zero cost. It does not authorize paid resources or usage above Always Free limits.
+EPIC8-001 delivers a manual, reproducible, production-like demo/staging path for School Newsroom on Oracle Cloud while leaving the development Compose topology unchanged. The environment runs Django/Wagtail behind Caddy, with private PostgreSQL, persistent editorial media, secure production settings, explicit operator actions for migrations/access/site reconciliation, and no automatic deployment.
 
-The staging topology uses Caddy as the only host-published service, Gunicorn for Django/Wagtail, PostgreSQL on an internal Compose network, a stable database volume, and a persistent host media directory shared read-write with the application and read-only with Caddy. Docker JSON logs for all three services use bounded rotation. The web startup waits for PostgreSQL, runs `collectstatic`, and then starts Gunicorn. It deliberately does not run migrations, bootstrap access, or create users during an ordinary restart.
+A material maintainer-approved amendment allowed conversion from Free Tier to **Individual Pay As You Go** solely to improve access to Always Free A1 capacity. Hard quotas, dual USD 1 budgets, four low-threshold alerts, resource-by-resource eligibility checks, and zero-cost acceptance remained mandatory. This amendment did not authorize paid resources or usage above Always Free limits.
 
-Production settings now fail closed for the secret key, database URL, explicit hosts, HTTPS CSRF origins, HTTPS Wagtail Admin base URL, and controlled console log level. Staging remains `DEBUG=False`, uses secure cookies and HTTPS redirect behavior, and keeps conservative noindex behavior. The image has a fixed non-root application identity and retains the existing development bind-mount ownership behavior through the entrypoint.
+The real staging environment is publicly reachable through browser-trusted HTTPS. The public site and Wagtail Admin work, nominal adult editorial roles passed UAT, content/media survived restarts, same-SHA redeploy, and VM reboot, and three agreed cost/inventory checkpoints completed at zero.
 
-The operator runbook documents current Oracle checks conservatively, with official source links and mandatory live Console verification before every resource creation. It includes the controlled Individual Pay As You Go procedure, a root-owned hard quota policy, USD 1 project and tenancy-root budgets with low-threshold alerts, project/root Cost Analysis and inventory schedules, limits/usage, zero-cost stop conditions, exact A1 and storage sizing, a dedicated subnet security list plus independently reviewed VNIC NSG boundary, VM/network/storage provisioning, Docker installation, host firewall, UUID mounts, DuckDNS token handling and HTTPS updater, manual deployment, migrations, access bootstrap, Wagtail Site reconciliation, HTTPS-only nominal adult user administration, bounded logs, persistence, backup/restore, access deactivation, and periodic cost/activity review.
+## Implemented repository files
 
-No real hostname, DNS record, certificate, user, password, token, private key, backup, or production value was added to the checkout. The maintainer has already created or configured external OCI account, governance, compartment, and networking resources outside Git; their detailed operational evidence remains private and will be consolidated once before merge.
+- `docker-compose.staging.yml`: standalone `proxy`/`web`/`db` staging topology, private backend networks, persistent PostgreSQL volume, host-backed media, health checks, and bounded logging.
+- `docker/staging/Caddyfile`: HTTP-to-HTTPS redirect, automatic TLS, reverse proxy, and read-only media route.
+- `docker/staging/staging.env.example`: safe non-secret staging contract.
+- `docker/staging/start-web.sh`: bounded database readiness, `collectstatic`, and Gunicorn startup without migration/bootstrap side effects.
+- `Dockerfile`: non-root application runtime compatible with the staging topology.
+- production settings and tests: fail-closed secret/database/host/origin/Admin URL requirements, secure proxy/cookie behavior, controlled logging, and staging noindex.
+- `docs/operations/oracle_always_free_staging.md`: complete manual provisioning and operations runbook, including controlled PAYG guardrails and real closure state.
+- `docs/operations/oracle_staging_uat.md`: final real-environment acceptance matrix and accepted EPIC8-003 backup deferral.
+- `docs/process/EPIC8-001_feedback.md`: this final factual closure record.
+- README/ignore files and focused tests required by the implementation.
 
-## Implemented files
+## Repository-local validation
 
-- `docker-compose.staging.yml`: standalone staging topology with no development source bind mount or database port, reusable `json-file` rotation (`10m`, three files) for every service, and external-file pass-through for sensitive values without inline secret expressions.
-- `docker/staging/Caddyfile`: automatic HTTPS reverse proxy and read-only `/media/` serving.
-- `docker/staging/start-web.sh`: bounded database wait, static collection, and Gunicorn startup; executable mode `0755`.
-- `docker/staging/staging.env.example`: safe validation placeholders only.
-- `docker/web/Dockerfile`: fixed UID/GID 10001 application user and application-owned runtime paths.
-- `config/settings/base.py`: environment-backed Wagtail Admin base URL and log-level schema.
-- `config/settings/production.py`: fail-closed production contract, secure proxy/cookie behavior, console logging, and uploaded-file modes.
-- `config/settings/tests.py`: focused production rejection and secure-contract coverage.
-- `.gitignore` and `.dockerignore`: broader secret, key, dump, backup, and temporary-data exclusions.
-- `docs/operations/oracle_always_free_staging.md`: operator-ready provisioning and operations runbook.
-- `docs/operations/oracle_staging_uat.md`: real-environment acceptance checklist with evidence boundaries.
-- `README.md`: developer-facing links and corrected current-scope wording.
-- `docs/process/EPIC8-001_feedback.md`: this implementation handoff draft.
+The implementation pass established:
 
-No model or editor workflow changed, so no migration or update to `docs/editorial/guia_de_uso.md` was required.
+- production settings focused tests: 34 passed;
+- staging Compose parsing with safe dummy values;
+- only Caddy publishing host ports 80/443;
+- `proxy`, `web`, and `db` using `json-file` with `max-size=10m` and `max-file=3`;
+- successful local x86_64 staging-image build;
+- non-root web runtime as UID/GID `10001:10001`;
+- successful static collection;
+- disposable migrations;
+- `bootstrap_mvp_access` idempotency;
+- fictional media routing and disposable local storage checks;
+- `make check`: Ruff passed, no migration drift, and 227 tests passed;
+- `git diff --check`, secret review, and repository ownership review passed;
+- runbook Bash blocks passed non-executing syntax validation during implementation.
 
-## Automated and local validation
+Known deploy-check warnings remain intentional for this temporary hostname: existing Wagtail/Treebeard future-compatibility warnings plus HSTS subdomain/preload warnings because those options are deliberately disabled. HTTPS redirect, secure cookies, and a bounded HSTS duration are enabled.
 
-The following checks passed locally using only dummy or fictional values:
+## Real Oracle deployment validation
 
-- active branch confirmation: `EPIC8-001-oracle-always-free-staging`;
-- focused Ruff and formatting checks for production settings/tests;
-- focused production settings tests: `34 passed`;
-- production `manage.py check --deploy` with dummy values: command completed with no errors and the warnings listed below;
-- staging Compose configuration parsing with a safe temporary environment;
-- complete safe-environment inspection confirmed that the effective web service receives `DATABASE_URL` and `DJANGO_SECRET_KEY` and the effective database service receives `POSTGRES_PASSWORD`, without printing any value;
-- omission inspection confirmed all three pass-through values remain unresolved/null with no value to inject when omitted from a temporary environment; the mandatory runbook preflight stops that deployment, production settings reject the missing web values, and a new PostgreSQL volume refuses normal initialization without its password;
-- exact published-port inspection: `proxy` publishes only `80` and `443`; `web` and `db` publish no host ports;
-- effective Compose logging inspection: `proxy`, `web`, and `db` each resolve to `json-file` with `max-size=10m` and `max-file=3`;
-- shell syntax check for `docker/staging/start-web.sh`;
-- executable mode check for `docker/staging/start-web.sh`: `0755`;
-- Caddy validation of the versioned `Caddyfile` using dummy environment values;
-- local native x86_64 staging image build;
-- application runtime identity: the staging web service is configured as UID/GID `10001:10001`, and the final image starts commands with that identity;
-- static collection: `217` files copied and `635` post-processed with the manifest-backed WhiteNoise storage;
-- disposable PostgreSQL migration run through the complete migration graph;
-- `bootstrap_mvp_access` run twice without duplicate owned objects;
-- disposable access query confirmed one each of `Director/editor`, `Curador SEO`, `Revisión SEO`, `Revisión editorial final`, and the owned workflow;
-- staging web health check reached healthy state;
-- internal public response and hashed static request returned HTTP 200;
-- fictional media created by the web process was UID/GID `10001:10001`, mode `0644`, and was served through a disposable Caddy route;
-- disposable custom-format PostgreSQL dump accepted by `pg_restore --list`;
-- disposable media archive accepted by `tar --list`;
-- local validation backup artifacts were non-empty, mode `0600`, and owned by the host maintainer user;
-- repository inspection found no Docker-generated root-owned ticket files.
+Private maintainer evidence confirmed:
 
-Technical-close gates:
+- home region Chile Central/Santiago;
+- account upgraded to Individual Pay As You Go under the approved zero-cost boundary;
+- root quota policy active, including regional and AD A1 counters;
+- A1 capped to 1 OCPU/4 GB, other Compute families blocked, combined storage capped to 100 GB, OCI volume backups blocked;
+- project and tenancy-root USD 1 budgets with four Actual/Forecast alerts active;
+- one `VM.Standard.A1.Flex` with 1 OCPU, 4 GB RAM, native `aarch64`;
+- Ubuntu 24.04 LTS after replacing the initially provisioned Ubuntu 20.04 boot image;
+- one approximately 50 GB boot volume and one 50 GB Balanced data block volume;
+- ext4 data volume mounted by UUID at `/srv/school-newsroom`;
+- Docker Engine, Compose, and Buildx running natively on ARM64;
+- DuckDNS timer working without exposing the token;
+- browser-trusted Caddy/Let's Encrypt HTTPS;
+- HTTP redirect, public Home/news pages, secure Admin login, and current certificate;
+- migrations, Wagtail Site reconciliation, technical superuser, and repeated access bootstrap;
+- only Caddy publishing 80/443, with application/database private;
+- bounded Docker logging for all three services.
 
-- `make check`: passed; Ruff passed, migration drift check reported `No changes detected`, and all `227` tests passed;
-- `make check` was not repeated after the focused Compose corrections and controlled-PAYG documentation amendment because no Python, migration, or application behavior changed; the pre-push repository gate remains responsible for the next general run, and the prior `227`-test evidence remains applicable;
-- the current official Oracle upgrade/payment, quotas, budgets, Cost Analysis, limits/usage, and Cost Reports guidance was reviewed, and volatile operational statements were date-qualified;
-- all 24 Bash-fenced runbook blocks passed non-executing `bash -n` syntax validation after the documentation amendment;
-- focused contradiction review confirmed that the account model, data-volume/combined-storage sizing, shape fallback, and list-price gates match the approved amendment in the touched documentation and README;
-- `git diff --check`: passed;
-- final secret/unsafe-value review: passed for all ticket files;
-- final ownership review: all repository ticket files remain owned by UID/GID `1000:1000`; no root/container-owned repository output was created.
+## Editorial UAT and privacy
 
-## Validation boundaries and warnings
+The adult Director/product owner and the separate nominal adult SEO user completed the canonical UAT with fictional/non-sensitive content:
 
-The production deploy check reports the existing five Treebeard/Wagtail future-compatibility warnings. It also reports Django security warnings `security.W005` and `security.W021` because HSTS subdomain inclusion and preload are deliberately disabled for a temporary third-party staging hostname. HTTPS redirect, secure cookies, and a one-hour HSTS duration remain enabled. These warnings are intentional for this environment and are not evidence that public HTTPS works.
+- Director/editor draft and authorized direct publication: passed;
+- `Revisión editorial` workflow start: passed;
+- SEO task visibility and isolation: passed;
+- request changes, revise, resubmit, and SEO approval: passed;
+- SEO inability to approve the final editorial task or publish: passed;
+- Director final `Aprobar y Publicar`: passed;
+- public Home/list/detail/image/byline/metadata: passed;
+- internal fictitious minor and contributor privacy boundaries: passed;
+- bootstrap rerun after UAT without duplicated or broadened access: passed.
 
-The local image build proves only the current x86_64 host path. It does not prove Oracle Ampere ARM64 compatibility or that the approved 1-OCPU/4-GB A1 target is sufficient for this stack. Image tags and Python dependency ranges are not immutable, so a future rebuild can resolve newer compatible patch versions even though the deploy procedure pins an approved repository commit.
+No account for a student, minor, teacher/monitor, or parent was created. No shared generic account was introduced.
 
-The local persistence checks used disposable Docker volumes and fictional media. They demonstrate the storage topology and normal container/redeploy behavior locally, not the Oracle block-volume mount, VM reboot persistence, or real public routing.
+## Persistence validation
 
-The local backup validation created and inspected disposable artifacts only. No destructive restore was run against persistent development or staging data; the formal restore drill remains EPIC8-003 scope.
+Using the fictional UAT article and image:
 
-## Failures, retries, and classification
+- web restart: passed;
+- proxy restart: passed;
+- PostgreSQL restart and health recovery: passed;
+- same-SHA `up -d --build` redeploy without volume deletion: passed;
+- PostgreSQL named-volume persistence: passed;
+- media persistence under `/srv/school-newsroom/media`: passed;
+- VM reboot preserving UUID mount, Docker/Compose, database, media, DuckDNS, and HTTPS: passed.
 
-- Repeated real `VM.Standard.A1.Flex` launch attempts while the account was Free Tier returned `Out of capacity` in the only available Availability Domain in Chile Central (Santiago). This is an external OCI capacity condition; the repository implementation and network configuration were not the cause. The approved Individual Pay As You Go amendment may improve capacity access but does not guarantee it, and no successful upgrade or VM launch is claimed here.
-- Initial sandboxed Docker/build access could not write Buildx state or reach the Docker socket. Approved Docker access completed the same build and runtime checks. This was an execution-permission boundary, not a repository defect.
-- Initial host-side access to a disposable published media port was blocked by the sandbox. The same fictional media request succeeded with approved local Docker/network access.
-- The first disposable backup attempt could not reach Docker under the sandbox and left no usable evidence. The approved rerun replaced it and produced valid non-empty mode-0600 artifacts.
-- A late focused-test attempt targeted the normal development `web` service after it was no longer running. The focused checks were rerun in the already built staging image with the checkout bind-mounted and passed. No repeated application failure remains.
-- The first pass-through omission assertion expected Compose to remove unresolved mapping keys. Effective Compose JSON instead retains those keys with null values and injects no secret value. The focused assertion and documentation were corrected to test the actual null/no-value boundary; no secret-handling defect remained.
+## Cost and inventory acceptance
 
-## Manual validation deferred to the maintainer
+The maintainer completed the approved three-checkpoint closure schedule. Final result:
 
-The following are explicitly pending on the real Oracle environment and must not be marked passed from this repository work:
+- project Cost to Date: zero;
+- project forecast: zero or no positive forecast;
+- tenancy Cost to Date: zero;
+- tenancy forecast: zero or no positive forecast;
+- paid SKU: none;
+- budgets: active;
+- four alerts: active;
+- expected project inventory only;
+- unexpected resource: none.
 
-- approved Free Tier to Individual Pay As You Go upgrade, completion email, final plan/account-type state, and current home region;
-- root quota policy creation, propagation, statement-order/effective-limit verification, and zero-backup enforcement;
-- both USD 1 budgets, all four alert rules/delivery, pre/post-upgrade project/root cost baselines, scheduled cost checks, settled Cost and Usage Report evidence, and full resource inventories;
-- current **Always Free-eligible** labels, estimator disclaimer where applicable, allowances, limits, usage, and actual capacity for every resource;
-- VM, VCN/dedicated subnet security list/VNIC NSG, public IP, approximately 46.6–50 GB boot volume, separate 50 GB data volume, and host firewall provisioning;
-- native build and resource-fit evidence on the approved Oracle ARM64 A1 VM with 1 OCPU/4 GB;
-- persistent storage mounted by UUID at `/srv/school-newsroom` and verified after a real reboot;
-- real `/etc/school-newsroom/staging.env` creation and safe secret custody;
-- DuckDNS account/update behavior, DNS propagation, Caddy certificate issuance/renewal, public HTTP-to-HTTPS redirect, and browser trust;
-- external confirmation that only ports 22 (restricted where practical), 80, and 443 are reachable and PostgreSQL/Gunicorn remain private;
-- real migrations, two access-bootstrap executions, Wagtail Site hostname reconciliation, and technical superuser creation;
-- nominal adult `Director/editor` and `Curador SEO` user creation through HTTPS Admin;
-- Home, news list/detail, media, secure Admin, workflow, permission-isolation, final-publication, and minors' privacy browser UAT;
-- database/media survival across real container restarts, redeploy, and VM reboot;
-- real Oracle database/media backup generation, checks, custody decision, and basic restore-procedure review;
-- adult-user deactivation and the required immediate, settled, daily-first-week, weekly, and infrastructure-deploy Oracle cost/activity reviews.
+The original daily-first-seven-days closure condition was explicitly replaced by three checkpoints through the agreed final review. Weekly cost/inventory review while staging remains active is operational maintenance after closure, not a reason to keep this ticket open.
 
-Until DNS and browser-trusted HTTPS pass, no Wagtail Admin credential may be shared or used over the Internet.
+## Failures, causes, and resolutions
 
-## Security, privacy, cost, and scope review
+### GitGuardian continued to flag a corrected branch
 
-- No real credentials, tokens, hostnames, IP addresses, certificates, private keys, dumps, archives, or cloud identifiers are present in ticket changes.
-- The committed environment file is a deliberately unusable `.invalid` template, and production settings reject its secret/database placeholders.
-- Sensitive Compose entries are pass-through mappings with no inline values. The external environment preflight checks presence without printing values, and no broad secret-scanner exclusion was added.
-- The DuckDNS token is never placed in Compose, Git, command arguments, example values, feedback, or logs; the runbook captures it interactively into a root-readable curl configuration.
-- Caddy alone publishes host ports. PostgreSQL remains on the internal backend network, and the application port remains Compose-internal so clients cannot connect directly and spoof the trusted proxy header.
-- The runbook requires independent inspection of the subnet security-list collection and every VNIC NSG because their rules are cumulative; the VCN default security list must not remain associated with the staging subnet.
-- Docker `json-file` logs are explicitly rotated for all services; systemd journal retention is documented separately for host services.
-- Media is public by design; the runbook and UAT require fictional/non-sensitive content and prohibit real minor data.
-- Both budgets are documented as soft alerting controls, never as hard spending limits. Hard quotas constrain the named A1/storage resources but do not directly cap monetary cost.
-- The approved Individual Pay As You Go upgrade is limited to A1 capacity access under verified quotas, dual budgets, Always Free usage, and zero-cost acceptance. No Corporate conversion, paid shape/service, usage above Always Free limits, trial-only dependency, paid load balancer, managed database, external object storage, AWS/R2, Kubernetes, Terraform, GitHub deployment workflow, staging-branch automation, scheduled OCI backup, transactional email, or forced password-change feature was introduced.
+Cause: the scanner evaluated secret-like content in earlier commits within the PR range.
+
+Resolution: consolidate the branch into clean history and push with `--force-with-lease`; correcting only the latest working tree was insufficient. GitGuardian subsequently passed.
+
+### A1 creation returned `Out of capacity`
+
+Cause: external OCI host capacity in the tenancy's only Santiago Availability Domain, not repository or network configuration.
+
+Resolution: controlled retries of the unchanged Always Free A1 target, followed by the approved Individual PAYG amendment with hard financial guardrails. No paid shape or larger resource was selected.
+
+### Quota policy blocked the approved A1 request
+
+Cause: the first policy restored only AD A1 counters; OCI also enforced regional core and memory counters.
+
+Resolution: update the same root policy to permit both `standard-a1-*-count` and `standard-a1-*-regional-count` at exactly 1 OCPU/4 GB, while retaining the zeroed families and storage/backup guardrails.
+
+### Initial image was Ubuntu 20.04
+
+Cause: the actual launched image did not match the approved Ubuntu 24.04 target.
+
+Resolution: preserve scarce A1 capacity by replacing the boot volume rather than terminating the instance.
+
+### OCI image selector was empty and Console replacement returned `kmsKeyId` validation errors
+
+Cause: OCI Console did not populate the compatible image list and sent an empty KMS field.
+
+Resolution: use the official Ubuntu 24.04 ARM64 image OCID through OCI Cloud Shell/CLI, omitting customer-managed KMS. The replacement completed and the old boot volume terminated.
+
+### SSH agent refused the approved key
+
+Cause: the local desktop SSH agent interfered with the protected private key.
+
+Resolution: connect with `IdentityAgent=none`, `IdentitiesOnly=yes`, and the explicit private-key path.
+
+### Host key changed after boot replacement
+
+Resolution: remove the obsolete known-host entry and accept the new verified host key.
+
+### ext4 label was truncated
+
+Cause: filesystem label length limit.
+
+Resolution: no operational change was required because `/etc/fstab` mounts the volume by UUID.
+
+### systemd warned after editing `fstab`
+
+Resolution: run `systemctl daemon-reload`, mount, verify with `findmnt`, and complete a real reboot test.
+
+### DuckDNS updater returned failure/`KO`
+
+Cause: the first stored token/domain combination was invalid; the earlier token had also appeared in a screenshot and required rotation.
+
+Resolution: rotate the token, recreate the root-only curl configuration, validate a manual `OK`, reset the oneshot service, and reactivate the timer.
+
+### Cost estimator displayed list pricing
+
+Cause: the estimator did not necessarily apply tier unit pricing in the displayed estimate.
+
+Resolution: do not infer either cost or gratuity from the estimator alone; verify Always Free eligibility, quotas, add-ons, Cost Analysis, settled data, and inventory. Final observed cost remained zero.
+
+## Approved closure amendments
+
+- Individual Pay As You Go is allowed solely for Always Free A1 capacity access under the documented quotas/budgets/zero-cost boundary.
+- EPIC8-001 closes after the three agreed cost/inventory checkpoints; the original seven-day closure gate no longer applies.
+- Real backup creation and restore validation are not EPIC8-001 gates and remain EPIC8-003.
+- Weekly cost/activity review continues as staging operation after ticket closure.
+
+## Security, privacy, and scope review
+
+- No real secret, password, token, private key, cloud identifier, database dump, or private minor data is committed.
+- The real environment file and DuckDNS curl configuration remain root-only outside the checkout.
+- Only Caddy publishes host ports; PostgreSQL and Gunicorn remain private.
+- Media UAT used fictional/non-sensitive content.
+- Nominal adult users are role-scoped and non-superuser.
+- No paid shape, paid load balancer, managed database, Object Storage dependency, customer-managed Vault key, trial-only service, Kubernetes, Terraform, AWS/R2, automatic GitHub deployment, or permanent staging branch was introduced.
+- This environment remains demo/staging, not production.
 
 ## New Work Discovered
 
-No blocking new repository work was discovered. The following remain separate concerns:
+Non-blocking future work remains separated:
 
-- EPIC8-002: staging-branch/GitHub deployment automation, if later approved;
-- EPIC8-003: scheduled backups, formal restore drill, retention, and minimum observability;
-- current Oracle capacity and native ARM64/resource-fit validation, which cannot be established locally;
-- a real-domain/DNS/TLS lifecycle if the temporary free hostname is later replaced;
-- transactional email/password recovery and enforced first-login password change;
-- immutable dependency locks and container-image digests if byte-for-byte rebuild reproducibility becomes a requirement.
+- **EPIC8-002:** permanent `staging` branch, GitHub Actions/manual approval flow, deployment automation, rollback, and CI secret handling.
+- **EPIC8-003:** database/media backups, retention, encrypted off-server custody, restore drill, and minimum observability.
+- Optional future tickets: real-domain lifecycle, transactional email/password recovery, immutable dependency/image locking, and a formal staging retention/access policy.
 
-## Handoff restrictions
+## Final handoff and merge boundary
 
-This draft does not mark EPIC8-001 accepted or complete because the approved ticket requires real Oracle access, HTTPS, persistence, backup, and browser/editorial UAT evidence. Do not commit, push, open a Pull Request, or merge as part of this implementation pass. The temporary checkout inspection and diff-review artifacts must remain untracked.
+The implementation and operational acceptance are complete. Before merge, the maintainer must still apply this final documentation replacement, push it, confirm the repository's required PR validation and GitGuardian checks are green, resolve any final review conversation, and use **Squash and merge**. A failure in that final documentation delta must be incorporated here before merge; otherwise no application redeploy or repeated UAT is required because the closing delta is documentation-only.

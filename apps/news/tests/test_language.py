@@ -12,10 +12,11 @@ from apps.news.models import (
     ContributorGroup,
     MinorContributor,
     NewsPage,
+    NewsPageSection,
     NewsSection,
     School,
 )
-from apps.news.panels import WritingModeFieldPanel
+from apps.news.panels import TaxonomyPanel, WritingModeFieldPanel
 
 
 def test_primary_language_settings_are_spanish_only() -> None:
@@ -78,7 +79,11 @@ def test_custom_editor_visible_labels_are_spanish() -> None:
     )
     assert "summary" not in {field.name for field in NewsPage._meta.get_fields()}
     assert NewsPage._meta.get_field("body").verbose_name == "Contenido"
-    assert NewsPage._meta.get_field("section").verbose_name == "Sección"
+    assert "section" not in {field.name for field in NewsPage._meta.get_fields()}
+    assert NewsSection._meta.get_field("parent").verbose_name == "Sección principal"
+    assert NewsPageSection._meta.get_field("section").verbose_name == (
+        "Sección o subsección"
+    )
     assert NewsPage._meta.get_field("school").verbose_name == "Colegio"
     assert NewsPage._meta.get_field("coverage_province").verbose_name == (
         "Provincia de cobertura"
@@ -164,7 +169,7 @@ def test_news_admin_panels_explain_content_authoring_and_public_credit() -> None
         "title",
         "Imagen destacada",
         "body",
-        "section",
+        "taxonomy_sections",
         "Cobertura",
         "publication_date",
         "tags",
@@ -188,6 +193,8 @@ def test_news_admin_panels_explain_content_authoring_and_public_credit() -> None
     )
 
     assert isinstance(body_panel, WritingModeFieldPanel)
+    taxonomy_panel = NewsPage.content_panels[body_panel_index + 1]
+    assert isinstance(taxonomy_panel, TaxonomyPanel)
     assert NewsPage.edit_handler.children[0].heading == "Edición de la noticia"
     assert NewsPage._meta.get_field("body").verbose_name == "Contenido"
     assert isinstance(featured_panel, MultiFieldPanel)

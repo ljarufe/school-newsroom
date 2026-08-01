@@ -5,7 +5,7 @@
     <img class="card-img-top" src="{{ card_image.url }}" width="{{ card_image.width }}" height="{{ card_image.height }}" alt="{{ news.effective_featured_image_alt_text }}">
   {% endif %}
   <div class="card-body d-flex flex-column">
-    <p class="eyebrow mb-2">{{ news.section.name }}</p>
+    {% if news.taxonomy.compact_main_names %}<p class="eyebrow mb-2">{{ news.taxonomy.compact_main_names }}</p>{% endif %}
     {% if heading_level == 2 %}
       <h2 class="h4 card-title"><a class="stretched-link" href="{% pageurl news %}">{{ news.title }}</a></h2>
     {% else %}
@@ -22,7 +22,7 @@
     {% endwith %}
     <dl class="news-meta mt-auto mb-0">
       <div><dt>Fecha de publicación</dt><dd><time datetime="{{ news.publication_date|date:'Y-m-d' }}">{{ news.publication_date }}</time></dd></div>
-      <div><dt>Sección</dt><dd>{{ news.section.name }}</dd></div>
+      {% if news.taxonomy.compact_main_names %}<div><dt>Secciones</dt><dd>{{ news.taxonomy.compact_main_names }}</dd></div>{% endif %}
       {% if news.school %}<div><dt>Colegio</dt><dd>{{ news.school }}</dd></div>{% endif %}
       <div><dt>Cobertura</dt><dd>{{ news.coverage_province }}{% if news.coverage_district %}, {{ news.coverage_district }}{% endif %}</dd></div>
     </dl>

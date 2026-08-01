@@ -1,4 +1,8 @@
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import ProtectedError
+from django.utils.functional import cached_property
 from modelcluster.contrib.taggit import ClusterTaggableManager
 from modelcluster.fields import ParentalKey
 from taggit.models import TaggedItemBase
@@ -11,7 +15,7 @@ from wagtail.admin.panels import (
     TabbedInterface,
 )
 from wagtail.fields import StreamField
-from wagtail.models import Orderable, Page
+from wagtail.models import Orderable, Page, Revision
 
 from .access import FULL_EDITOR_PERMISSION, SEO_EDITOR_PERMISSION
 from .blocks import (
@@ -27,6 +31,7 @@ from .panels import (
     NewsSeoContextPanel,
     RolePermissionObjectList,
     SeoAssistantPanel,
+    TaxonomyPanel,
     WritingModeFieldPanel,
     contextual_image_panels,
 )
@@ -72,20 +77,111 @@ class NewsSection(models.Model):
     name = models.CharField("Nombre", max_length=80)
     slug = models.SlugField("Slug", max_length=80, unique=True)
     sort_order = models.PositiveSmallIntegerField("Orden", default=100)
+    parent = models.ForeignKey(
+        "self",
+        verbose_name="Sección principal",
+        on_delete=models.PROTECT,
+        related_name="subsections",
+        null=True,
+        blank=True,
+        limit_choices_to={"parent__isnull": True},
+        help_text=(
+            "Déjalo vacío para crear una sección principal. Una subsección no "
+            "puede contener otras subsecciones."
+        ),
+    )
 
     panels = [
         FieldPanel("name"),
         FieldPanel("slug"),
+        FieldPanel("parent"),
         FieldPanel("sort_order"),
     ]
 
     class Meta:
-        ordering = ["sort_order", "name"]
+        ordering = ["sort_order", "name", "pk"]
         verbose_name = "Sección editorial"
         verbose_name_plural = "Secciones editoriales"
 
     def __str__(self) -> str:
+        if self.parent_id:
+            return f"{self.parent.name} › {self.name}"
         return self.name
+
+    @property
+    def hierarchical_name(self) -> str:
+        return str(self)
+
+    hierarchical_name.fget.short_description = "Clasificación"
+
+    @property
+    def classification_type(self) -> str:
+        return "Subsección" if self.parent_id else "Sección principal"
+
+    classification_type.fget.short_description = "Tipo"
+
+    def clean(self) -> None:
+        super().clean()
+        if self.pk and self.parent_id == self.pk:
+            raise ValidationError(
+                {"parent": "Una sección no puede depender de sí misma."}
+            )
+        if self.parent_id is not None and self.parent.parent_id is not None:
+            raise ValidationError(
+                {"parent": "Una subsección no puede depender de otra subsección."}
+            )
+
+        if not self.pk:
+            return
+
+        original_parent_ids = list(
+            type(self)
+            .objects.filter(pk=self.pk)
+            .values_list("parent_id", flat=True)[:1]
+        )
+        if not original_parent_ids:
+            return
+
+        original_parent_id = original_parent_ids[0]
+        if original_parent_id is None and self.parent_id is not None:
+            raise ValidationError(
+                {
+                    "parent": (
+                        "Una sección principal no puede convertirse en subsección."
+                    )
+                }
+            )
+        if original_parent_id is not None and self.parent_id is None:
+            raise ValidationError(
+                {
+                    "parent": (
+                        "Una subsección no puede convertirse en sección principal."
+                    )
+                }
+            )
+
+    def is_referenced_by_revision(self) -> bool:
+        news_page_content_type = ContentType.objects.get_for_model(NewsPage)
+        section_ids = {self.pk}
+        from .taxonomy import revision_content_references_section
+
+        return any(
+            revision_content_references_section(content, section_ids)
+            for content in Revision.objects.filter(
+                content_type=news_page_content_type
+            ).values_list("content", flat=True)
+        )
+
+    def delete(self, *args, **kwargs):
+        if self.is_referenced_by_revision():
+            raise ProtectedError(
+                (
+                    "No puedes eliminar esta clasificación porque contiene "
+                    "subsecciones o está asociada a noticias."
+                ),
+                {self},
+            )
+        return super().delete(*args, **kwargs)
 
 
 class School(models.Model):
@@ -215,12 +311,6 @@ class NewsPage(Page):
         blank=False,
         use_json_field=True,
     )
-    section = models.ForeignKey(
-        NewsSection,
-        verbose_name="Sección",
-        on_delete=models.PROTECT,
-        related_name="news_pages",
-    )
     school = models.ForeignKey(
         School,
         verbose_name="Colegio",
@@ -343,7 +433,7 @@ class NewsPage(Page):
             heading="Imagen destacada",
         ),
         WritingModeFieldPanel("body", help_text=CONTENT_AUTHORING_HELP),
-        FieldPanel("section"),
+        TaxonomyPanel("taxonomy_sections"),
         MultiFieldPanel(
             [
                 FieldPanel("coverage_province"),
@@ -445,6 +535,12 @@ class NewsPage(Page):
         )
         return context
 
+    @cached_property
+    def taxonomy(self):
+        from .taxonomy import NewsTaxonomy
+
+        return NewsTaxonomy.from_page(self)
+
     def get_sitemap_urls(self, request=None):
         if effective_noindex(self) or not canonical_is_self(self, request):
             return []
@@ -501,6 +597,33 @@ class NewsPageContributor(Orderable):
 
     def __str__(self) -> str:
         return str(self.contributor)
+
+
+class NewsPageSection(models.Model):
+    page = ParentalKey(
+        NewsPage,
+        related_name="section_assignments",
+        on_delete=models.CASCADE,
+    )
+    section = models.ForeignKey(
+        NewsSection,
+        verbose_name="Sección o subsección",
+        on_delete=models.PROTECT,
+        related_name="news_page_assignments",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("page", "section"),
+                name="unique_news_page_section",
+            )
+        ]
+        verbose_name = "Clasificación de noticia"
+        verbose_name_plural = "Clasificaciones de noticia"
+
+    def __str__(self) -> str:
+        return str(self.section)
 
 
 class NewsPagePublicCredit(Orderable):

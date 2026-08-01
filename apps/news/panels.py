@@ -58,6 +58,28 @@ class WritingModeFieldPanel(FieldPanel):
             )
 
 
+class TaxonomyPanel(FieldPanel):
+    """Render the NewsPage-only hierarchical classification field."""
+
+    class BoundPanel(FieldPanel.BoundPanel):
+        class Media:
+            css = {"all": ["news/css/taxonomy_tree.css"]}
+            js = ["news/js/taxonomy_tree.js"]
+
+        def get_context_data(self, parent_context=None):
+            self.bound_field.field.widget.has_taxonomy_error = bool(
+                self.bound_field.errors
+            )
+            return super().get_context_data(parent_context)
+
+        @property
+        def media(self):
+            return super().media + forms.Media(
+                css=self.Media.css,
+                js=self.Media.js,
+            )
+
+
 class SeoAssistantPanel(Panel):
     class BoundPanel(Panel.BoundPanel):
         template_name = "news/admin/seo_assistant_panel.html"
@@ -132,4 +154,5 @@ class NewsSeoContextPanel(Panel):
                 if self.instance.pk
                 else None
             )
+            context["classification_paths"] = self.instance.taxonomy.visible_paths
             return context

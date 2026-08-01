@@ -15,6 +15,7 @@ from apps.news.models import (
     NewsPage,
     NewsPageContributor,
     NewsPagePublicCredit,
+    NewsPageSection,
     NewsSection,
     School,
 )
@@ -77,12 +78,12 @@ def create_news_page(
                 "<p>Contenido público ficticio para la noticia.</p>",
             ),
         ],
-        section=section,
         coverage_province="Arequipa",
         featured_image=featured_image,
         featured_image_alt_text=featured_image_alt_text,
     )
     home.add_child(instance=page)
+    NewsPageSection.objects.create(page=page, section=section)
     return page
 
 
@@ -220,6 +221,61 @@ def test_incomplete_draft_json_ld_omits_missing_publication_date(
     data = json.loads(context["seo_json_ld"])
 
     assert "datePublished" not in data
+
+
+@pytest.mark.django_db
+def test_json_ld_uses_ordered_deduplicated_taxonomy_values(
+    public_site,
+    section,
+    settings,
+) -> None:
+    settings.SEO_DEFAULT_NOINDEX = False
+    page = create_news_page(
+        public_site,
+        section,
+        title="Taxonomy JSON-LD news",
+        slug="taxonomy-json-ld-news",
+    )
+    music = NewsSection.objects.get(slug="musica")
+    interviews = NewsSection.objects.get(slug="entrevistas")
+    community = NewsSection.objects.get(slug="comunidad")
+    page.section_assignments.set(
+        [
+            NewsPageSection(page=page, section=music),
+            NewsPageSection(page=page, section=interviews),
+            NewsPageSection(page=page, section=community),
+        ]
+    )
+    page.save()
+
+    data = json_ld_from_response(site_client().get(page.url))
+
+    assert data["articleSection"] == [
+        "Cultura",
+        "Cultura > Música",
+        "Entrevistas",
+        "Entrevistas > Comunidad",
+    ]
+
+
+@pytest.mark.django_db
+def test_json_ld_omits_article_section_for_unclassified_historical_page(
+    public_site,
+    section,
+    settings,
+) -> None:
+    settings.SEO_DEFAULT_NOINDEX = False
+    page = create_news_page(
+        public_site,
+        section,
+        title="Unclassified historical news",
+        slug="unclassified-historical-news",
+    )
+    page.section_assignments.all().delete()
+
+    data = json_ld_from_response(site_client().get(page.url))
+
+    assert "articleSection" not in data
 
 
 @pytest.mark.django_db

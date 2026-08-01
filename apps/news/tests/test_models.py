@@ -14,6 +14,7 @@ from apps.news.models import (
     NewsPage,
     NewsPageContributor,
     NewsPagePublicCredit,
+    NewsPageSection,
     NewsSection,
     School,
 )
@@ -65,13 +66,13 @@ def create_news_page(
             ("paragraph", "<p>Reported context</p>"),
             ("paragraph", "<p>Structured body paragraph.</p>"),
         ],
-        section=section,
         school=school,
         coverage_province="Arequipa",
         coverage_district="Cercado",
         featured_image=featured_image,
     )
     home_page.add_child(instance=page)
+    NewsPageSection.objects.create(page=page, section=section)
     return page
 
 
@@ -102,9 +103,134 @@ def test_contextual_image_metadata_fields_are_blank_safe() -> None:
 
 @pytest.mark.django_db
 def test_initial_news_sections_are_seeded() -> None:
-    assert list(NewsSection.objects.values_list("slug", flat=True)) == (
-        INITIAL_SECTION_SLUGS
+    assert (
+        list(
+            NewsSection.objects.filter(parent__isnull=True).values_list(
+                "slug", flat=True
+            )
+        )
+        == INITIAL_SECTION_SLUGS
     )
+
+
+@pytest.mark.django_db
+def test_provisional_subsections_have_expected_variable_branch_sizes() -> None:
+    counts = {
+        section.slug: section.subsections.count()
+        for section in NewsSection.objects.filter(parent__isnull=True)
+    }
+
+    assert counts == {
+        "politica": 3,
+        "cultura": 5,
+        "medio-ambiente": 4,
+        "problematicas-sociales": 2,
+        "columnas": 1,
+        "entrevistas": 3,
+    }
+
+
+@pytest.mark.django_db
+def test_news_section_rejects_self_parent_and_third_level() -> None:
+    politics = NewsSection.objects.get(slug="politica")
+    local = NewsSection.objects.get(slug="politica-local")
+
+    politics.parent = politics
+    with pytest.raises(ValidationError) as self_error:
+        politics.full_clean()
+    assert "Una sección no puede depender de sí misma." in str(self_error.value)
+
+    invalid = NewsSection(name="Third level", slug="third-level", parent=local)
+    with pytest.raises(ValidationError) as depth_error:
+        invalid.full_clean()
+    assert "Una subsección no puede depender de otra subsección." in str(
+        depth_error.value
+    )
+
+
+@pytest.mark.django_db
+def test_news_section_moves_and_level_conversion_rules() -> None:
+    politics = NewsSection.objects.get(slug="politica")
+    culture = NewsSection.objects.get(slug="cultura")
+    local = NewsSection.objects.get(slug="politica-local")
+
+    local.parent = culture
+    local.full_clean()
+    local.save()
+    assert NewsSection.objects.get(pk=local.pk).parent == culture
+
+    local.parent = None
+    with pytest.raises(ValidationError) as subsection_error:
+        local.full_clean()
+    assert "Una subsección no puede convertirse en sección principal." in str(
+        subsection_error.value
+    )
+
+    politics.parent = culture
+    with pytest.raises(ValidationError) as section_error:
+        politics.full_clean()
+    assert "Una sección principal no puede convertirse en subsección." in str(
+        section_error.value
+    )
+
+
+@pytest.mark.django_db
+def test_news_taxonomy_derives_paths_parents_and_article_sections(
+    home_page,
+    section,
+) -> None:
+    page = create_news_page(home_page, section)
+    music = NewsSection.objects.get(slug="musica")
+    interviews = NewsSection.objects.get(slug="entrevistas")
+    community = NewsSection.objects.get(slug="comunidad")
+    page.section_assignments.set(
+        [
+            NewsPageSection(page=page, section=music),
+            NewsPageSection(page=page, section=interviews),
+            NewsPageSection(page=page, section=community),
+        ]
+    )
+    page.__dict__.pop("taxonomy", None)
+
+    assert [item.slug for item in page.taxonomy.explicit_sections] == [
+        "musica",
+        "entrevistas",
+        "comunidad",
+    ]
+    assert [item.slug for item in page.taxonomy.effective_main_sections] == [
+        "cultura",
+        "entrevistas",
+    ]
+    assert page.taxonomy.visible_paths == (
+        "Cultura › Música",
+        "Entrevistas › Comunidad",
+    )
+    assert page.taxonomy.article_section_values == (
+        "Cultura",
+        "Cultura > Música",
+        "Entrevistas",
+        "Entrevistas > Comunidad",
+    )
+
+
+@pytest.mark.django_db
+def test_news_page_section_is_unique(home_page, section) -> None:
+    page = create_news_page(home_page, section)
+
+    with pytest.raises(IntegrityError):
+        NewsPageSection.objects.create(page=page, section=section)
+
+
+@pytest.mark.django_db
+def test_revision_only_section_reference_is_protected(home_page, section) -> None:
+    page = create_news_page(home_page, section)
+    revision = page.save_revision()
+    page.section_assignments.all().delete()
+
+    with pytest.raises(ProtectedError):
+        section.delete()
+
+    assert revision.content["section_assignments"][0]["section"] == section.pk
 
 
 @pytest.mark.django_db
@@ -122,7 +248,9 @@ def test_news_section_ordering_and_string_representation() -> None:
     NewsSection.objects.create(name="Later", slug="later", sort_order=200)
     NewsSection.objects.create(name="Earlier", slug="earlier", sort_order=5)
 
-    sections = list(NewsSection.objects.values_list("name", flat=True))
+    sections = list(
+        NewsSection.objects.filter(parent__isnull=True).values_list("name", flat=True)
+    )
 
     assert sections[:2] == ["Earlier", "Política"]
     assert str(NewsSection.objects.get(slug="cultura")) == "Cultura"
@@ -149,7 +277,7 @@ def test_school_ordering_and_string_representation() -> None:
 
 
 @pytest.mark.django_db
-def test_section_is_required_by_model_validation() -> None:
+def test_draft_page_model_allows_no_taxonomy_assignment() -> None:
     page = NewsPage(
         title="Missing Section",
         slug="missing-section",
@@ -158,10 +286,7 @@ def test_section_is_required_by_model_validation() -> None:
         coverage_province="Arequipa",
     )
 
-    with pytest.raises(ValidationError) as exc_info:
-        page.full_clean(exclude=["path", "depth"])
-
-    assert "section" in exc_info.value.message_dict
+    page.full_clean(exclude=["path", "depth"])
 
 
 @pytest.mark.django_db

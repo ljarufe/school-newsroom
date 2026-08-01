@@ -2,6 +2,7 @@ import json
 from urllib.parse import urljoin
 
 from django.contrib.auth.decorators import permission_required
+from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
@@ -36,12 +37,18 @@ def news_list(request):
         news_pages = news_pages.descendant_of(site.root_page)
 
     if section_slug:
-        selected_section = NewsSection.objects.filter(slug=section_slug).first()
+        selected_section = NewsSection.objects.filter(
+            slug=section_slug,
+            parent__isnull=True,
+        ).first()
         if selected_section is None:
             unknown_section_slug = section_slug
             news_pages = news_pages.none()
         else:
-            news_pages = news_pages.filter(section=selected_section)
+            news_pages = news_pages.filter(
+                Q(section_assignments__section=selected_section)
+                | Q(section_assignments__section__parent=selected_section)
+            ).distinct()
 
     return render(
         request,

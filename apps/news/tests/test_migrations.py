@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ImproperlyConfigured
-from django.db import connection
+from django.db import connection, transaction
 from django.db.migrations.executor import MigrationExecutor
 from django.utils import timezone
 from wagtail.models import (
@@ -36,6 +36,8 @@ from wagtail.models import (
 from wagtail.users.models import UserProfile
 
 from apps.home.models import HomePage as RuntimeHomePage
+from apps.news.models import NewsPage as RuntimeNewsPage
+from apps.news.models import NewsPageSection as RuntimeNewsPageSection
 from apps.news.models import NewsSection as RuntimeNewsSection
 
 NEWS_0001 = ("news", "0001_initial")
@@ -49,6 +51,9 @@ NEWS_0008 = ("news", "0008_alter_newspage_options")
 NEWS_0009 = ("news", "0009_reconcile_mvp_access")
 NEWS_0010 = ("news", "0010_remove_newspage_summary_and_more")
 NEWS_0011 = ("news", "0011_alter_newspage_body")
+NEWS_0012 = ("news", "0012_editorial_taxonomy_schema")
+NEWS_0013 = ("news", "0013_migrate_editorial_taxonomy")
+NEWS_0014 = ("news", "0014_remove_singular_section")
 HOME_0001 = ("home", "0001_initial")
 BEFORE_NEWS_0002 = [HOME_0001, NEWS_0001]
 
@@ -63,6 +68,27 @@ def migrate_to(targets):
 
 def migrate_to_latest():
     executor = MigrationExecutor(connection)
+    if ("news", "0002_bootstrap_editorial_data") in executor.loader.applied_migrations:
+        with connection.cursor() as cursor:
+            cursor.executemany(
+                """
+                INSERT INTO news_newssection (name, slug, sort_order)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (slug) DO NOTHING
+                """,
+                [
+                    ("Política", "politica", 10),
+                    ("Cultura", "cultura", 20),
+                    ("Medio Ambiente", "medio-ambiente", 30),
+                    (
+                        "Problemáticas Sociales",
+                        "problematicas-sociales",
+                        40,
+                    ),
+                    ("Columnas", "columnas", 50),
+                    ("Entrevistas", "entrevistas", 60),
+                ],
+            )
     executor.migrate(executor.loader.graph.leaf_nodes())
 
 
@@ -79,6 +105,12 @@ def migration_schema_editor():
 def mvp_access_migration_module():
     return importlib.import_module(
         "apps.news.migrations.0009_reconcile_mvp_access",
+    )
+
+
+def taxonomy_migration_module():
+    return importlib.import_module(
+        "apps.news.migrations.0013_migrate_editorial_taxonomy",
     )
 
 
@@ -1330,3 +1362,297 @@ def test_epic3_006_migration_preserves_body_and_adds_table_schema() -> None:
                 home.delete()
         if section_id is not None:
             RuntimeNewsSection.objects.filter(pk=section_id).delete()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_epic3_009_migrates_current_page_and_revision_relation_shape() -> None:
+    home_id = None
+    page_id = None
+    revision_id = None
+    try:
+        apps = migrate_to(NEWS_0011)
+        db_alias = connection.alias
+        ContentType = apps.get_model("contenttypes", "ContentType")
+        HistoricalNewsPage = apps.get_model("news", "NewsPage")
+        HistoricalNewsSection = apps.get_model("news", "NewsSection")
+        HistoricalPage = apps.get_model("wagtailcore", "Page")
+        HistoricalRevision = apps.get_model("wagtailcore", "Revision")
+
+        RuntimeLocale.objects.get_or_create(language_code="es")
+        root = RuntimePage.get_first_root_node()
+        if root is None:
+            root = RuntimePage.add_root(
+                instance=RuntimePage(title="Root", slug="root"),
+            )
+        home = RuntimeHomePage(
+            title="Historical taxonomy home",
+            slug="historical-taxonomy-home",
+        )
+        root.add_child(instance=home)
+        home_id = home.pk
+        base_child = RuntimePage(
+            title="Historical taxonomy news",
+            slug="historical-taxonomy-news",
+            live=False,
+        )
+        home.add_child(instance=base_child)
+        page_id = base_child.pk
+
+        news_page_content_type, _ = ContentType.objects.db_manager(
+            db_alias
+        ).get_or_create(app_label="news", model="newspage")
+        page_content_type, _ = ContentType.objects.db_manager(db_alias).get_or_create(
+            app_label="wagtailcore", model="page"
+        )
+        HistoricalPage._base_manager.using(db_alias).filter(pk=page_id).update(
+            content_type_id=news_page_content_type.pk,
+        )
+        seeded_sections = {}
+        for name, slug, sort_order in [
+            ("Política", "politica", 10),
+            ("Cultura", "cultura", 20),
+            ("Medio Ambiente", "medio-ambiente", 30),
+            ("Problemáticas Sociales", "problematicas-sociales", 40),
+            ("Columnas", "columnas", 50),
+            ("Entrevistas", "entrevistas", 60),
+        ]:
+            seeded_sections[slug], _ = HistoricalNewsSection.objects.using(
+                db_alias
+            ).get_or_create(
+                slug=slug,
+                defaults={"name": name, "sort_order": sort_order},
+            )
+        section = seeded_sections["politica"]
+        body_data = [
+            {
+                "type": "paragraph",
+                "value": "<p>Historical taxonomy body.</p>",
+                "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            }
+        ]
+        HistoricalNewsPage(
+            page_ptr_id=page_id,
+            publication_date=timezone.datetime(2026, 7, 31).date(),
+            body=body_data,
+            section_id=section.pk,
+            coverage_province="Arequipa",
+        ).save_base(raw=True, using=db_alias, force_insert=True)
+        revision = HistoricalRevision.objects.using(db_alias).create(
+            content_type_id=news_page_content_type.pk,
+            base_content_type_id=page_content_type.pk,
+            object_id=str(page_id),
+            created_at=timezone.now(),
+            object_str="Historical taxonomy news",
+            content={
+                "pk": page_id,
+                "title": "Historical taxonomy news",
+                "slug": "historical-taxonomy-news",
+                "publication_date": "2026-07-31",
+                "coverage_province": "Arequipa",
+                "body": json.dumps(body_data),
+                "section": section.pk,
+            },
+        )
+        revision_id = revision.pk
+
+        apps = migrate_to(NEWS_0014)
+        MigratedNewsPageSection = apps.get_model("news", "NewsPageSection")
+        MigratedRevision = apps.get_model("wagtailcore", "Revision")
+        migrated_revision = MigratedRevision.objects.using(db_alias).get(pk=revision_id)
+
+        assert list(
+            MigratedNewsPageSection.objects.using(db_alias)
+            .filter(page_id=page_id)
+            .values_list("section_id", flat=True)
+        ) == [section.pk]
+        assert "section" not in migrated_revision.content
+        assert migrated_revision.content["section_assignments"] == [
+            {"pk": None, "page": page_id, "section": section.pk}
+        ]
+
+        reconstructed = Revision.objects.get(pk=revision_id).as_object()
+        assert list(
+            reconstructed.section_assignments.values_list("section_id", flat=True)
+        ) == [section.pk]
+        assert reconstructed.body[0].value.source == (
+            "<p>Historical taxonomy body.</p>"
+        )
+        round_trip = reconstructed.save_revision()
+        round_trip_object = round_trip.as_object()
+        assert list(
+            round_trip_object.section_assignments.values_list("section_id", flat=True)
+        ) == [section.pk]
+        assert round_trip_object.body[0].value.source == (
+            "<p>Historical taxonomy body.</p>"
+        )
+    finally:
+        migrate_to_latest()
+        if revision_id is not None:
+            Revision.objects.filter(pk=revision_id).delete()
+        if page_id is not None:
+            page = RuntimePage.objects.filter(pk=page_id).first()
+            if page is not None:
+                page.delete()
+        if home_id is not None:
+            home = RuntimePage.objects.filter(pk=home_id).first()
+            if home is not None:
+                home.delete()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_epic3_009_provisional_bootstrap_is_idempotent_and_conflicts_fail() -> None:
+    try:
+        apps = migrate_to(NEWS_0012)
+        NewsSection = apps.get_model("news", "NewsSection")
+        db_alias = connection.alias
+        for name, slug, sort_order in [
+            ("Política", "politica", 10),
+            ("Cultura", "cultura", 20),
+            ("Medio Ambiente", "medio-ambiente", 30),
+            ("Problemáticas Sociales", "problematicas-sociales", 40),
+            ("Columnas", "columnas", 50),
+            ("Entrevistas", "entrevistas", 60),
+        ]:
+            NewsSection.objects.using(db_alias).get_or_create(
+                slug=slug,
+                defaults={"name": name, "sort_order": sort_order},
+            )
+        culture = NewsSection.objects.using(db_alias).get(slug="cultura")
+        NewsSection.objects.using(db_alias).create(
+            name="Conflicting music",
+            slug="musica",
+            sort_order=999,
+        )
+
+        with pytest.raises(ImproperlyConfigured, match="incompatible identity"):
+            with transaction.atomic():
+                taxonomy_migration_module().migrate_pages_and_revisions(
+                    apps,
+                    migration_schema_editor(),
+                )
+
+        NewsSection.objects.using(db_alias).filter(slug="musica").delete()
+        migration = taxonomy_migration_module()
+        migration.migrate_pages_and_revisions(apps, migration_schema_editor())
+        migration.migrate_pages_and_revisions(apps, migration_schema_editor())
+
+        assert NewsSection.objects.using(db_alias).filter(slug="musica").count() == 1
+        assert (
+            NewsSection.objects.using(db_alias).get(slug="musica").parent_id
+            == culture.pk
+        )
+        assert (
+            NewsSection.objects.using(db_alias).filter(parent_id__isnull=False).count()
+            == 18
+        )
+    finally:
+        migrate_to_latest()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_epic3_009_reverse_fails_before_collapsing_multiple_assignments() -> None:
+    page_id = None
+    home_id = None
+    try:
+        RuntimeLocale.objects.get_or_create(language_code="es")
+        root = RuntimePage.get_first_root_node()
+        if root is None:
+            root = RuntimePage.add_root(
+                instance=RuntimePage(title="Root", slug="root"),
+            )
+        home = RuntimeHomePage(
+            title="Reverse taxonomy home",
+            slug="reverse-taxonomy-home",
+        )
+        root.add_child(instance=home)
+        home_id = home.pk
+        page = RuntimeNewsPage(
+            title="Reverse taxonomy news",
+            slug="reverse-taxonomy-news",
+            live=False,
+            publication_date=timezone.datetime(2026, 7, 31).date(),
+            body=[("paragraph", "<p>Reverse taxonomy body.</p>")],
+            coverage_province="Arequipa",
+        )
+        home.add_child(instance=page)
+        page_id = page.pk
+        politics, _ = RuntimeNewsSection.objects.get_or_create(
+            slug="politica",
+            defaults={"name": "Política", "sort_order": 10},
+        )
+        culture, _ = RuntimeNewsSection.objects.get_or_create(
+            slug="cultura",
+            defaults={"name": "Cultura", "sort_order": 20},
+        )
+        RuntimeNewsPageSection.objects.create(
+            page=page,
+            section=politics,
+        )
+        RuntimeNewsPageSection.objects.create(
+            page=page,
+            section=culture,
+        )
+        executor = MigrationExecutor(connection)
+        historical_apps = executor.loader.project_state([NEWS_0013]).apps
+
+        with pytest.raises(ImproperlyConfigured, match="cannot reverse"):
+            taxonomy_migration_module().restore_singular_sections(
+                historical_apps,
+                migration_schema_editor(),
+            )
+
+        assert RuntimeNewsPageSection.objects.filter(page_id=page_id).count() == 2
+    finally:
+        if page_id is not None:
+            page = RuntimePage.objects.filter(pk=page_id).first()
+            if page is not None:
+                page.delete()
+        if home_id is not None:
+            home = RuntimePage.objects.filter(pk=home_id).first()
+            if home is not None:
+                home.delete()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_epic3_009_reverse_preserves_an_unclassified_page_as_null() -> None:
+    page_id = None
+    home_id = None
+    try:
+        migrate_to(NEWS_0013)
+        RuntimeLocale.objects.get_or_create(language_code="es")
+        root = RuntimePage.get_first_root_node()
+        if root is None:
+            root = RuntimePage.add_root(
+                instance=RuntimePage(title="Root", slug="root"),
+            )
+        home = RuntimeHomePage(
+            title="Unclassified reverse home",
+            slug="unclassified-reverse-home",
+        )
+        root.add_child(instance=home)
+        home_id = home.pk
+        page = RuntimeNewsPage(
+            title="Unclassified reverse news",
+            slug="unclassified-reverse-news",
+            live=False,
+            publication_date=timezone.datetime(2026, 7, 31).date(),
+            body=[("paragraph", "<p>Unclassified reverse body.</p>")],
+            coverage_province="Arequipa",
+        )
+        home.add_child(instance=page)
+        page_id = page.pk
+
+        apps = migrate_to(NEWS_0012)
+        HistoricalNewsPage = apps.get_model("news", "NewsPage")
+
+        assert HistoricalNewsPage.objects.get(pk=page_id).section_id is None
+    finally:
+        migrate_to_latest()
+        if page_id is not None:
+            page = RuntimePage.objects.filter(pk=page_id).first()
+            if page is not None:
+                page.delete()
+        if home_id is not None:
+            home = RuntimePage.objects.filter(pk=home_id).first()
+            if home is not None:
+                home.delete()

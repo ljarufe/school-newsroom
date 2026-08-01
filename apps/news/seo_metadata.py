@@ -131,6 +131,9 @@ def build_news_article_data(page, metadata: PublicMetadata) -> dict:
     ]
     if authors:
         data["author"] = authors
+    article_sections = list(page.taxonomy.article_section_values)
+    if article_sections:
+        data["articleSection"] = article_sections
     return data
 
 

@@ -36,7 +36,8 @@ usuarios, grupos ni permisos y no es superusuario.
 editar la superficie SEO permitida y elegir una imagen social existente. No ve
 la pestaña `Edición de la noticia`, `Propiedades`, `Navegación y menús`,
 colaboradores internos ni snippets editoriales; tampoco puede publicar. En
-noticias dispone del Asistente SEO completo. En `Inicio` y páginas
+noticias dispone del Asistente SEO completo y ve las secciones y subsecciones
+de la noticia como contexto de solo lectura. En `Inicio` y páginas
 institucionales dispone sólo de `Slug de la URL`, `Título SEO` y `Descripción
 meta`, porque esos tipos no tienen el checklist ampliado de la noticia.
 
@@ -51,13 +52,16 @@ de noticias, el detalle de cada noticia y las páginas institucionales. Incluye:
 
 - `Inicio`;
 - `Noticias`;
-- las secciones editoriales existentes, que abren el listado filtrado por su
+- las secciones principales existentes, que abren el listado filtrado por su
   slug;
 - las páginas institucionales publicadas que tengan activa la opción nativa
   `mostrar en menús`.
 
 Una página institucional que no exista, no esté publicada o no esté marcada
 para menús no genera un enlace vacío en la navegación.
+
+Las subsecciones no se añaden a este menú. Una noticia seleccionada sólo en una
+subsección sí pertenece a su sección principal cuando se usa el filtro público.
 
 ## Páginas institucionales simples
 
@@ -94,16 +98,31 @@ público. Para revisar el recorrido:
 Si no hay noticias públicas, o una sección real no tiene resultados, la página
 muestra un estado vacío. No se generan tarjetas ni datos de demostración.
 
-## Secciones editoriales
+## Secciones y subsecciones editoriales
 
-Ruta en Wagtail Admin:
+La administración de la taxonomía está separada en dos rutas:
 
 ```text
-Editorial -> Secciones editoriales
+Editorial -> Secciones
+Editorial -> Subsecciones
 ```
 
-Una sección editorial clasifica una noticia dentro de la cobertura del sitio.
-Las secciones iniciales son:
+La taxonomía tiene dos niveles. Una `sección principal` organiza una rama y una
+`subsección` depende directamente de una sección principal. No se permiten
+niveles adicionales.
+
+En `Secciones` sólo aparecen las secciones principales. Sus campos son
+`Nombre`, `Slug` y `Orden`; el formulario no muestra `Sección principal`. En
+`Subsecciones` sólo aparecen las subsecciones. Sus campos son `Nombre`, `Slug`,
+`Sección principal` y `Orden`. La sección principal es obligatoria y el selector
+sólo ofrece secciones principales, nunca otras subsecciones.
+
+El tipo queda fijo al crear la clasificación: una sección principal no puede
+convertirse en subsección y una subsección no puede convertirse en sección
+principal. Sí puedes mover una subsección a otra sección principal desde
+`Editorial -> Subsecciones`. `Orden` organiza cada grupo de elementos hermanos.
+
+Las secciones principales iniciales son:
 
 - Política
 - Cultura
@@ -111,6 +130,11 @@ Las secciones iniciales son:
 - Problemáticas Sociales
 - Columnas
 - Entrevistas
+
+La lista inicial de subsecciones es provisional y editable; sirve para validar
+el flujo editorial y no reemplaza la definición institucional definitiva. No
+se puede eliminar una clasificación que contenga subsecciones o esté asociada a
+noticias actuales o históricas.
 
 ## Colegios
 
@@ -186,7 +210,7 @@ Campos principales:
 - Título
 - Imagen destacada
 - Contenido
-- Sección
+- Secciones y subsecciones
 - Cobertura
 - Fecha de publicación
 - Etiquetas
@@ -198,6 +222,24 @@ Campos principales:
 La ubicación del colegio describe dónde está la institución educativa asociada.
 La cobertura editorial describe el territorio sobre el que trata la noticia.
 Pueden coincidir, pero no son el mismo dato.
+
+`Secciones y subsecciones` muestra un árbol compacto de checkboxes. El control
+de cada rama sólo muestra u oculta sus subsecciones: expandir `Cultura` no la
+selecciona. Puedes elegir una subsección sin marcar su sección principal,
+marcar sólo una sección principal o combinar varias secciones y subsecciones.
+Marcar un elemento no marca automáticamente ningún padre ni hijo.
+
+Guardar un borrador sin clasificación está permitido. Antes de publicar,
+programar o completar el envío editorial, selecciona al menos una sección o
+subsección. Al reabrir la noticia se conservan exactamente las selecciones
+explícitas y las ramas que las contienen aparecen abiertas.
+
+En el detalle público, una subsección se presenta con un path como `Cultura ›
+Música`. Los paths legibles aparecen una sola vez, en la clasificación roja
+superior. Si también seleccionaste `Cultura`, el detalle no repite una etiqueta
+redundante de la misma rama ni añade una fila inferior de clasificación. La
+Home, las tarjetas y el listado mantienen su diseño compacto y muestran
+únicamente las secciones principales efectivas.
 
 `Resumen` ya no forma parte del modelo ni del flujo editorial de una noticia.
 La Home, el listado, las tarjetas y el detalle no fabrican una bajada desde

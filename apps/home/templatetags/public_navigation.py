@@ -29,6 +29,6 @@ def public_navigation(context):
     return {
         "request": request,
         "home_page": home_page,
-        "sections": NewsSection.objects.all(),
+        "sections": NewsSection.objects.filter(parent__isnull=True),
         "institutional_pages": institutional_pages,
     }

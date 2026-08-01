@@ -13,6 +13,7 @@ from wagtail.actions.publish_page_revision import (
     PublishPagePermissionError,
     PublishPageRevisionAction,
 )
+from wagtail.admin.admin_url_finder import AdminURLFinder
 from wagtail.admin.views.pages.edit import EditView
 from wagtail.images import get_image_model
 from wagtail.models import (
@@ -43,6 +44,7 @@ from apps.news.models import (
     NewsPage,
     NewsPageContributor,
     NewsPagePublicCredit,
+    NewsPageSection,
     NewsSection,
     School,
 )
@@ -74,10 +76,13 @@ def create_news_page(*, slug: str = "noticia-workflow") -> NewsPage:
         live=False,
         publication_date=dt.date(2026, 7, 15),
         body=[("paragraph", "<p>Contenido editorial ficticio y seguro.</p>")],
-        section=NewsSection.objects.get(slug="politica"),
         coverage_province="Arequipa",
     )
     home.add_child(instance=page)
+    NewsPageSection.objects.create(
+        page=page,
+        section=NewsSection.objects.get(slug="politica"),
+    )
     NewsPagePublicCredit.objects.create(page=page, display_name="Redacción escolar")
     page.save_revision()
     return page
@@ -292,11 +297,48 @@ def test_director_and_seo_curator_real_permission_matrix() -> None:
         == 200
     )
     assert (
+        director_client.get(
+            reverse("wagtailsnippets_news_newssection:list")
+        ).status_code
+        == 200
+    )
+    assert director_client.get(reverse("news_subsections:index")).status_code == 200
+    assert (
         curator_client.get(
             reverse("wagtailsnippets_news_minorcontributor:list")
         ).status_code
         != 200
     )
+    assert (
+        curator_client.get(reverse("wagtailsnippets_news_newssection:list")).status_code
+        != 200
+    )
+    assert curator_client.get(reverse("news_subsections:index")).status_code != 200
+
+    root_section = NewsSection.objects.get(slug="cultura")
+    subsection = NewsSection.objects.get(slug="musica")
+    director_url_finder = AdminURLFinder(director)
+    curator_url_finder = AdminURLFinder(curator)
+    assert director_url_finder.get_edit_url(root_section) == reverse(
+        "wagtailsnippets_news_newssection:edit",
+        args=(root_section.pk,),
+    )
+    assert director_url_finder.get_edit_url(subsection) == reverse(
+        "news_subsections:edit",
+        args=(subsection.pk,),
+    )
+    assert curator_url_finder.get_edit_url(root_section) is None
+    assert curator_url_finder.get_edit_url(subsection) is None
+
+    director_dashboard = director_client.get(
+        reverse("wagtailadmin_home")
+    ).content.decode()
+    curator_dashboard = curator_client.get(
+        reverse("wagtailadmin_home")
+    ).content.decode()
+    assert "Secciones" in director_dashboard
+    assert "Subsecciones" in director_dashboard
+    assert "Subsecciones" not in curator_dashboard
     assert director_client.get("/admin/users/").status_code != 200
     assert curator_client.get("/admin/users/").status_code != 200
 
@@ -323,6 +365,7 @@ def test_role_bound_forms_expose_only_authorized_fields_and_relations() -> None:
     assert {"body", "show_in_menus", "contains_identifiable_minors"} <= set(
         director_form.fields
     )
+    assert "taxonomy_sections" in director_form.fields
     assert {"comments", "internal_contributors", "public_credits"} == set(
         director_form.formsets
     )
@@ -388,6 +431,7 @@ def test_seo_curator_edit_surface_hides_content_properties_and_minor_data() -> N
     assert "news/js/smart_paste.js" not in content
     assert 'name="show_in_menus"' not in content
     assert 'name="contains_identifiable_minors"' not in content
+    assert 'name="taxonomy_sections"' not in content
     assert "Colaboradores internos" not in content
     assert "Propiedades" not in visible_tab_labels(response)
     assert "Publicar" not in content
@@ -450,6 +494,7 @@ def test_seo_curator_manipulated_post_cannot_change_non_seo_fields() -> None:
             "body": "CONTENIDO MANIPULADO",
             "show_in_menus": "on",
             "contains_identifiable_minors": "on",
+            "taxonomy_sections": str(NewsSection.objects.get(slug="musica").pk),
             "internal_contributors-TOTAL_FORMS": "0",
             "internal_contributors-INITIAL_FORMS": "0",
             "action-save": "Guardar borrador",
@@ -463,6 +508,9 @@ def test_seo_curator_manipulated_post_cannot_change_non_seo_fields() -> None:
     assert "CONTENIDO MANIPULADO" not in str(saved_page.body)
     assert not saved_page.show_in_menus
     assert not saved_page.contains_identifiable_minors
+    assert list(
+        saved_page.section_assignments.values_list("section__slug", flat=True)
+    ) == ["politica"]
     saved_contributor_ids = saved_page.internal_contributors.values_list(
         "contributor_id",
         flat=True,

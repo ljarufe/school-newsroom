@@ -10,7 +10,8 @@ from django.urls import reverse
 from wagtail.models import Page, Site
 
 from apps.home.models import HomePage
-from apps.news.models import NewsPage, NewsSection
+from apps.news.models import NewsPage, NewsPageSection, NewsSection
+from apps.news.taxonomy_forms import NewsSubsectionAdminForm
 
 
 @pytest.fixture
@@ -104,11 +105,14 @@ def test_seo_assistant_keeps_served_url_separate_from_external_canonical(
         slug="canonical-preview-news",
         publication_date=dt.date(2026, 7, 12),
         body=[("paragraph", "<p>Contenido ficticio.</p>")],
-        section=NewsSection.objects.get(slug="politica"),
         coverage_province="Arequipa",
         canonical_url="https://canonical.example.org/original",
     )
     home.add_child(instance=page)
+    NewsPageSection.objects.create(
+        page=page,
+        section=NewsSection.objects.get(slug="politica"),
+    )
 
     response = admin_client.get(
         reverse("wagtailadmin_pages:edit", args=(page.pk,)),
@@ -130,7 +134,8 @@ def test_wagtail_dashboard_uses_spanish_search_and_editorial_menu(admin_client):
     assert response.status_code == 200
     assert_contains_text(response, "Buscar en todas las páginas...")
     assert_contains_text(response, "Editorial")
-    assert_contains_text(response, "Secciones editoriales")
+    assert_contains_text(response, "Secciones")
+    assert_contains_text(response, "Subsecciones")
     assert_contains_text(response, "Colegios")
     assert_contains_text(response, "Grupos de colaboradores")
     assert_contains_text(response, "Colaboradores menores")
@@ -142,6 +147,7 @@ def test_editorial_snippet_destinations_are_available(admin_client):
     section_response = admin_client.get(
         reverse("wagtailsnippets_news_newssection:list"),
     )
+    subsection_response = admin_client.get(reverse("news_subsections:index"))
     school_response = admin_client.get(reverse("wagtailsnippets_news_school:list"))
     group_response = admin_client.get(
         reverse("wagtailsnippets_news_contributorgroup:list"),
@@ -151,13 +157,275 @@ def test_editorial_snippet_destinations_are_available(admin_client):
     )
 
     assert section_response.status_code == 200
+    assert subsection_response.status_code == 200
     assert school_response.status_code == 200
     assert group_response.status_code == 200
     assert contributor_response.status_code == 200
-    assert_contains_text(section_response, "Secciones editoriales")
+    culture = NewsSection.objects.get(slug="cultura")
+    music = NewsSection.objects.get(slug="musica")
+    assert_contains_text(section_response, "Secciones")
+    assert_contains_text(section_response, "Añadir sección")
+    assert_not_contains_text(section_response, "Añadir Sección editorial")
+    assert_contains_text(
+        section_response,
+        reverse("wagtailsnippets_news_newssection:edit", args=(culture.pk,)),
+    )
+    assert_not_contains_text(
+        section_response,
+        reverse("wagtailsnippets_news_newssection:edit", args=(music.pk,)),
+    )
+    assert_contains_text(subsection_response, "Subsecciones")
+    assert_contains_text(subsection_response, "Añadir subsección")
+    assert_not_contains_text(subsection_response, "Añadir Sección editorial")
+    assert_contains_text(
+        subsection_response, reverse("news_subsections:edit", args=(music.pk,))
+    )
+    assert_not_contains_text(
+        subsection_response, reverse("news_subsections:edit", args=(culture.pk,))
+    )
+    assert_contains_text(subsection_response, "Cultura")
     assert_contains_text(school_response, "Colegios")
     assert_contains_text(group_response, "Grupos de colaboradores")
     assert_contains_text(contributor_response, "Colaboradores menores")
+
+
+@pytest.mark.django_db
+def test_taxonomy_management_forms_keep_types_fixed_and_parent_choices_root_only(
+    admin_client,
+) -> None:
+    culture = NewsSection.objects.get(slug="cultura")
+    politics = NewsSection.objects.get(slug="politica")
+    music = NewsSection.objects.get(slug="musica")
+
+    section_add_response = admin_client.get(
+        reverse("wagtailsnippets_news_newssection:add")
+    )
+    subsection_add_response = admin_client.get(reverse("news_subsections:add"))
+
+    assert section_add_response.status_code == 200
+    assert subsection_add_response.status_code == 200
+    section_add_content = section_add_response.content.decode()
+    subsection_add_content = subsection_add_response.content.decode()
+    assert re.search(
+        r'<h2[^>]+id="header-title"[^>]*>.*?<span>Sección</span>.*?</h2>',
+        section_add_content,
+        flags=re.DOTALL,
+    )
+    assert re.search(
+        r'<h2[^>]+id="header-title"[^>]*>.*?<span>Subsección</span>.*?</h2>',
+        subsection_add_content,
+        flags=re.DOTALL,
+    )
+    assert "Crear sección: Sección" in section_add_content
+    assert "Crear subsección: Subsección" in subsection_add_content
+    assert "Nueva: Sección" in section_add_content
+    assert "Nueva: Subsección" in subsection_add_content
+    assert 'name="parent"' not in section_add_response.content.decode()
+    assert 'name="parent"' in subsection_add_response.content.decode()
+    assert_contains_text(subsection_add_response, "Sección principal")
+
+    subsection_form = NewsSubsectionAdminForm()
+    parent_slugs = list(
+        subsection_form.fields["parent"].queryset.values_list("slug", flat=True)
+    )
+    assert subsection_form.fields["parent"].required
+    assert "cultura" in parent_slugs
+    assert "politica" in parent_slugs
+    assert "musica" not in parent_slugs
+    assert not NewsSubsectionAdminForm(
+        data={
+            "name": "Subsección manipulada",
+            "slug": "subseccion-manipulada",
+            "parent": music.pk,
+            "sort_order": 100,
+        }
+    ).is_valid()
+
+    section_create_response = admin_client.post(
+        reverse("wagtailsnippets_news_newssection:add"),
+        {
+            "name": "Sección creada",
+            "slug": "seccion-creada",
+            "sort_order": 70,
+            "parent": culture.pk,
+        },
+    )
+    assert section_create_response.status_code == 302
+    assert section_create_response.url == reverse(
+        "wagtailsnippets_news_newssection:list"
+    )
+    assert NewsSection.objects.get(slug="seccion-creada").parent_id is None
+
+    crafted_section_edit_response = admin_client.post(
+        reverse(
+            "wagtailsnippets_news_newssection:edit",
+            args=(culture.pk,),
+        ),
+        {
+            "name": culture.name,
+            "slug": culture.slug,
+            "sort_order": culture.sort_order,
+            "parent": politics.pk,
+        },
+    )
+    assert crafted_section_edit_response.status_code == 302
+    culture.refresh_from_db()
+    assert culture.parent_id is None
+
+    missing_parent_response = admin_client.post(
+        reverse("news_subsections:add"),
+        {
+            "name": "Subsección sin padre",
+            "slug": "subseccion-sin-padre",
+            "sort_order": 80,
+        },
+    )
+    assert missing_parent_response.status_code == 200
+    assert_contains_text(
+        missing_parent_response,
+        "Selecciona una sección principal.",
+    )
+
+    cleared_parent_response = admin_client.post(
+        reverse("news_subsections:edit", args=(music.pk,)),
+        {
+            "name": music.name,
+            "slug": music.slug,
+            "sort_order": music.sort_order,
+        },
+    )
+    assert cleared_parent_response.status_code == 200
+    assert_contains_text(
+        cleared_parent_response,
+        "Selecciona una sección principal.",
+    )
+    music.refresh_from_db()
+    assert music.parent == culture
+
+    move_response = admin_client.post(
+        reverse("news_subsections:edit", args=(music.pk,)),
+        {
+            "name": music.name,
+            "slug": music.slug,
+            "parent": politics.pk,
+            "sort_order": music.sort_order,
+        },
+    )
+    assert move_response.status_code == 302
+    assert move_response.url == reverse("news_subsections:index")
+    music.refresh_from_db()
+    assert music.parent == politics
+
+
+@pytest.mark.django_db
+def test_taxonomy_cross_surface_object_urls_return_not_found(admin_client) -> None:
+    culture = NewsSection.objects.get(slug="cultura")
+    music = NewsSection.objects.get(slug="musica")
+
+    assert (
+        admin_client.get(
+            reverse("wagtailsnippets_news_newssection:edit", args=(music.pk,))
+        ).status_code
+        == 404
+    )
+    assert (
+        admin_client.get(
+            reverse("wagtailsnippets_news_newssection:delete", args=(music.pk,))
+        ).status_code
+        == 404
+    )
+    assert (
+        admin_client.get(
+            reverse("news_subsections:edit", args=(culture.pk,))
+        ).status_code
+        == 404
+    )
+    assert (
+        admin_client.get(
+            reverse("news_subsections:delete", args=(culture.pk,))
+        ).status_code
+        == 404
+    )
+    for view_name in ("copy", "history", "usage"):
+        assert (
+            admin_client.get(
+                reverse(
+                    f"wagtailsnippets_news_newssection:{view_name}",
+                    args=(music.pk,),
+                )
+            ).status_code
+            == 404
+        )
+        assert (
+            admin_client.get(
+                reverse(f"news_subsections:{view_name}", args=(culture.pk,))
+            ).status_code
+            == 404
+        )
+
+
+@pytest.mark.django_db
+def test_protected_taxonomy_delete_paths_redirect_with_spanish_error(
+    admin_client,
+) -> None:
+    section = NewsSection.objects.get(slug="cultura")
+    subsection = NewsSection.objects.get(slug="musica")
+    home = HomePage.objects.first()
+    if home is None:
+        root = Page.get_first_root_node()
+        home = HomePage(title="Inicio", slug="inicio-taxonomy-delete")
+        root.add_child(instance=home)
+    page = NewsPage(
+        title="Taxonomy delete protection",
+        slug="taxonomy-delete-protection",
+        publication_date=dt.date(2026, 7, 31),
+        body=[("paragraph", "<p>Contenido ficticio.</p>")],
+        coverage_province="Arequipa",
+    )
+    home.add_child(instance=page)
+    NewsPageSection.objects.create(page=page, section=subsection)
+    expected_error = (
+        "No puedes eliminar esta clasificación porque contiene subsecciones o "
+        "está asociada a noticias."
+    )
+
+    individual_response = admin_client.get(
+        reverse("wagtailsnippets_news_newssection:delete", args=(section.pk,)),
+        follow=True,
+    )
+    bulk_response = admin_client.get(
+        reverse(
+            "wagtail_bulk_action",
+            args=("news", "newssection", "delete"),
+        ),
+        {"id": [str(section.pk)]},
+        follow=True,
+    )
+    subsection_response = admin_client.get(
+        reverse("news_subsections:delete", args=(subsection.pk,)),
+        follow=True,
+    )
+    crafted_bulk_response = admin_client.get(
+        reverse(
+            "wagtail_bulk_action",
+            args=("news", "newssection", "delete"),
+        ),
+        {"id": [str(subsection.pk)]},
+        follow=True,
+    )
+
+    assert individual_response.status_code == 200
+    assert bulk_response.status_code == 200
+    assert subsection_response.status_code == 200
+    assert crafted_bulk_response.status_code == 200
+    assert_contains_text(individual_response, expected_error)
+    assert_contains_text(bulk_response, expected_error)
+    assert_contains_text(subsection_response, expected_error)
+    assert_contains_text(
+        crafted_bulk_response,
+        "La clasificación solicitada no está disponible en Secciones.",
+    )
+    assert NewsSection.objects.filter(pk=subsection.pk).exists()
 
 
 @pytest.mark.django_db
@@ -194,6 +462,16 @@ def test_news_page_create_surface_contains_contributor_and_privacy_copy(
     assert_contains_text(response, "Modo redacción")
     assert_contains_text(response, "Volver")
     assert_contains_text(response, "Volver a la edición de la noticia")
+    assert_contains_text(response, "Secciones y subsecciones")
+    assert_contains_text(
+        response,
+        (
+            "Selecciona una o varias secciones o subsecciones. Puedes elegir una "
+            "subsección sin seleccionar también su sección principal."
+        ),
+    )
+    assert 'name="taxonomy_sections"' in response.content.decode()
+    assert 'aria-label="Mostrar subsecciones de Cultura"' in response.content.decode()
     assert_contains_telepath_text(response, "Encabezados de tabla")
     assert_contains_telepath_text(
         response,

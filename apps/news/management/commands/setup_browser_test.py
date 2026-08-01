@@ -9,7 +9,7 @@ from django.db import transaction
 
 from apps.home.models import HomePage
 from apps.news.access import DIRECTOR_GROUP_NAME
-from apps.news.models import NewsPage, NewsPagePublicCredit, NewsSection
+from apps.news.models import NewsPage, NewsPagePublicCredit
 
 
 class Command(BaseCommand):
@@ -44,7 +44,6 @@ class Command(BaseCommand):
         if len(home_pages) != 1:
             raise CommandError("The browser fixture requires exactly one HomePage.")
         home = home_pages[0]
-        section = NewsSection.objects.get(slug="politica")
         page = NewsPage.objects.filter(slug="nota-browser-epic3-006").first()
         if page is None:
             page = NewsPage(
@@ -52,7 +51,6 @@ class Command(BaseCommand):
                 slug="nota-browser-epic3-006",
                 live=False,
                 publication_date=dt.date(2026, 7, 28),
-                section=section,
                 coverage_province="Arequipa",
                 coverage_district="Cercado",
                 body=[
@@ -67,7 +65,6 @@ class Command(BaseCommand):
         page.title = "Nota browser EPIC3-006"
         page.live = False
         page.publication_date = dt.date(2026, 7, 28)
-        page.section = section
         page.coverage_province = "Arequipa"
         page.coverage_district = "Cercado"
         page.body = [
@@ -77,6 +74,7 @@ class Command(BaseCommand):
             ("paragraph", "<p>Bloque posterior.</p>"),
         ]
         page.save()
+        page.section_assignments.all().delete()
         NewsPagePublicCredit.objects.update_or_create(
             page=page,
             sort_order=0,

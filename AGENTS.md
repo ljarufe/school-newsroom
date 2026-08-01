@@ -70,6 +70,15 @@ Temporary inspection and diff-review artifacts under `tmp/` must not be staged o
 - Keep pre-commit hooks fast and suitable for staged files.
 - Do not add CI, deploy infrastructure, or product features unless the current ticket explicitly requires them.
 
+## Browser testing
+
+- Before writing or changing a failed Playwright locator, inspect the rendered DOM, accessibility role, and current disclosure state.
+- Model required preconditions explicitly: open the relevant menu, accordion, tab, or disclosure before locating an action hidden inside it.
+- Prefer semantic role/name locators scoped to the visible container, or stable project-owned identifiers.
+- Do not use force, arbitrary sleeps, or speculative selector sequences to bypass a missing precondition.
+- On failure, inspect available DOM, trace, or screenshot evidence and classify the cause as an incorrect locator, expected hidden state, race, or product defect before retrying.
+- Extract a shared Wagtail interaction helper only when the same pattern exists in at least two specs; otherwise keep the local interaction sequence explicit.
+
 ## Review guidelines
 
 - Secrets, credentials, private keys, tokens, or production values are blocking findings.

@@ -2,7 +2,9 @@ import datetime as dt
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import connection
 from django.test import Client, RequestFactory
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 from wagtail.embeds.exceptions import EmbedNotFoundException
 from wagtail.images import get_image_model
@@ -15,6 +17,7 @@ from apps.news.models import (
     NewsPage,
     NewsPageContributor,
     NewsPagePublicCredit,
+    NewsPageSection,
     NewsSection,
     School,
 )
@@ -78,7 +81,6 @@ def create_news_page(
                 "<h2>Story background</h2><p>Detailed public body text.</p>",
             ),
         ],
-        section=section,
         school=school,
         coverage_province="Arequipa",
         coverage_district="Cercado",
@@ -88,6 +90,7 @@ def create_news_page(
         featured_image_credit=featured_image_credit,
     )
     home_page.add_child(instance=page)
+    NewsPageSection.objects.create(page=page, section=section)
     if first_published_at is not None:
         Page.objects.filter(pk=page.pk).update(first_published_at=first_published_at)
         page.refresh_from_db()
@@ -241,7 +244,7 @@ def test_home_renders_published_news_metadata(public_site, section) -> None:
     assert b"Fecha de publicaci\xc3\xb3n" in response.content
     assert b"julio" in response.content
     assert b"July" not in response.content
-    assert b"Secci\xc3\xb3n" in response.content
+    assert b"Secciones" in response.content
     assert b"Published News" in response.content
     assert b"Detailed public body text." not in response.content
     assert "Política".encode() in response.content
@@ -330,7 +333,7 @@ def test_news_detail_renders_required_content(public_site, section) -> None:
     assert b"Fecha de publicaci\xc3\xb3n" in response.content
     assert b"julio" in response.content
     assert b"July" not in response.content
-    assert b"Secci\xc3\xb3n" in response.content
+    assert b"Secciones" in response.content
     assert b"Fictional School" in response.content
     assert b"Colegio" in response.content
     assert b"Cobertura" in response.content
@@ -339,6 +342,42 @@ def test_news_detail_renders_required_content(public_site, section) -> None:
     assert b"Etiquetas" in response.content
     assert b"student-reporting" in response.content
     assert b"local-news" in response.content
+
+
+@pytest.mark.django_db
+def test_news_detail_renders_explicit_taxonomy_paths_without_parent_duplication(
+    public_site,
+    section,
+) -> None:
+    page = create_news_page(
+        public_site,
+        section,
+        title="Taxonomy detail news",
+        slug="taxonomy-detail-news",
+        publication_date=dt.date(2026, 7, 1),
+    )
+    culture = NewsSection.objects.get(slug="cultura")
+    music = NewsSection.objects.get(slug="musica")
+    interviews = NewsSection.objects.get(slug="entrevistas")
+    community = NewsSection.objects.get(slug="comunidad")
+    page.section_assignments.set(
+        [
+            NewsPageSection(page=page, section=culture),
+            NewsPageSection(page=page, section=music),
+            NewsPageSection(page=page, section=interviews),
+            NewsPageSection(page=page, section=community),
+        ]
+    )
+    page.save()
+
+    content = Client().get(page.url).content.decode()
+
+    assert '<p class="eyebrow">Cultura › Música; Entrevistas › Comunidad</p>' in content
+    assert content.count("Cultura › Música") == 1
+    assert content.count("Entrevistas › Comunidad") == 1
+    assert "<dt>Secciones y subsecciones</dt>" not in content
+    assert "Cultura; Cultura › Música" not in content
+    assert "Entrevistas; Entrevistas › Comunidad" not in content
 
 
 @pytest.mark.django_db
@@ -787,6 +826,72 @@ def test_news_list_filters_by_matching_real_section(public_site, section) -> Non
     assert f"Noticias de {section.name}" in content
     assert "Matching section story" in content
     assert "Other section story" not in content
+
+
+@pytest.mark.django_db
+def test_main_section_filter_includes_descendants_without_duplicates(
+    public_site,
+) -> None:
+    culture = NewsSection.objects.get(slug="cultura")
+    music = NewsSection.objects.get(slug="musica")
+    traditions = NewsSection.objects.get(slug="tradiciones")
+    page = create_news_page(
+        public_site,
+        music,
+        title="Descendant filter story",
+        slug="descendant-filter-story",
+        publication_date=dt.date(2026, 7, 2),
+    )
+    NewsPageSection.objects.create(page=page, section=traditions)
+
+    response = Client().get("/noticias/", {"seccion": culture.slug})
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert content.count("Descendant filter story") == 1
+
+
+@pytest.mark.django_db
+def test_subsection_slug_does_not_enable_public_subsection_filter(public_site) -> None:
+    response = Client().get("/noticias/", {"seccion": "musica"})
+
+    assert response.status_code == 200
+    assert "La sección solicitada no existe." in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_news_list_taxonomy_queries_have_constant_growth(public_site, section) -> None:
+    client = Client()
+    create_news_page(
+        public_site,
+        section,
+        title="Query budget story 0",
+        slug="query-budget-story-0",
+        publication_date=dt.date(2026, 7, 1),
+    )
+    client.get("/noticias/")
+    with CaptureQueriesContext(connection) as one_page_queries:
+        response = client.get("/noticias/")
+    assert response.status_code == 200
+
+    for index in range(1, 6):
+        page = create_news_page(
+            public_site,
+            section,
+            title=f"Query budget story {index}",
+            slug=f"query-budget-story-{index}",
+            publication_date=dt.date(2026, 7, index + 1),
+        )
+        NewsPageSection.objects.create(
+            page=page,
+            section=NewsSection.objects.get(slug="politica-local"),
+        )
+
+    with CaptureQueriesContext(connection) as six_page_queries:
+        response = client.get("/noticias/")
+
+    assert response.status_code == 200
+    assert len(six_page_queries) == len(one_page_queries)
 
 
 @pytest.mark.django_db

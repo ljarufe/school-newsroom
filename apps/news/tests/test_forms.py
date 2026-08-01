@@ -17,6 +17,7 @@ from apps.news.models import (
     MinorContributor,
     NewsPage,
     NewsPagePublicCredit,
+    NewsPageSection,
     NewsSection,
     School,
 )
@@ -43,6 +44,7 @@ PARAGRAPH_CONTENTSTATE = json.dumps(
         "entityMap": {},
     },
 )
+DEFAULT_TAXONOMY = object()
 
 
 @pytest.fixture
@@ -69,11 +71,11 @@ def create_news_page(home_page, section, *, slug="form-news-existing"):
         live=False,
         publication_date=dt.date(2026, 7, 1),
         body=[("paragraph", "<p>Reported context</p>")],
-        section=section,
         coverage_province="Arequipa",
         coverage_district="Cercado",
     )
     home_page.add_child(instance=page)
+    NewsPageSection.objects.create(page=page, section=section)
     return page
 
 
@@ -109,6 +111,7 @@ def admin_form_data(
     og_image_caption="",
     og_image_alt_text="",
     og_image_credit="",
+    taxonomy_sections=DEFAULT_TAXONOMY,
 ):
     public_credits = public_credits or []
     deleted_credit_ids = deleted_credit_ids or []
@@ -117,6 +120,11 @@ def admin_form_data(
         "type": "paragraph",
         "value": PARAGRAPH_CONTENTSTATE,
     }
+    selected_taxonomy = (
+        [str(section.pk)]
+        if taxonomy_sections is DEFAULT_TAXONOMY
+        else [str(value) for value in taxonomy_sections]
+    )
     data = {
         "title": title,
         "slug": slug,
@@ -126,7 +134,7 @@ def admin_form_data(
         "body-0-order": "0",
         "body-0-type": body_block["type"],
         "body-0-id": "11111111-1111-4111-8111-111111111111",
-        "section": str(section.pk),
+        "taxonomy_sections": selected_taxonomy,
         "school": "",
         "coverage_province": "Arequipa",
         "coverage_district": "Cercado",
@@ -215,6 +223,104 @@ def test_draft_validation_allows_missing_public_credit(home_page, section) -> No
 
     assert form.is_valid()
     assert form.is_deferred_validation
+
+
+@pytest.mark.django_db
+def test_draft_validation_allows_missing_taxonomy(home_page, section) -> None:
+    form = make_admin_form(
+        home_page,
+        section,
+        slug="draft-without-taxonomy",
+        taxonomy_sections=[],
+    )
+
+    form.defer_required_fields()
+
+    assert form.is_valid(), form.errors.as_json()
+    assert list(form.instance.section_assignments.all()) == []
+
+
+@pytest.mark.django_db
+def test_full_validation_requires_taxonomy(home_page, section) -> None:
+    form = make_admin_form(
+        home_page,
+        section,
+        slug="publish-without-taxonomy",
+        public_credits=["Fictional school newsroom team"],
+        taxonomy_sections=[],
+    )
+
+    assert not form.is_valid()
+    assert NewsPageAdminForm.TAXONOMY_REQUIRED_ERROR in str(
+        form.errors["taxonomy_sections"]
+    )
+
+
+@pytest.mark.django_db
+def test_taxonomy_form_persists_exact_revision_aware_selections(
+    home_page,
+    section,
+) -> None:
+    page = create_news_page(home_page, section, slug="taxonomy-form-existing")
+    music = NewsSection.objects.get(slug="musica")
+    interviews = NewsSection.objects.get(slug="entrevistas")
+    community = NewsSection.objects.get(slug="comunidad")
+    form = make_admin_form(
+        home_page,
+        section,
+        instance=page,
+        title=page.title,
+        slug=page.slug,
+        public_credits=["Fictional school newsroom team"],
+        taxonomy_sections=[music.pk, interviews.pk, community.pk, music.pk],
+    )
+
+    assert form.is_valid(), form.errors.as_json()
+    saved_page = form.save()
+    revision_page = saved_page.save_revision().as_object()
+
+    expected_ids = {music.pk, interviews.pk, community.pk}
+    assert (
+        set(saved_page.section_assignments.values_list("section_id", flat=True))
+        == expected_ids
+    )
+    assert (
+        set(revision_page.section_assignments.values_list("section_id", flat=True))
+        == expected_ids
+    )
+    assert section.pk not in expected_ids
+
+
+@pytest.mark.django_db
+def test_taxonomy_widget_expands_only_selected_or_error_branches(
+    home_page,
+    section,
+) -> None:
+    music = NewsSection.objects.get(slug="musica")
+    form = make_admin_form(
+        home_page,
+        section,
+        taxonomy_sections=[music.pk],
+    )
+    form.defer_required_fields()
+    assert form.is_valid(), form.errors.as_json()
+    html = str(form["taxonomy_sections"])
+
+    assert "Secciones y subsecciones" not in html
+    assert 'aria-label="Ocultar subsecciones de Cultura"' in html
+    assert 'aria-label="Mostrar subsecciones de Política"' in html
+    assert f'value="{music.pk}"' in html
+
+    invalid_form = make_admin_form(
+        home_page,
+        section,
+        public_credits=["Fictional school newsroom team"],
+        taxonomy_sections=[],
+    )
+    assert not invalid_form.is_valid()
+    invalid_form.fields["taxonomy_sections"].widget.has_taxonomy_error = True
+    invalid_html = str(invalid_form["taxonomy_sections"])
+    assert 'aria-label="Ocultar subsecciones de Política"' in invalid_html
 
 
 @pytest.mark.django_db

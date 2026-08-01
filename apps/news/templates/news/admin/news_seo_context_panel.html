@@ -4,8 +4,14 @@
     <dl>
         <dt>Título</dt>
         <dd>{{ self.instance.title }}</dd>
-        <dt>Sección</dt>
-        <dd>{{ self.instance.section }}</dd>
+        <dt>Secciones y subsecciones</dt>
+        <dd>
+            {% if classification_paths %}
+                {% for path in classification_paths %}{{ path }}{% if not forloop.last %}; {% endif %}{% endfor %}
+            {% else %}
+                Sin clasificación registrada.
+            {% endif %}
+        </dd>
         <dt>Fecha de publicación</dt>
         <dd>{{ self.instance.publication_date|date:"DATE_FORMAT" }}</dd>
     </dl>

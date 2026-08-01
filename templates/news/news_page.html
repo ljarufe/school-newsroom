@@ -25,7 +25,9 @@
 {% block content %}
   <article class="container article-layout py-5">
     <header class="article-header content-width mx-auto mb-5">
-      <p class="eyebrow">{{ page.section.name }}</p>
+      {% if page.taxonomy.visible_paths %}
+        <p class="eyebrow">{% for path in page.taxonomy.visible_paths %}{{ path }}{% if not forloop.last %}; {% endif %}{% endfor %}</p>
+      {% endif %}
       <h1 class="display-3">{{ page.title }}</h1>
       {% with public_credits=page.public_credits.all %}
         {% if public_credits %}
@@ -38,7 +40,6 @@
       {% endwith %}
       <dl class="news-meta news-meta--detail mb-4">
         <div><dt>Fecha de publicación</dt><dd><time datetime="{{ page.publication_date|date:'Y-m-d' }}">{{ page.publication_date }}</time></dd></div>
-        <div><dt>Sección</dt><dd><a href="{% url 'news_list' %}?seccion={{ page.section.slug|urlencode }}">{{ page.section.name }}</a></dd></div>
         {% if page.school %}<div><dt>Colegio</dt><dd>{{ page.school }}</dd></div>{% endif %}
         <div><dt>Cobertura</dt><dd>{{ page.coverage_province }}{% if page.coverage_district %}, {{ page.coverage_district }}{% endif %}</dd></div>
       </dl>

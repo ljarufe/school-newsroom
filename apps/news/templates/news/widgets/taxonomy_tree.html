@@ -1,0 +1,52 @@
+<div class="news-taxonomy-tree" data-news-taxonomy-tree{% if widget.has_error %} data-news-taxonomy-error="true"{% endif %}>
+  <ul class="news-taxonomy-tree__roots">
+    {% for node in widget.nodes %}
+      <li class="news-taxonomy-tree__branch" data-news-taxonomy-branch data-root-name="{{ node.root.name }}">
+        <div class="news-taxonomy-tree__row news-taxonomy-tree__row--root">
+          {% if node.children %}
+            <button
+              class="news-taxonomy-tree__disclosure"
+              type="button"
+              aria-controls="{{ node.branch_id }}"
+              aria-expanded="{% if node.expanded %}true{% else %}false{% endif %}"
+              aria-label="{% if node.expanded %}Ocultar{% else %}Mostrar{% endif %} subsecciones de {{ node.root.name }}"
+              data-news-taxonomy-disclosure
+            ><span aria-hidden="true">{% if node.expanded %}▾{% else %}▸{% endif %}</span></button>
+          {% else %}
+            <span class="news-taxonomy-tree__disclosure-placeholder" aria-hidden="true"></span>
+          {% endif %}
+          <label for="{{ node.root_input_id }}">
+            <input
+              type="checkbox"
+              name="{{ widget.name }}"
+              value="{{ node.root.pk }}"
+              id="{{ node.root_input_id }}"
+              {% include "django/forms/widgets/attrs.html" with widget=widget %}
+              {% if node.root_checked %}checked{% endif %}
+            >
+            <span>{{ node.root.name }}</span>
+          </label>
+        </div>
+        {% if node.children %}
+          <ul class="news-taxonomy-tree__children" id="{{ node.branch_id }}"{% if not node.expanded %} hidden{% endif %}>
+            {% for child, child_input_id in node.children_with_ids %}
+              <li class="news-taxonomy-tree__row news-taxonomy-tree__row--child">
+                <label for="{{ child_input_id }}">
+                  <input
+                    type="checkbox"
+                    name="{{ widget.name }}"
+                    value="{{ child.pk }}"
+                    id="{{ child_input_id }}"
+                    {% include "django/forms/widgets/attrs.html" with widget=widget %}
+                    {% if child.pk|stringformat:"s" in node.child_values %}checked{% endif %}
+                  >
+                  <span>{{ child.name }}</span>
+                </label>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+</div>

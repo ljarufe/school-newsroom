@@ -1,6 +1,6 @@
 # EPIC3-009 Feedback
 
-Status: **Implementation Closing Draft**
+Status: **Closing Feedback Final**
 
 ## Checkout and scope
 
@@ -16,6 +16,29 @@ Status: **Implementation Closing Draft**
   maintainer applied `news.0012`–`0014` to that database before performing the
   UAT that exposed the Admin and public findings. Disposable browser stacks
   applied migrations only to their isolated databases.
+
+### Operational closure evidence
+
+- The implementation was committed as
+  `158b53c41610b7b85feaddd1434250f84d20f446` with message
+  `EPIC3-009 — Add hierarchical editorial taxonomy` and pushed to
+  `EPIC3-009-editorial-taxonomy`.
+- At Stage B preparation, pull request
+  [#16](https://github.com/ljarufe/school-newsroom/pull/16),
+  `EPIC3-009 — Add hierarchical editorial taxonomy`, was open against `main`,
+  was not a draft, and was reported mergeable.
+- GitHub Actions completed successfully on that implementation commit:
+  `Pull Request Validation` run 35 and `Browser Regression` run 4 both finished
+  with conclusion `success`.
+- Pull request review completed with no findings. At Stage B close, the PR had
+  no review submissions, discussion comments, or inline review threads.
+- The maintainer completed the detailed UAT, reported only the Admin/public
+  deviations documented below, and then completed the focused correction and
+  post-diff-review delta-UAT passes without further deviations. Fictional UAT
+  content and temporary classifications were removed.
+- This document is the Stage B replacement prepared after the implementation
+  commit, CI, UAT, and review. Its documentation-only incorporation and the
+  later squash merge do not change the accepted implementation or UAT result.
 
 ### Maintainer UAT correction baseline
 
@@ -581,11 +604,12 @@ Docker-first evidence:
 
    Result: passed with no diagnostics.
 
-No maintainer UAT was performed for this delta. The persistent maintainer
-database had already received migrations `news.0012` through `news.0014` from
-the maintainer before the earlier UAT; Codex applied migrations only in
-disposable browser stacks. Delta UAT for the corrected canonical edit links and
-the type-specific create labels remains pending.
+The persistent maintainer database had already received migrations `news.0012`
+through `news.0014` from the maintainer before the earlier UAT; Codex applied
+migrations only in disposable browser stacks. After this automated close, the
+maintainer completed the focused delta-UAT for the corrected management
+surfaces, fixed-type behavior, root-only parent choices, wrong-surface 404
+boundary, and public readable paths. No further deviation was reported.
 
 ## Failures and root causes encountered
 
@@ -648,33 +672,36 @@ No failure was bypassed, and all affected validations were green at close.
 
 ## Manual validation and maintainer UAT
 
-No manual maintainer UAT result is claimed. UAT remains pending and should use
-only fictional, non-sensitive data. In particular, preview through the Wagtail
-UI, revert through the Wagtail UI, and preservation through the complete
-moderation workflow are accepted non-automated coverage and remain to be
-exercised by the maintainer; no result for those paths has been invented.
+Maintainer UAT is complete. The detailed pass used fictional, non-sensitive
+content and covered the editor, taxonomy management, publication validation,
+public rendering/filtering, structured data, permission boundary, protected
+deletion, and revision/workflow routes described by the UAT script. Under the
+approved deviation-reporting contract, every detailed-UAT step not reported as
+a finding remained approved.
 
-- Taxonomy routes: open both `Wagtail Admin > Editorial > Secciones` and
-  `Wagtail Admin > Editorial > Subsecciones`. Verify the root form contains
-  `Nombre`, `Slug`, and `Orden` with no parent field. Verify the child form also
-  contains the required `Sección principal` select, offers only roots, permits
-  moving a fictional child between roots, rejects clearing its parent, and
-  preserves protected deletion. Remove any unused fictional fixture afterward.
-- News route: `/admin/pages/<page-id>/edit/`, tab `Edición de la noticia`, field
-  `Secciones y subsecciones`. Use `Investigación ficticia sobre música
-  comunitaria`, select Música plus Entrevistas and Comunidad, save/reopen, clear
-  all values, and verify the exact publish error.
-- Public route: open the fictional news detail and
-  `/noticias/?seccion=cultura`. Confirm `Cultura › Música` and `Entrevistas ›
-  Comunidad` appear once in the upper classification area, the lower
-  classification row is absent, main-only navigation and filtering remain
-  unchanged, and the expected four-value `articleSection` array remains.
-- Curator route: use a separate Curador SEO account in an authorized workflow
-  state. Verify read-only paths and the absence of taxonomy/snippet controls.
-- Runtime revision routes: preview the draft with representative explicit
-  selections, revert between revisions with different selections, and complete
-  the authorized moderation workflow. Confirm exact identities at each step and
-  record the result only after those UI paths are actually exercised.
+The detailed pass found the mixed management surface, mutable classification
+type, and duplicated public classification described above. After the
+consolidated correction, the maintainer completed the focused delta-UAT and
+confirmed the separate root/child surfaces, root-only parent selector,
+fixed-type behavior, subsection movement between roots, and single public
+readable-path presentation.
+
+Diff review then found the type-unaware Admin URL finder and shared create-flow
+copy. After that focused correction, the maintainer completed the final
+delta-UAT and reported no deviations. It confirmed:
+
+- exact `Añadir sección` / `Sección` and
+  `Añadir subsección` / `Subsección` identities;
+- no parent field for roots and a required root-only parent field for children;
+- a subsection can move between roots but cannot be accessed through the root
+  edit surface;
+- complete, ordered public paths appear once in the upper classification area;
+- the duplicate lower classification row is absent; and
+- all fictional pages and temporary classifications were removed.
+
+The type-aware `AdminURLFinder` routing remained causal automated evidence; it
+was not represented as an additional manual assertion. No maintainer UAT
+remains pending for EPIC3-009.
 
 ## Warnings and deferred items
 
@@ -687,9 +714,6 @@ exercised by the maintainer; no result for those paths has been invented.
 - Historical revisions store taxonomy identities, not label or hierarchy
   snapshots. A later taxonomy rename or move intentionally changes how an old
   identity is displayed.
-- Manual visual, permissions, and end-to-end workflow UAT remains for the
-  maintainer; automated browser coverage used only the disposable Director
-  fixture.
 
 ## Collisions and reusable boundaries
 
@@ -709,12 +733,13 @@ exercised by the maintainer; no result for those paths has been invented.
   information architecture. Suggested disposition: obtain a product/editorial
   decision on the definitive list and reconciliation approach; do not add a
   bulk importer or replacement workflow to EPIC3-009.
-- **Manual Wagtail runtime UAT.** Evidence: automated coverage reconstructs
-  revision objects and the browser spec exercises draft persistence plus a
-  blocked publish attempt, but it does not causally drive preview, revert, or a
-  complete moderation workflow. Impact: those integration paths retain manual
-  confidence risk. Suggested disposition: execute the documented maintainer UAT
-  before release; do not add the superseded four-test causal matrix.
+- **Manual Wagtail runtime UAT — resolved during closure.** Evidence: automated
+  coverage reconstructs revision objects and exercises draft persistence plus a
+  blocked publish attempt; the maintainer subsequently completed the documented
+  runtime UAT without reporting a remaining deviation. Impact: the manual
+  confidence gap identified during implementation is closed for this ticket.
+  Suggested disposition: no additional EPIC3-009 work; retain the focused
+  automated boundary and avoid the superseded four-test causal matrix.
 - **Future subsection filtering.** Evidence: the implemented public contract
   intentionally accepts only a main-section slug and rejects subsection slugs.
   Impact: subsection URLs, combined filters, search, and pagination are absent
@@ -746,8 +771,10 @@ exercised by the maintainer; no result for those paths has been invented.
   browser specs were not changed.
 - The existing `Revision.as_object()` assertions already satisfy the reduced
   automated revision contract with exact explicit IDs.
-- Feedback claims now distinguish automated reconstruction, the browser's
-  blocked-publication evidence, and pending manual preview/revert/workflow UAT.
+- Feedback claims distinguish automated reconstruction and the browser's
+  blocked-publication evidence from the later maintainer runtime UAT.
 - `AGENTS.md` now contains the permanent evidence-first Playwright locator and
   disclosure-precondition rule without ticket-specific retry history.
-- No maintainer UAT result has been invented.
+- At clarification time no maintainer result was attributed. This Stage B
+  replacement records only the detailed and focused UAT passes later reported
+  by the maintainer.

@@ -1,47 +1,14 @@
-import math
-import re
-import unicodedata
-from dataclasses import dataclass, field
-from html.parser import HTMLParser
+from dataclasses import dataclass
 from urllib.parse import urlsplit
 
-from wagtail.rich_text import RichText
-
-from .image_metadata import effective_text
-
-WORD_RE = re.compile(r"[^\W_]+(?:['’-][^\W_]+)*", re.UNICODE)
-SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
-SPACE_RE = re.compile(r"\s+")
-
-
-@dataclass(frozen=True)
-class LinkInfo:
-    href: str
-    linktype: str = ""
-
-
-@dataclass(frozen=True)
-class ContentEvent:
-    kind: str
-    text: str
-
-
-@dataclass
-class ContentSnapshot:
-    text: str = ""
-    paragraphs: list[str] = field(default_factory=list)
-    headings: list[str] = field(default_factory=list)
-    body_image_alts: list[str] = field(default_factory=list)
-    links: list[LinkInfo] = field(default_factory=list)
-    events: list[ContentEvent] = field(default_factory=list)
-
-    @property
-    def introduction(self) -> str:
-        return self.paragraphs[0] if self.paragraphs else ""
-
-    @property
-    def word_count(self) -> int:
-        return count_words(self.text)
+from ..image_metadata import effective_text
+from .content import ContentSnapshot, LinkInfo, extract_content
+from .keyphrases import (
+    contains_exact_phrase,
+    keyphrase_usage,
+    normalize_for_match,
+)
+from .readability import readability_checks
 
 
 @dataclass(frozen=True)
@@ -57,126 +24,6 @@ class AnalysisResult:
     readability_checks: tuple[CheckResult, ...]
     overall_status: str
     overall_label: str
-
-
-class _RichTextExtractor(HTMLParser):
-    captured_tags = {"p": "paragraph", "li": "paragraph", "blockquote": "paragraph"}
-    heading_tags = {"h2", "h3", "h4"}
-
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
-        self.all_text: list[str] = []
-        self.paragraphs: list[str] = []
-        self.headings: list[str] = []
-        self.links: list[LinkInfo] = []
-        self.events: list[ContentEvent] = []
-        self._captures: list[tuple[str, list[str]]] = []
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        tag = tag.lower()
-        if tag in self.captured_tags or tag in self.heading_tags:
-            self._captures.append((tag, []))
-        if tag == "a":
-            attributes = {name.lower(): value or "" for name, value in attrs}
-            self.links.append(
-                LinkInfo(
-                    href=attributes.get("href", "").strip(),
-                    linktype=attributes.get("linktype", "").strip().lower(),
-                ),
-            )
-
-    def handle_endtag(self, tag: str) -> None:
-        tag = tag.lower()
-        for index in range(len(self._captures) - 1, -1, -1):
-            captured_tag, chunks = self._captures[index]
-            if captured_tag != tag:
-                continue
-            del self._captures[index]
-            text = normalize_whitespace(" ".join(chunks))
-            if not text:
-                return
-            if tag in self.heading_tags:
-                self.headings.append(text)
-                self.events.append(ContentEvent("heading", text))
-            else:
-                self.paragraphs.append(text)
-                self.events.append(ContentEvent("paragraph", text))
-            return
-
-    def handle_data(self, data: str) -> None:
-        self.all_text.append(data)
-        if self._captures:
-            self._captures[-1][1].append(data)
-
-
-def normalize_whitespace(value: str) -> str:
-    return SPACE_RE.sub(" ", value).strip()
-
-
-def normalize_for_match(value: str) -> str:
-    decomposed = unicodedata.normalize("NFKD", value or "")
-    without_accents = "".join(
-        character for character in decomposed if not unicodedata.combining(character)
-    )
-    return normalize_whitespace(without_accents.casefold())
-
-
-def normalize_slug_for_match(value: str) -> str:
-    return normalize_for_match((value or "").replace("-", " ").replace("_", " "))
-
-
-def contains_exact_phrase(value: str, phrase: str, *, slug: bool = False) -> bool:
-    normalized_phrase = normalize_for_match(phrase)
-    if not normalized_phrase:
-        return False
-    normalized_value = (
-        normalize_slug_for_match(value) if slug else normalize_for_match(value)
-    )
-    pattern = re.compile(rf"(?<!\w){re.escape(normalized_phrase)}(?!\w)")
-    return bool(pattern.search(normalized_value))
-
-
-def count_exact_phrase(value: str, phrase: str) -> int:
-    normalized_phrase = normalize_for_match(phrase)
-    if not normalized_phrase:
-        return 0
-    pattern = re.compile(rf"(?<!\w){re.escape(normalized_phrase)}(?!\w)")
-    return len(pattern.findall(normalize_for_match(value)))
-
-
-def count_words(value: str) -> int:
-    return len(WORD_RE.findall(value or ""))
-
-
-def extract_content(body) -> ContentSnapshot:
-    snapshot = ContentSnapshot()
-    text_parts: list[str] = []
-
-    if not body:
-        return snapshot
-
-    for child in body:
-        if child.block_type == "paragraph":
-            value = child.value
-            source = value.source if isinstance(value, RichText) else str(value or "")
-            parser = _RichTextExtractor()
-            parser.feed(source)
-            parser.close()
-            visible_text = normalize_whitespace(" ".join(parser.all_text))
-            if visible_text:
-                text_parts.append(visible_text)
-            snapshot.paragraphs.extend(parser.paragraphs)
-            snapshot.headings.extend(parser.headings)
-            snapshot.links.extend(parser.links)
-            snapshot.events.extend(parser.events)
-            if visible_text and not parser.events:
-                snapshot.paragraphs.append(visible_text)
-                snapshot.events.append(ContentEvent("paragraph", visible_text))
-        elif child.block_type == "article_image":
-            snapshot.body_image_alts.append(str(child.value.get("alt_text") or ""))
-
-    snapshot.text = normalize_whitespace(" ".join(text_parts))
-    return snapshot
 
 
 def _result(status: str, label: str, explanation: str) -> CheckResult:
@@ -302,15 +149,21 @@ def _word_count_check(word_count: int) -> CheckResult:
     )
 
 
-def _keyphrase_overuse_check(keyphrase: str, snapshot: ContentSnapshot) -> CheckResult:
+def _keyphrase_overuse_check(
+    keyphrase: str,
+    snapshot: ContentSnapshot,
+) -> CheckResult:
     if not normalize_for_match(keyphrase) or not snapshot.word_count:
         return _result(
             "not_applicable",
             "Uso de la frase clave",
             "Se necesita una frase clave y texto para calcular su uso.",
         )
-    occurrences = count_exact_phrase(snapshot.text, keyphrase)
-    rate = occurrences / snapshot.word_count * 100
+    occurrences, rate = keyphrase_usage(
+        snapshot.text,
+        keyphrase,
+        snapshot.word_count,
+    )
     if occurrences >= 6 and rate > 5:
         return _result(
             "problem",
@@ -566,195 +419,13 @@ def _seo_checks(
     return tuple(checks)
 
 
-def _max_section_words(events: list[ContentEvent]) -> int:
-    maximum = 0
-    current = 0
-    for event in events:
-        if event.kind == "heading":
-            maximum = max(maximum, current)
-            current = 0
-        else:
-            current += count_words(event.text)
-    return max(maximum, current)
-
-
-def _readability_checks(snapshot: ContentSnapshot) -> tuple[CheckResult, ...]:
-    checks: list[CheckResult] = []
-    if snapshot.text:
-        checks.append(
-            _result(
-                "good",
-                "Texto del artículo",
-                "El artículo contiene prosa analizable.",
-            ),
-        )
-    else:
-        checks.append(
-            _result(
-                "problem",
-                "Texto del artículo",
-                "Añade texto al cuerpo de la noticia.",
-            ),
-        )
-
-    paragraph_lengths = [count_words(paragraph) for paragraph in snapshot.paragraphs]
-    longest_paragraph = max(paragraph_lengths, default=0)
-    if longest_paragraph > 250:
-        checks.append(
-            _result(
-                "problem",
-                "Longitud de párrafos",
-                (
-                    f"El párrafo más largo tiene {longest_paragraph} palabras; "
-                    "conviene dividirlo."
-                ),
-            ),
-        )
-    elif longest_paragraph > 150:
-        checks.append(
-            _result(
-                "warning",
-                "Longitud de párrafos",
-                (
-                    f"El párrafo más largo tiene {longest_paragraph} palabras; "
-                    "considera dividirlo."
-                ),
-            ),
-        )
-    elif snapshot.paragraphs:
-        checks.append(
-            _result(
-                "good",
-                "Longitud de párrafos",
-                "Los párrafos están dentro del rango orientativo.",
-            ),
-        )
-    else:
-        checks.append(
-            _result(
-                "not_applicable",
-                "Longitud de párrafos",
-                "No hay párrafos para analizar.",
-            ),
-        )
-
-    sentences = [
-        sentence
-        for sentence in SENTENCE_SPLIT_RE.split(snapshot.text)
-        if count_words(sentence)
-    ]
-    long_sentences = [sentence for sentence in sentences if count_words(sentence) > 30]
-    long_ratio = len(long_sentences) / len(sentences) if sentences else 0
-    if not sentences:
-        checks.append(
-            _result(
-                "not_applicable",
-                "Longitud de oraciones",
-                "No hay oraciones para analizar.",
-            ),
-        )
-    elif long_ratio > 0.5:
-        checks.append(
-            _result(
-                "problem",
-                "Longitud de oraciones",
-                (
-                    f"{math.floor(long_ratio * 100)} % de las oraciones supera "
-                    "30 palabras."
-                ),
-            ),
-        )
-    elif long_ratio > 0.25:
-        checks.append(
-            _result(
-                "warning",
-                "Longitud de oraciones",
-                (
-                    f"{math.floor(long_ratio * 100)} % de las oraciones supera "
-                    "30 palabras."
-                ),
-            ),
-        )
-    else:
-        checks.append(
-            _result(
-                "good",
-                "Longitud de oraciones",
-                "La proporción de oraciones largas es moderada.",
-            ),
-        )
-
-    if snapshot.word_count < 300:
-        checks.append(
-            _result(
-                "not_applicable",
-                "Uso de subtítulos",
-                "La recomendación se aplica a artículos de 300 palabras o más.",
-            ),
-        )
-    elif snapshot.headings:
-        checks.append(
-            _result(
-                "good",
-                "Uso de subtítulos",
-                "El artículo largo utiliza subtítulos.",
-            ),
-        )
-    else:
-        checks.append(
-            _result(
-                "warning",
-                "Uso de subtítulos",
-                "Añade al menos un H2, H3 o H4 para orientar la lectura.",
-            ),
-        )
-
-    largest_section = _max_section_words(snapshot.events)
-    if not snapshot.text:
-        checks.append(
-            _result(
-                "not_applicable",
-                "Bloques de texto",
-                "No hay texto para analizar.",
-            ),
-        )
-    elif largest_section > 500:
-        checks.append(
-            _result(
-                "problem",
-                "Bloques de texto",
-                (
-                    f"Hay una sección continua de {largest_section} palabras; "
-                    "divídela con subtítulos."
-                ),
-            ),
-        )
-    elif largest_section > 300:
-        checks.append(
-            _result(
-                "warning",
-                "Bloques de texto",
-                (
-                    f"Hay una sección continua de {largest_section} palabras; "
-                    "considera dividirla."
-                ),
-            ),
-        )
-    else:
-        checks.append(
-            _result(
-                "good",
-                "Bloques de texto",
-                "La prosa está distribuida en bloques manejables.",
-            ),
-        )
-    return tuple(checks)
-
-
 def analyze_page(page, *, site_hostname: str = "") -> AnalysisResult:
     snapshot = extract_content(page.body)
     seo_checks = _seo_checks(page, snapshot, site_hostname)
-    readability_checks = _readability_checks(snapshot)
+    readability = tuple(
+        _result(status, label, explanation)
+        for status, label, explanation in readability_checks(snapshot)
+    )
     incomplete = not all(
         (
             (page.focus_keyphrase or "").strip(),
@@ -767,8 +438,7 @@ def analyze_page(page, *, site_hostname: str = "") -> AnalysisResult:
         overall_status = "problem"
         overall_label = "Incompleto"
     elif any(
-        check.status in {"problem", "warning"}
-        for check in (*seo_checks, *readability_checks)
+        check.status in {"problem", "warning"} for check in (*seo_checks, *readability)
     ):
         overall_status = "warning"
         overall_label = "Necesita mejoras"
@@ -777,7 +447,7 @@ def analyze_page(page, *, site_hostname: str = "") -> AnalysisResult:
         overall_label = "Bueno"
     return AnalysisResult(
         seo_checks=seo_checks,
-        readability_checks=readability_checks,
+        readability_checks=readability,
         overall_status=overall_status,
         overall_label=overall_label,
     )

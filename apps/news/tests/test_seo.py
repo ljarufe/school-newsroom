@@ -192,6 +192,56 @@ def test_seo_analysis_reports_expected_keyphrase_and_link_statuses() -> None:
     assert check_by_label(result.seo_checks, "Enlace externo").status == "good"
 
 
+def test_analysis_preserves_observable_group_order_copy_and_numeric_values() -> None:
+    result = analyze_page(make_page(), site_hostname="school.test")
+
+    assert result.overall_status == "warning"
+    assert result.overall_label == "Necesita mejoras"
+    assert [check.label for check in result.seo_checks] == [
+        "Frase clave objetivo",
+        "Frase clave en el título SEO",
+        "Frase clave en la URL",
+        "Frase clave en la descripción meta",
+        "Frase clave en la introducción",
+        "Frase clave en subtítulos",
+        "Frase clave en el cuerpo",
+        "Uso de la frase clave",
+        "Longitud del título SEO",
+        "Longitud de la descripción meta",
+        "Extensión del artículo",
+        "Imagen destacada",
+        "Metadata de imagen social",
+        "Texto alternativo en imágenes del cuerpo",
+        "Enlace interno",
+        "Enlace externo",
+    ]
+    assert [check.label for check in result.readability_checks] == [
+        "Texto del artículo",
+        "Longitud de párrafos",
+        "Longitud de oraciones",
+        "Uso de subtítulos",
+        "Bloques de texto",
+    ]
+    assert (
+        check_by_label(
+            result.seo_checks,
+            "Uso de la frase clave",
+        ).explanation
+        == "Aparece 2 veces y no muestra sobreuso evidente."
+    )
+    assert (
+        check_by_label(
+            result.seo_checks,
+            "Extensión del artículo",
+        ).explanation
+        == "El cuerpo tiene 27 palabras; se recomiendan al menos 300."
+    )
+    assert check_by_label(
+        result.readability_checks,
+        "Uso de subtítulos",
+    ).explanation == ("La recomendación se aplica a artículos de 300 palabras o más.")
+
+
 def test_missing_keyphrase_is_incomplete_and_dependent_checks_do_not_apply() -> None:
     result = analyze_page(make_page(focus_keyphrase=""))
 
@@ -200,6 +250,39 @@ def test_missing_keyphrase_is_incomplete_and_dependent_checks_do_not_apply() -> 
     assert (
         check_by_label(result.seo_checks, "Frase clave en el cuerpo").status
         == "not_applicable"
+    )
+
+
+def test_whitespace_only_inputs_preserve_empty_content_fallbacks() -> None:
+    page = make_page(
+        seo_title=" \n ",
+        search_description="\t",
+        focus_keyphrase="   ",
+        body=[("paragraph", "<p> \n\t </p>")],
+    )
+
+    snapshot = extract_content(page.body)
+    result = analyze_page(page)
+
+    assert snapshot.text == ""
+    assert snapshot.paragraphs == []
+    assert snapshot.headings == []
+    assert snapshot.word_count == 0
+    assert result.overall_status == "problem"
+    assert result.overall_label == "Incompleto"
+    assert check_by_label(result.seo_checks, "Frase clave objetivo").explanation == (
+        "Añade una frase clave objetivo para completar el análisis."
+    )
+    assert (
+        check_by_label(result.readability_checks, "Texto del artículo").status
+        == "problem"
+    )
+    assert (
+        check_by_label(
+            result.readability_checks,
+            "Texto del artículo",
+        ).explanation
+        == "Añade texto al cuerpo de la noticia."
     )
 
 

@@ -247,7 +247,13 @@ def test_over_limit_text_is_not_silently_truncated() -> None:
     assert all(
         finding.status == "unavailable" for finding in result.primary_linguistic_checks
     )
+    assert len(result.advanced_readability_checks) == 8
+    assert all(
+        finding.status == "unavailable"
+        for finding in result.advanced_readability_checks
+    )
     assert result.seo_checks
+    assert result.readability_checks
 
 
 @override_settings(SEO_NLP_MODEL="missing_test_model")
@@ -260,6 +266,10 @@ def test_load_failure_is_cached_once_and_exact_analysis_remains(caplog) -> None:
         assert first.nlp_warning == MODEL_UNAVAILABLE_WARNING
         assert second.nlp_warning == MODEL_UNAVAILABLE_WARNING
         assert runtime_info().load_attempts == 1
+        assert all(
+            finding.status == "unavailable"
+            for finding in first.advanced_readability_checks
+        )
         assert (
             len(
                 [

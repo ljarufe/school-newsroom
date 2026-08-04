@@ -32,6 +32,7 @@ class NlpInferenceError(RuntimeError):
 
 @dataclass(frozen=True)
 class NlpToken:
+    index: int
     text: str
     lemma: str
     normalized_text: str
@@ -39,14 +40,29 @@ class NlpToken:
     start: int
     end: int
     pos: str
+    dependency: str
+    head_index: int
+    morphology: tuple[str, ...]
+    sentence_index: int | None
     significant: bool
+    word: bool
     content: bool
+
+
+@dataclass(frozen=True)
+class NlpSentence:
+    index: int
+    start: int
+    end: int
+    token_start: int
+    token_end: int
 
 
 @dataclass(frozen=True)
 class AnalyzedText:
     text: str
     tokens: tuple[NlpToken, ...]
+    sentences: tuple[NlpSentence, ...]
 
 
 @dataclass(frozen=True)
@@ -137,8 +153,15 @@ def _load_pipeline():
 
 
 def _convert_doc(doc) -> AnalyzedText:
+    spans = tuple(doc.sents)
+    sentence_by_token = {
+        token_index: sentence_index
+        for sentence_index, sentence in enumerate(spans)
+        for token_index in range(sentence.start, sentence.end)
+    }
     tokens = tuple(
         NlpToken(
+            index=token.i,
             text=token.text,
             lemma=token.lemma_,
             normalized_text=normalize_for_match(token.text),
@@ -146,12 +169,38 @@ def _convert_doc(doc) -> AnalyzedText:
             start=token.idx,
             end=token.idx + len(token.text),
             pos=token.pos_,
+            dependency=token.dep_,
+            head_index=token.head.i,
+            morphology=tuple(sorted(str(feature) for feature in token.morph)),
+            sentence_index=sentence_by_token.get(token.i),
             significant=not token.is_space and not token.is_punct,
-            content=token.pos_ in CONTENT_POS,
+            word=(
+                not token.is_space
+                and not token.is_punct
+                and any(character.isalpha() for character in token.text)
+                and not any(character.isdigit() for character in token.text)
+            ),
+            content=(
+                token.pos_ in CONTENT_POS
+                and not token.is_space
+                and not token.is_punct
+                and any(character.isalpha() for character in token.text)
+                and not any(character.isdigit() for character in token.text)
+            ),
         )
         for token in doc
     )
-    return AnalyzedText(text=doc.text, tokens=tokens)
+    sentences = tuple(
+        NlpSentence(
+            index=index,
+            start=sentence.start_char,
+            end=sentence.end_char,
+            token_start=sentence.start,
+            token_end=sentence.end,
+        )
+        for index, sentence in enumerate(spans)
+    )
+    return AnalyzedText(text=doc.text, tokens=tokens, sentences=sentences)
 
 
 def analyze_texts(texts: Iterable[str]) -> tuple[AnalyzedText, ...]:

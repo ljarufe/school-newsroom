@@ -823,7 +823,8 @@ silenciosamente.
 
 ### Legibilidad en español
 
-La primera versión de legibilidad usa heurísticas conservadoras:
+La tarjeta `Legibilidad` conserva las heurísticas básicas que ya forman parte
+del estado general:
 
 - confirma que exista prosa;
 - advierte por párrafos de más de 150 palabras y marca como problema los de más
@@ -837,6 +838,68 @@ La separación automática de oraciones puede no interpretar perfectamente
 abreviaturas o puntuación inusual. Los resultados son recomendaciones
 editoriales, no una certificación lingüística ni una fórmula definitiva de
 calidad en español.
+
+La tarjeta separada `Legibilidad avanzada` reutiliza el análisis lingüístico
+local para orientar una revisión más detallada. Sus ocho resultados no cambian
+el estado general `Incompleto`, `Necesita mejoras` o `Bueno`. Se calculan en el
+servidor después de guardar o volver a abrir la noticia; no se actualizan por
+cada pulsación y no corrigen ni reescriben el contenido automáticamente.
+
+Las métricas avanzadas usan sólo la prosa visible de párrafos, listas y citas
+del cuerpo. Los subtítulos sirven como límites editoriales, pero sus palabras
+no entran en los cálculos. Tampoco se analizan para estas métricas el título,
+la metadata SEO, las tablas, las imágenes, los pies, los créditos, la
+taxonomía ni datos internos. Una oración nunca se une con texto de otro bloque.
+
+Los resultados aparecen en este orden:
+
+1. `Oraciones extensas con evidencia`: localiza oraciones de más de 30
+   palabras. Hasta 25 % del total aparece como `Correcto`; una proporción mayor
+   aparece como `Por mejorar`. El porcentaje visible se trunca al entero
+   inferior y las evidencias más extensas aparecen primero.
+2. `Comienzos consecutivos`: compara los dos primeros lemas de contenido y
+   señala sólo secuencias de tres o más oraciones con la misma firma. Dos
+   comienzos semejantes no se marcan.
+3. `Uso de conectores`: cuenta una sola vez cada oración que contiene al menos
+   un conector del léxico del proyecto. Con menos de cinco oraciones muestra
+   `No aplica`; menos de 10 % es `Por mejorar`, desde 10 % y menos de 20 % es
+   `Informativo`, y desde 20 % es `Correcto`. Una proporción alta no garantiza
+   mejor escritura ni implica que deban insertarse conectores mecánicamente.
+4. `Pasiva perifrástica`: busca de forma conservadora una forma de `ser` unida
+   sintácticamente a un participio verbal. No cuenta construcciones con
+   `estar`, usos con `se` ni adjetivos detectados sin evidencia verbal. Una
+   ocurrencia o una proporción menor de 10 % es informativa; dos o más y al
+   menos 10 % aparecen como `Por mejorar`.
+5. `Complejidad sintáctica`: considera compleja una oración con tres o más
+   cabezas de cláusula estimadas. Con menos de tres oraciones muestra `No
+   aplica`; una proporción de hasta 20 % es informativa y una mayor aparece
+   como `Por mejorar`. No es un análisis gramatical exhaustivo.
+6. `Densidad léxica`: desde 50 palabras muestra, como dato `Informativo`, la
+   proporción de adjetivos, adverbios, sustantivos, nombres propios y verbos.
+   No clasifica el valor como bueno o malo porque depende del género, la edad,
+   el estilo y el propósito.
+7. `Diversidad léxica`: desde 50 tokens de contenido muestra MATTR con una
+   ventana fija de 50 lemas y tres decimales. Es `Informativo` y no genera
+   sugerencias automáticas de sinónimos.
+8. `Flesch-Szigriszt e INFLESZ`: se calcula desde 100 palabras y tres
+   oraciones. Muestra palabras, oraciones, sílabas, un decimal del índice y la
+   banda `Muy difícil`, `Algo difícil`, `Normal`, `Bastante fácil` o `Muy
+   fácil`. Un valor inferior a 55 aparece como `Por mejorar`; desde 55 aparece
+   como `Correcto`. Es un índice orientativo de esta métrica, no una puntuación
+   del artículo ni del SEO, y no se limita artificialmente al rango 0–100.
+
+Cada resultado explica su métrica y puede mostrar hasta tres fragmentos con el
+tipo, ordinal y referencia del bloque. La evidencia es sólo una ayuda para
+localizar el pasaje: no se guarda como dato de la noticia ni certifica calidad,
+comprensión, veracidad, justicia o relevancia.
+
+Si el pipeline lingüístico no está disponible, falla durante esa respuesta o
+el texto supera el límite configurado, los ocho resultados avanzados muestran
+`No disponible`; la tarjeta básica, el análisis SEO, el guardado y el workflow
+continúan funcionando. Si falla únicamente la silabación local `es_ES`, los
+primeros siete resultados continúan y sólo `Flesch-Szigriszt e INFLESZ`
+muestra `No disponible`. Ninguno de estos procesos descarga diccionarios ni
+envía el texto a un servicio externo.
 
 ### Estado general
 

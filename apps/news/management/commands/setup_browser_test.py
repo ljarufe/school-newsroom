@@ -114,7 +114,16 @@ class Command(BaseCommand):
             publication_date=dt.date(2026, 8, 3),
             coverage_province="Arequipa",
             coverage_district="Cercado",
-            body=[("paragraph", "<p>Contenido ficticio para el análisis SEO.</p>")],
+            body=[
+                (
+                    "paragraph",
+                    "<p>Además, el borrador ficticio fue revisado por dos "
+                    "editoras adultas. El equipo comparó fuentes inventadas. "
+                    "La redacción ordenó los datos del ejercicio. El grupo "
+                    "explicó el contexto escolar imaginario. La editora guardó "
+                    "la práctica sin publicar información real.</p>",
+                )
+            ],
             focus_keyphrase="periodismo escolar",
             seo_title="Periodismo escolar en una redacción local",
             search_description=(

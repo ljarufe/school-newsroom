@@ -443,6 +443,8 @@ def test_seo_curator_edit_surface_hides_content_properties_and_minor_data() -> N
     assert 'name="seo_title"' in content
     assert 'name="og_image"' in content
     assert 'name="related_keyphrases-TOTAL_FORMS"' in content
+    assert "Legibilidad avanzada" in content
+    assert 'data-advanced-readability-finding="long-sentences"' in content
     assert 'name="summary"' not in content
     assert 'name="body"' not in content
     assert "data-news-writing-mode" not in content

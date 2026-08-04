@@ -90,6 +90,16 @@ test("SEO curator manages related keyphrases without other editorial access", as
   await expect(
     page.locator('[data-linguistic-finding="related-1-presence"]'),
   ).toContainText("Variante flexiva");
+  await expect(
+    page.getByRole("heading", { name: "Legibilidad avanzada", exact: true }),
+  ).toBeVisible();
+  const connectorFinding = page.locator(
+    '[data-advanced-readability-finding="connectors"]',
+  );
+  await expect(connectorFinding).toContainText("Uso de conectores — Correcto");
+  await expect(connectorFinding).toContainText("1 de 5 oraciones (20 %)");
+  await expect(connectorFinding).toContainText("Párrafo 1 (body:0:0)");
+  await expect(connectorFinding).toContainText("Además, el borrador ficticio");
   await expect(page.locator('[name="body"]')).toHaveCount(0);
   await expect(page.locator('[name="taxonomy_sections"]')).toHaveCount(0);
   expect(pageErrors).toEqual([]);

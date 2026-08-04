@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from urllib.parse import urlsplit
 
 from ..image_metadata import effective_text
+from .advanced_readability import AdvancedReadabilityFinding
 from .content import ContentSnapshot, LinkInfo, build_page_segments, extract_content
 from .keyphrases import (
     contains_exact_phrase,
@@ -32,6 +33,7 @@ class AnalysisResult:
     nlp_warning: str
     overall_status: str
     overall_label: str
+    advanced_readability_checks: tuple[AdvancedReadabilityFinding, ...] = ()
 
 
 def _result(status: str, label: str, explanation: str) -> CheckResult:
@@ -472,6 +474,7 @@ def analyze_page(page, *, site_hostname: str = "") -> AnalysisResult:
     return AnalysisResult(
         seo_checks=seo_checks,
         readability_checks=readability,
+        advanced_readability_checks=linguistic.advanced_readability_checks,
         primary_linguistic_checks=linguistic.primary_findings,
         related_keyphrase_groups=linguistic.related_groups,
         nlp_warning=linguistic.warning,

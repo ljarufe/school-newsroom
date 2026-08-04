@@ -564,6 +564,26 @@ def test_news_page_create_surface_transforms_promote_tab_into_seo_assistant(
     assert_contains_text(response, "Vista previa social")
     assert_contains_text(response, "Análisis SEO")
     assert_contains_text(response, "Legibilidad")
+    assert_contains_text(response, "Legibilidad avanzada")
+    assert_contains_text(
+        response,
+        "Estas métricas son orientativas para textos en castellano. Ayudan a "
+        "localizar pasajes para revisión, pero no certifican la calidad ni la "
+        "comprensión del artículo.",
+    )
+    advanced_titles = [
+        "Oraciones extensas con evidencia",
+        "Comienzos consecutivos",
+        "Uso de conectores",
+        "Pasiva perifrástica",
+        "Complejidad sintáctica",
+        "Densidad léxica",
+        "Diversidad léxica",
+        "Flesch-Szigriszt e INFLESZ",
+    ]
+    assert [content.index(title) for title in advanced_titles] == sorted(
+        content.index(title) for title in advanced_titles
+    )
     assert_contains_text(response, "Análisis de la frase principal")
     assert_contains_text(response, "Análisis de frases relacionadas")
     assert_contains_telepath_text(response, "Frase clave principal")
@@ -623,6 +643,48 @@ def test_seo_assistant_shows_visible_nlp_fallback_without_hiding_exact_checks(
     )
     assert_contains_text(response, "Frase clave en el cuerpo")
     assert_contains_text(response, "La frase clave aparece en este elemento.")
+    assert response.content.decode().count("Análisis lingüístico no disponible") == 1
+    assert response.content.decode().count('data-advanced-readability-finding="') == 8
+    assert response.content.decode().count("No disponible") >= 8
+
+
+@pytest.mark.django_db
+def test_seo_assistant_renders_advanced_metrics_and_escaped_evidence(
+    admin_client,
+) -> None:
+    home = HomePage.objects.first()
+    if home is None:
+        root = Page.get_first_root_node()
+        home = HomePage(title="Inicio", slug="inicio-legibilidad-avanzada")
+        root.add_child(instance=home)
+    page = NewsPage(
+        title="Noticia ficticia de legibilidad",
+        slug="legibilidad-avanzada-admin",
+        live=False,
+        publication_date=dt.date(2026, 8, 3),
+        body=[
+            (
+                "paragraph",
+                "<p>Además, el borrador &lt;etiqueta&gt; fue revisado por dos "
+                "editoras. El equipo comparó datos ficticios. La editora "
+                "ordenó las notas. El grupo explicó el contexto. La redacción "
+                "guardó el ejercicio.</p>",
+            )
+        ],
+        coverage_province="Arequipa",
+        focus_keyphrase="legibilidad avanzada",
+    )
+    home.add_child(instance=page)
+
+    response = admin_client.get(reverse("wagtailadmin_pages:edit", args=(page.pk,)))
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert 'data-advanced-readability-finding="connectors"' in content
+    assert "1 de 5 oraciones (20 %)." in content
+    assert "Párrafo 1 (body:0:0)" in content
+    assert "&lt;etiqueta&gt;" in content
+    assert "<etiqueta>" not in content
 
 
 @pytest.mark.django_db

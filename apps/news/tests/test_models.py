@@ -1,11 +1,13 @@
 import datetime as dt
+import importlib.metadata
 
 import pytest
+from django.core.checks import run_checks
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.db.models import ProtectedError
 from wagtail.images import get_image_model
-from wagtail.models import Page
+from wagtail.models import Collection, Page
 
 from apps.home.models import HomePage
 from apps.news.models import (
@@ -84,6 +86,14 @@ def create_test_image():
         width=1,
         height=1,
     )
+
+
+def test_treebeard_resolution_preserves_wagtail_manager_behavior() -> None:
+    assert importlib.metadata.version("django-treebeard").startswith("5.2.")
+    assert Page.objects.all().query.order_by == ("path",)
+    assert Collection.objects.all().query.order_by == ("path",)
+    assert hasattr(Page.objects, "specific")
+    assert not [issue for issue in run_checks() if issue.id == "treebeard.E001"]
 
 
 @pytest.mark.django_db

@@ -2,6 +2,11 @@ from dataclasses import dataclass
 
 from django.conf import settings
 
+from .advanced_readability import (
+    AdvancedReadabilityFinding,
+    analyze_advanced_readability,
+    unavailable_advanced_readability,
+)
 from .content import ContentSegment, normalize_whitespace
 from .keyphrases import contains_exact_phrase
 from .nlp import (
@@ -68,6 +73,7 @@ class LinguisticAnalysis:
     primary_findings: tuple[LinguisticFinding, ...]
     related_groups: tuple[RelatedKeyphraseAnalysis, ...]
     warning: str = ""
+    advanced_readability_checks: tuple[AdvancedReadabilityFinding, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -161,7 +167,12 @@ def _unavailable_analysis(
         )
         for index, phrase in enumerate(related)
     )
-    return LinguisticAnalysis(primary_findings, related_groups, warning)
+    return LinguisticAnalysis(
+        primary_findings,
+        related_groups,
+        warning,
+        unavailable_advanced_readability(),
+    )
 
 
 def _body_offset(segment: ContentSegment, current_offset: int) -> int | None:
@@ -450,10 +461,15 @@ def analyze_linguistic_keyphrases(
         if (normalized := normalize_whitespace(phrase))
     )
     phrases = ((primary,) if primary else ()) + related
-    if not phrases:
-        return LinguisticAnalysis(_not_applicable_primary(), ())
     if sum(len(segment.text) for segment in segments) > settings.SEO_NLP_MAX_CHARACTERS:
         return _unavailable_analysis(primary, related, TEXT_TOO_LONG_WARNING)
+
+    if not phrases and not segments:
+        return LinguisticAnalysis(
+            _not_applicable_primary(),
+            (),
+            advanced_readability_checks=analyze_advanced_readability(()),
+        )
 
     try:
         analyzed = analyze_texts((*phrases, *(segment.text for segment in segments)))
@@ -524,4 +540,11 @@ def analyze_linguistic_keyphrases(
                 ),
             )
         )
-    return LinguisticAnalysis(primary_findings, tuple(related_groups))
+    advanced_readability = analyze_advanced_readability(
+        tuple((item.segment, item.analyzed) for item in prepared)
+    )
+    return LinguisticAnalysis(
+        primary_findings,
+        tuple(related_groups),
+        advanced_readability_checks=advanced_readability,
+    )

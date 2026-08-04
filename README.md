@@ -468,6 +468,44 @@ Important variables:
 
 `.env` is local-only and must not be committed.
 
+## Local advanced readability
+
+The SEO Admin analysis uses the existing ordered `ContentSegment` snapshot and
+one batched spaCy inference for keyphrase and advanced-readability rules. spaCy
+objects remain inside `apps.news.seo.nlp`; immutable project structures expose
+sentence membership, token offsets, POS, morphology, dependency labels, and
+head indexes to the rules. Results are request-derived, are not persisted, and
+are not cached.
+
+Advanced readability accepts only visible `paragraph`, `list`, and `quote`
+body segments. Headings preserve editorial boundaries but do not contribute
+words. Titles, SEO metadata, tables, image metadata, taxonomy, credits, and
+internal fields are excluded. Each segment is parsed as a separate document,
+so sentences cannot cross block boundaries. Text above
+`SEO_NLP_MAX_CHARACTERS` is not truncated.
+
+`pyphen==0.17.2` supplies its bundled generic Spanish dictionary offline.
+`Pyphen(lang="es_ES")` resolves to `pyphen/dictionaries/hyph_es.dic`; no
+startup or request-time download is used. The image build verifies the package
+version, dictionary resolution, file presence, and a real Spanish hyphenation.
+The artifact and dictionary notices and hashes are recorded in
+`THIRD_PARTY_NOTICES.md`.
+
+Flesch-Szigriszt is calculated only with at least 100 words and three parser
+sentences:
+
+```text
+206.835 - 62.3 * (syllables / words) - (words / sentences)
+```
+
+INFLESZ boundaries are `40`, `55`, `65`, and `80`; values below `55` need
+review and values from `55` are good for this finding only. The other rule
+thresholds and the fixed connector lexicon live in
+`apps/news/seo/advanced_readability.py` and are covered by causal boundary
+tests. Advanced findings never contribute to the SEO assistant's overall
+status. A spaCy failure leaves all eight unavailable, while a Pyphen-only
+failure leaves the first seven available and only disables Flesch-Szigriszt.
+
 ## Troubleshooting
 
 ### Docker daemon permission errors

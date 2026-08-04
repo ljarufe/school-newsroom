@@ -156,7 +156,8 @@
   border-color: #6b7280;
 }
 
-.seo-assistant__match-type {
+.seo-assistant__match-type,
+.seo-assistant__metric {
   color: var(--w-color-text-meta, #4b5563);
   font-size: 0.9rem;
   font-weight: 600;

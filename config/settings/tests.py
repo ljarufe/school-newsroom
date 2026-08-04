@@ -282,6 +282,44 @@ def test_seo_default_noindex_can_be_disabled(monkeypatch: MonkeyPatch) -> None:
 
 
 @pytest.mark.usefixtures("isolated_settings_modules")
+def test_base_settings_use_cpu_small_model_and_bounded_default(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("SEO_NLP_MODEL", raising=False)
+    monkeypatch.delenv("SEO_NLP_DEVICE", raising=False)
+    monkeypatch.delenv("SEO_NLP_MAX_CHARACTERS", raising=False)
+
+    base_settings = import_base_settings()
+
+    assert base_settings.SEO_NLP_MODEL == "es_core_news_sm"
+    assert base_settings.SEO_NLP_DEVICE == "cpu"
+    assert base_settings.SEO_NLP_MAX_CHARACTERS == 50000
+
+
+@pytest.mark.usefixtures("isolated_settings_modules")
+@pytest.mark.parametrize("device", ["auto", "gpu", "cpu_only", "unknown"])
+def test_base_settings_reject_unknown_nlp_device(
+    monkeypatch: MonkeyPatch,
+    device: str,
+) -> None:
+    monkeypatch.setenv("SEO_NLP_DEVICE", device)
+
+    with pytest.raises(ImproperlyConfigured, match="SEO_NLP_DEVICE"):
+        import_base_settings()
+
+
+@pytest.mark.usefixtures("isolated_settings_modules")
+@pytest.mark.parametrize("device", ["cpu", "prefer_gpu", "require_gpu"])
+def test_base_settings_accept_supported_nlp_devices(
+    monkeypatch: MonkeyPatch,
+    device: str,
+) -> None:
+    monkeypatch.setenv("SEO_NLP_DEVICE", device)
+
+    assert import_base_settings().SEO_NLP_DEVICE == device
+
+
+@pytest.mark.usefixtures("isolated_settings_modules")
 @pytest.mark.parametrize(
     "database_url",
     [

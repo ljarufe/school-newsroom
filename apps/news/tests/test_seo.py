@@ -179,7 +179,7 @@ def test_nested_list_items_are_flattened_without_double_counting() -> None:
 def test_seo_analysis_reports_expected_keyphrase_and_link_statuses() -> None:
     result = analyze_page(make_page(), site_hostname="school.test")
 
-    assert check_by_label(result.seo_checks, "Frase clave objetivo").status == "good"
+    assert check_by_label(result.seo_checks, "Frase clave principal").status == "good"
     assert (
         check_by_label(result.seo_checks, "Frase clave en el título SEO").status
         == "good"
@@ -198,7 +198,7 @@ def test_analysis_preserves_observable_group_order_copy_and_numeric_values() -> 
     assert result.overall_status == "warning"
     assert result.overall_label == "Necesita mejoras"
     assert [check.label for check in result.seo_checks] == [
-        "Frase clave objetivo",
+        "Frase clave principal",
         "Frase clave en el título SEO",
         "Frase clave en la URL",
         "Frase clave en la descripción meta",
@@ -246,7 +246,9 @@ def test_missing_keyphrase_is_incomplete_and_dependent_checks_do_not_apply() -> 
     result = analyze_page(make_page(focus_keyphrase=""))
 
     assert result.overall_label == "Incompleto"
-    assert check_by_label(result.seo_checks, "Frase clave objetivo").status == "problem"
+    assert check_by_label(result.seo_checks, "Frase clave principal").status == (
+        "problem"
+    )
     assert (
         check_by_label(result.seo_checks, "Frase clave en el cuerpo").status
         == "not_applicable"
@@ -270,8 +272,8 @@ def test_whitespace_only_inputs_preserve_empty_content_fallbacks() -> None:
     assert snapshot.word_count == 0
     assert result.overall_status == "problem"
     assert result.overall_label == "Incompleto"
-    assert check_by_label(result.seo_checks, "Frase clave objetivo").explanation == (
-        "Añade una frase clave objetivo para completar el análisis."
+    assert check_by_label(result.seo_checks, "Frase clave principal").explanation == (
+        "Añade una frase clave principal para completar el análisis."
     )
     assert (
         check_by_label(result.readability_checks, "Texto del artículo").status

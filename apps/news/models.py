@@ -28,7 +28,6 @@ from .blocks import (
 from .forms import NewsPageAdminForm
 from .image_metadata import contextual_metadata_field, effective_text
 from .panels import (
-    NewsSeoContextPanel,
     RolePermissionObjectList,
     SeoAssistantPanel,
     TaxonomyPanel,
@@ -341,7 +340,7 @@ class NewsPage(Page):
     featured_image_alt_text = contextual_metadata_field("alt_text")
     featured_image_credit = contextual_metadata_field("credit")
     focus_keyphrase = models.CharField(
-        "Frase clave objetivo",
+        "Frase clave principal",
         max_length=255,
         blank=True,
         help_text=(
@@ -462,13 +461,23 @@ class NewsPage(Page):
     ]
 
     promote_panels = [
-        NewsSeoContextPanel(),
         MultiFieldPanel(
             [
                 FieldPanel("slug", heading="Slug de la URL"),
                 FieldPanel("seo_title", heading="Título SEO"),
                 FieldPanel("search_description", heading="Descripción meta"),
                 FieldPanel("focus_keyphrase"),
+                InlinePanel(
+                    "related_keyphrases",
+                    label="Frase clave relacionada",
+                    heading="Frases clave relacionadas",
+                    help_text=(
+                        "Añade hasta cuatro frases relacionadas que también "
+                        "describan el tema. Se analizan con menos exigencia que la "
+                        "frase principal."
+                    ),
+                    max_num=4,
+                ),
             ],
             heading="Configuración SEO",
         ),
@@ -571,6 +580,24 @@ class NewsPage(Page):
         ]
         verbose_name = "Noticia"
         verbose_name_plural = "Noticias"
+
+
+class NewsPageRelatedKeyphrase(Orderable):
+    page = ParentalKey(
+        NewsPage,
+        related_name="related_keyphrases",
+        on_delete=models.CASCADE,
+    )
+    phrase = models.CharField("Frase relacionada", max_length=255)
+
+    panels = [FieldPanel("phrase")]
+
+    class Meta(Orderable.Meta):
+        verbose_name = "Frase clave relacionada"
+        verbose_name_plural = "Frases clave relacionadas"
+
+    def __str__(self) -> str:
+        return self.phrase
 
 
 class NewsPageContributor(Orderable):

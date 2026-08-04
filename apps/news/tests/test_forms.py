@@ -112,10 +112,13 @@ def admin_form_data(
     og_image_alt_text="",
     og_image_credit="",
     taxonomy_sections=DEFAULT_TAXONOMY,
+    focus_keyphrase="",
+    related_keyphrases=None,
 ):
     public_credits = public_credits or []
     deleted_credit_ids = deleted_credit_ids or []
     internal_contributor_ids = internal_contributor_ids or []
+    related_keyphrases = related_keyphrases or []
     body_block = body_block or {
         "type": "paragraph",
         "value": PARAGRAPH_CONTENTSTATE,
@@ -145,6 +148,7 @@ def admin_form_data(
         "tags": "",
         "seo_title": "",
         "search_description": "",
+        "focus_keyphrase": focus_keyphrase,
         "og_image": og_image,
         "og_image_caption": og_image_caption,
         "og_image_alt_text": og_image_alt_text,
@@ -162,6 +166,10 @@ def admin_form_data(
         "internal_contributors-INITIAL_FORMS": "0",
         "internal_contributors-MIN_NUM_FORMS": "0",
         "internal_contributors-MAX_NUM_FORMS": "1000",
+        "related_keyphrases-TOTAL_FORMS": str(len(related_keyphrases)),
+        "related_keyphrases-INITIAL_FORMS": "0",
+        "related_keyphrases-MIN_NUM_FORMS": "0",
+        "related_keyphrases-MAX_NUM_FORMS": "4",
     }
 
     if body_block["type"] == "article_image":
@@ -199,6 +207,11 @@ def admin_form_data(
         data[f"internal_contributors-{index}-id"] = ""
         data[f"internal_contributors-{index}-contributor"] = str(contributor_id)
         data[f"internal_contributors-{index}-ORDER"] = str(index)
+
+    for index, phrase in enumerate(related_keyphrases):
+        data[f"related_keyphrases-{index}-id"] = ""
+        data[f"related_keyphrases-{index}-phrase"] = phrase
+        data[f"related_keyphrases-{index}-ORDER"] = str(index)
 
     return data
 
@@ -277,7 +290,8 @@ def test_taxonomy_form_persists_exact_revision_aware_selections(
 
     assert form.is_valid(), form.errors.as_json()
     saved_page = form.save()
-    revision_page = saved_page.save_revision().as_object()
+    original_revision = saved_page.save_revision()
+    revision_page = original_revision.as_object()
 
     expected_ids = {music.pk, interviews.pk, community.pk}
     assert (
@@ -339,6 +353,123 @@ def test_empty_seo_fields_remain_non_blocking_for_full_validation(
     assert form.cleaned_data["focus_keyphrase"] == ""
     assert form.cleaned_data["canonical_url"] == ""
     assert form.cleaned_data["seo_noindex"] is False
+
+
+@pytest.mark.django_db
+def test_related_keyphrases_are_ordered_revision_aware_and_optional(
+    home_page,
+    section,
+) -> None:
+    page = create_news_page(
+        home_page,
+        section,
+        slug="related-keyphrases-revision",
+    )
+    form = make_admin_form(
+        home_page,
+        section,
+        instance=page,
+        title=page.title,
+        slug="related-keyphrases-revision",
+        public_credits=["Fictional school newsroom team"],
+        focus_keyphrase="periodismo escolar",
+        related_keyphrases=[
+            "investigación escolar",
+            "noticia escolar",
+            "jóvenes reporteros",
+            "redacción periodística",
+        ],
+    )
+
+    assert form.is_valid(), form.errors.as_json()
+    saved_page = form.save()
+    original_revision = saved_page.save_revision()
+    revision_page = original_revision.as_object()
+
+    assert list(saved_page.related_keyphrases.values_list("phrase", flat=True)) == [
+        "investigación escolar",
+        "noticia escolar",
+        "jóvenes reporteros",
+        "redacción periodística",
+    ]
+    assert [item.phrase for item in revision_page.related_keyphrases.all()] == [
+        "investigación escolar",
+        "noticia escolar",
+        "jóvenes reporteros",
+        "redacción periodística",
+    ]
+
+    first_related = saved_page.related_keyphrases.first()
+    first_related.phrase = "frase modificada"
+    first_related.save(update_fields=["phrase"])
+    saved_page.save_revision()
+    assert [
+        item.phrase
+        for item in saved_page.get_latest_revision_as_object().related_keyphrases.all()
+    ][0] == "frase modificada"
+
+    reverted_revision = original_revision.as_object().save_revision()
+    assert [
+        item.phrase for item in reverted_revision.as_object().related_keyphrases.all()
+    ] == [
+        "investigación escolar",
+        "noticia escolar",
+        "jóvenes reporteros",
+        "redacción periodística",
+    ]
+
+
+@pytest.mark.django_db
+def test_related_keyphrase_formset_rejects_fifth_effective_row_but_ignores_whitespace(
+    home_page,
+    section,
+) -> None:
+    invalid = make_admin_form(
+        home_page,
+        section,
+        public_credits=["Fictional school newsroom team"],
+        related_keyphrases=["uno", "dos", "tres", "cuatro", "cinco"],
+    )
+    whitespace = make_admin_form(
+        home_page,
+        section,
+        slug="related-whitespace",
+        public_credits=["Fictional school newsroom team"],
+        related_keyphrases=["uno", "dos", "tres", "cuatro", "   "],
+    )
+
+    assert not invalid.is_valid()
+    assert NewsPageAdminForm.RELATED_KEYPHRASE_LIMIT_ERROR in str(
+        invalid.formsets["related_keyphrases"].non_form_errors()
+    )
+    assert whitespace.is_valid(), whitespace.errors.as_json()
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "related_keyphrases",
+    [
+        ["PERIODÍSMO   ESCOLAR"],
+        ["investigación escolar", "investigacio\u0301n   escolar"],
+    ],
+)
+def test_related_keyphrases_reject_normalized_duplicates(
+    related_keyphrases,
+    home_page,
+    section,
+) -> None:
+    form = make_admin_form(
+        home_page,
+        section,
+        public_credits=["Fictional school newsroom team"],
+        focus_keyphrase="periodismo escolar",
+        related_keyphrases=related_keyphrases,
+    )
+
+    assert not form.is_valid()
+    assert NewsPageAdminForm.RELATED_KEYPHRASE_DUPLICATE_ERROR in str(
+        form.formsets["related_keyphrases"].errors
+    )
 
 
 @pytest.mark.django_db

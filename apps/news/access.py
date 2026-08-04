@@ -28,3 +28,5 @@ NEWS_SEO_FIELD_NAMES = NATIVE_SEO_FIELD_NAMES | {
     "canonical_url",
     "seo_noindex",
 }
+
+NEWS_SEO_FORMSET_NAMES = frozenset({"related_keyphrases"})

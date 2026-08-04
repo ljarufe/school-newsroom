@@ -13,6 +13,7 @@ public accounts, custom authentication, automatic deployment, or a public write 
 - Django 5.2 LTS
 - Wagtail 7.x
 - PostgreSQL 16
+- spaCy 3.8 with the local Spanish `es_core_news_sm` CPU pipeline
 - Docker Compose
 - Gunicorn, WhiteNoise, and Caddy for manual staging deployment
 - Ruff
@@ -98,6 +99,28 @@ Open the public Home:
 ```text
 http://localhost:8000/
 ```
+
+## Local Linguistic Analysis
+
+The normal image build installs `spacy==3.8.14`, `click==8.4.2`, and the
+checksum-pinned `es_core_news_sm==3.8.0` wheel. The Dockerfile smoke imports
+spaCy, loads the model with `ner` excluded, and verifies sentence boundaries,
+lemmas, part-of-speech tags, morphology, and dependencies. The application does
+not download models during startup, requests, tests, or editorial use.
+
+CPU is the default and the supported runtime for local development and staging.
+The optional `prefer_gpu` and `require_gpu` settings only select a device when
+the host already provides a compatible spaCy GPU environment; this repository
+does not install CUDA, CuPy, PyTorch, transformers, or GPU drivers.
+
+Run an explicit smoke in the normal image with:
+
+```bash
+docker compose run --rm web python -c "import spacy; nlp = spacy.load('es_core_news_sm', exclude=['ner']); print(nlp.pipe_names)"
+```
+
+The library, model, and Click workaround have distinct licenses. See
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 ## Editorial News Flow
 
@@ -439,6 +462,9 @@ Important variables:
 | `POSTGRES_DB`            | PostgreSQL database created by Docker.                                     |
 | `POSTGRES_USER`          | PostgreSQL user created by Docker.                                         |
 | `POSTGRES_PASSWORD`      | PostgreSQL password created by Docker.                                     |
+| `SEO_NLP_MODEL`          | Local spaCy pipeline package; defaults to `es_core_news_sm`.                |
+| `SEO_NLP_DEVICE`         | `cpu`, `prefer_gpu`, or `require_gpu`; defaults to `cpu`.                   |
+| `SEO_NLP_MAX_CHARACTERS` | Maximum visible characters per advanced analysis; defaults to `50000`.     |
 
 `.env` is local-only and must not be committed.
 

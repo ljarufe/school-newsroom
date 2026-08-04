@@ -29,6 +29,17 @@
   border-left: 0.4rem solid #cd3238;
 }
 
+.seo-assistant__nlp-warning {
+  background: #fff7ed;
+  border-left: 0.4rem solid #d97706;
+  padding: 1rem;
+}
+
+.seo-assistant__nlp-warning strong,
+.seo-assistant__nlp-warning span {
+  display: block;
+}
+
 .seo-assistant__traffic-light {
   align-items: center;
   display: flex;
@@ -133,4 +144,35 @@
 
 .seo-assistant__check--problem {
   border-color: #cd3238;
+}
+
+.seo-assistant__check--improve {
+  border-color: #d97706;
+}
+
+.seo-assistant__check--informative,
+.seo-assistant__check--not_applicable,
+.seo-assistant__check--unavailable {
+  border-color: #6b7280;
+}
+
+.seo-assistant__match-type {
+  color: var(--w-color-text-meta, #4b5563);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.seo-assistant__evidence {
+  margin-top: 0.5rem;
+  padding-left: 1.25rem;
+}
+
+.seo-assistant__related-groups {
+  display: grid;
+  gap: 1rem;
+}
+
+.seo-assistant__related-group {
+  border-top: 1px solid var(--w-color-border-field-default, #c4c4c4);
+  padding-top: 0.75rem;
 }

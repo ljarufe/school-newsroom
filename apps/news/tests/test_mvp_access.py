@@ -106,7 +106,8 @@ def bootstrap_access() -> None:
 
 
 def seo_workflow_action_data(page: NewsPage, action: str, comment: str = ""):
-    return {
+    related = list(page.related_keyphrases.all())
+    data = {
         "slug": page.slug,
         "seo_title": page.seo_title,
         "search_description": page.search_description,
@@ -117,10 +118,19 @@ def seo_workflow_action_data(page: NewsPage, action: str, comment: str = ""):
         "og_image_alt_text": page.og_image_alt_text,
         "og_image_credit": page.og_image_credit,
         "canonical_url": page.canonical_url,
+        "related_keyphrases-TOTAL_FORMS": str(len(related)),
+        "related_keyphrases-INITIAL_FORMS": str(len(related)),
+        "related_keyphrases-MIN_NUM_FORMS": "0",
+        "related_keyphrases-MAX_NUM_FORMS": "4",
         "action-workflow-action": "1",
         "workflow-action-name": action,
         "workflow-action-extra-data": json.dumps({"comment": comment}),
     }
+    for index, item in enumerate(related):
+        data[f"related_keyphrases-{index}-id"] = str(item.pk)
+        data[f"related_keyphrases-{index}-phrase"] = item.phrase
+        data[f"related_keyphrases-{index}-ORDER"] = str(index)
+    return data
 
 
 def start_workflow(page: NewsPage | InstitutionalPage, user):
@@ -366,11 +376,16 @@ def test_role_bound_forms_expose_only_authorized_fields_and_relations() -> None:
         director_form.fields
     )
     assert "taxonomy_sections" in director_form.fields
-    assert {"comments", "internal_contributors", "public_credits"} == set(
-        director_form.formsets
-    )
+    assert {
+        "comments",
+        "internal_contributors",
+        "public_credits",
+        "related_keyphrases",
+    } == set(director_form.formsets)
     assert set(curator_form.fields) == NEWS_SEO_FIELD_NAMES
-    assert curator_form.formsets == {}
+    assert set(curator_form.formsets) == {"related_keyphrases"}
+    assert "wagtailadmin/js/comments.js" in director_form.media._js
+    assert "wagtailadmin/js/comments.js" not in curator_form.media._js
 
 
 def test_seo_curator_edit_surface_hides_content_properties_and_minor_data() -> None:
@@ -415,15 +430,19 @@ def test_seo_curator_edit_surface_hides_content_properties_and_minor_data() -> N
 
     response = client.get(reverse("wagtailadmin_pages:edit", args=(page.pk,)))
     content = response.content.decode()
-    context_fragment = content.split(
-        "Contexto de la noticia — solo lectura",
-        maxsplit=1,
-    )[1].split("Configuración SEO", maxsplit=1)[0]
 
     assert response.status_code == 200
     assert visible_tab_labels(response) == ["Asistente SEO"]
+    assert "Contexto de la noticia — solo lectura" not in content
+    assert NewsPage.promote_panels[0].heading == "Configuración SEO"
+    assert content.index("Configuración SEO") < content.index(
+        "Configuración para redes sociales"
+    )
+    assert 'data-side-panel-toggle="preview"' in content
+    assert 'data-side-panel="preview"' in content
     assert 'name="seo_title"' in content
     assert 'name="og_image"' in content
+    assert 'name="related_keyphrases-TOTAL_FORMS"' in content
     assert 'name="summary"' not in content
     assert 'name="body"' not in content
     assert "data-news-writing-mode" not in content
@@ -433,26 +452,14 @@ def test_seo_curator_edit_surface_hides_content_properties_and_minor_data() -> N
     assert 'name="contains_identifiable_minors"' not in content
     assert 'name="taxonomy_sections"' not in content
     assert "Colaboradores internos" not in content
+    assert 'name="public_credits-TOTAL_FORMS"' not in content
     assert "Propiedades" not in visible_tab_labels(response)
     assert "Publicar" not in content
-    assert "Contexto de la noticia — solo lectura" in content
-    assert "Noticia ficticia para workflow" in content
-    assert "Política" in context_fragment, context_fragment
-    assert "15 de julio de 2026" in content
-    assert "Contenido editorial ficticio y seguro." in content
-    assert "Taller ficticio preparando una noticia." in content
-    assert "Cuadernos y grabadoras sobre una mesa." in content
-    assert "Archivo escolar ficticio" in content
-    assert "Redacción escolar" in content
-    assert "Previsualizar borrador completo" in content
-    assert reverse("wagtailadmin_pages:view_draft", args=(page.pk,)) in content
+    assert "Contenido editorial ficticio y seguro." not in content
     assert "Nombre privado que no debe mostrarse" not in content
     assert "Menor de 14 años" not in content
     assert "Privacidad de menores" not in content
     assert "autorizaciones requeridas" not in content
-    assert "<input" not in context_fragment
-    assert "<textarea" not in context_fragment
-    assert "<select" not in context_fragment
 
 
 def test_seo_curator_manipulated_post_cannot_change_non_seo_fields() -> None:
@@ -497,6 +504,15 @@ def test_seo_curator_manipulated_post_cannot_change_non_seo_fields() -> None:
             "taxonomy_sections": str(NewsSection.objects.get(slug="musica").pk),
             "internal_contributors-TOTAL_FORMS": "0",
             "internal_contributors-INITIAL_FORMS": "0",
+            "public_credits-TOTAL_FORMS": "0",
+            "public_credits-INITIAL_FORMS": "0",
+            "related_keyphrases-TOTAL_FORMS": "1",
+            "related_keyphrases-INITIAL_FORMS": "0",
+            "related_keyphrases-MIN_NUM_FORMS": "0",
+            "related_keyphrases-MAX_NUM_FORMS": "4",
+            "related_keyphrases-0-id": "",
+            "related_keyphrases-0-phrase": "investigación escolar",
+            "related_keyphrases-0-ORDER": "0",
             "action-save": "Guardar borrador",
         },
     )
@@ -516,6 +532,12 @@ def test_seo_curator_manipulated_post_cannot_change_non_seo_fields() -> None:
         flat=True,
     )
     assert list(saved_contributor_ids) == [contributor.pk]
+    assert list(saved_page.related_keyphrases.values_list("phrase", flat=True)) == [
+        "investigación escolar"
+    ]
+    assert list(saved_page.public_credits.values_list("display_name", flat=True)) == [
+        "Redacción escolar"
+    ]
 
 
 def test_native_workflow_order_final_publication_and_request_changes() -> None:

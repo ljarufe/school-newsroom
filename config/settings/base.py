@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import environ
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DEFAULT_DATABASE_URL = (
@@ -15,6 +16,9 @@ env = environ.Env(
     DATABASE_URL=(str, DEFAULT_DATABASE_URL),
     DJANGO_LOG_LEVEL=(str, "INFO"),
     SEO_DEFAULT_NOINDEX=(bool, True),
+    SEO_NLP_MODEL=(str, "es_core_news_sm"),
+    SEO_NLP_DEVICE=(str, "cpu"),
+    SEO_NLP_MAX_CHARACTERS=(int, 50000),
 )
 
 environ.Env.read_env(BASE_DIR / ".env")
@@ -23,6 +27,17 @@ SECRET_KEY = env("DJANGO_SECRET_KEY")
 DEBUG = env("DJANGO_DEBUG")
 ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")
 SEO_DEFAULT_NOINDEX = env("SEO_DEFAULT_NOINDEX")
+SEO_NLP_MODEL = env("SEO_NLP_MODEL").strip()
+SEO_NLP_DEVICE = env("SEO_NLP_DEVICE").strip().lower()
+SEO_NLP_MAX_CHARACTERS = env("SEO_NLP_MAX_CHARACTERS")
+if SEO_NLP_DEVICE not in {"cpu", "prefer_gpu", "require_gpu"}:
+    raise ImproperlyConfigured(
+        "SEO_NLP_DEVICE must be one of cpu, prefer_gpu, or require_gpu."
+    )
+if not SEO_NLP_MODEL:
+    raise ImproperlyConfigured("SEO_NLP_MODEL must not be empty.")
+if SEO_NLP_MAX_CHARACTERS < 1:
+    raise ImproperlyConfigured("SEO_NLP_MAX_CHARACTERS must be greater than zero.")
 
 INSTALLED_APPS = [
     "apps.home",

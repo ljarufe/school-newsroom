@@ -13,6 +13,13 @@
     <p>Es una recomendación editorial y no bloquea el guardado ni la publicación.</p>
   </div>
 
+  {% if analysis.nlp_warning %}
+    <div class="seo-assistant__nlp-warning" role="alert">
+      <strong>Análisis lingüístico no disponible</strong>
+      <span>{{ analysis.nlp_warning }}</span>
+    </div>
+  {% endif %}
+
   <div class="seo-assistant__grid">
     <section class="seo-assistant__card" aria-labelledby="search-preview-heading">
       <h2 id="search-preview-heading">Vista previa en buscador</h2>
@@ -85,4 +92,68 @@
       </ul>
     </section>
   </div>
+
+  <section class="seo-assistant__card" aria-labelledby="primary-keyphrase-analysis-heading" data-seo-linguistic-analysis>
+    <h2 id="primary-keyphrase-analysis-heading">Análisis de la frase principal</h2>
+    <p class="help-block help-info">Las variantes flexivas son predicciones lingüísticas orientativas y no modifican el estado general.</p>
+    <ul class="seo-assistant__checks">
+      {% for check in analysis.primary_linguistic_checks %}
+        <li class="seo-assistant__check seo-assistant__check--{{ check.status }}" data-linguistic-finding="{{ check.id }}">
+          <strong>{{ check.title }} — {{ check.status_label }}</strong>
+          <span>{{ check.explanation }}</span>
+          {% if check.match_type == "exact" %}
+            <span class="seo-assistant__match-type">Coincidencia exacta</span>
+          {% elif check.match_type == "flexive" %}
+            <span class="seo-assistant__match-type">Variante flexiva</span>
+          {% elif check.match_type == "exact_and_flexive" %}
+            <span class="seo-assistant__match-type">Coincidencia exacta y variante flexiva</span>
+          {% endif %}
+          {% if check.evidence %}
+            <ul class="seo-assistant__evidence">
+              {% for item in check.evidence %}
+                <li><strong>{{ item.location }}:</strong> {{ item.text }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="seo-assistant__card" aria-labelledby="related-keyphrases-analysis-heading">
+    <h2 id="related-keyphrases-analysis-heading">Análisis de frases relacionadas</h2>
+    {% if analysis.related_keyphrase_groups %}
+      <div class="seo-assistant__related-groups">
+        {% for group in analysis.related_keyphrase_groups %}
+          <section class="seo-assistant__related-group" aria-labelledby="related-keyphrase-{{ forloop.counter }}">
+            <h3 id="related-keyphrase-{{ forloop.counter }}">{{ group.phrase }}</h3>
+            <ul class="seo-assistant__checks">
+              {% for check in group.findings %}
+                <li class="seo-assistant__check seo-assistant__check--{{ check.status }}" data-linguistic-finding="{{ check.id }}">
+                  <strong>{{ check.title }} — {{ check.status_label }}</strong>
+                  <span>{{ check.explanation }}</span>
+                  {% if check.match_type == "exact" %}
+                    <span class="seo-assistant__match-type">Coincidencia exacta</span>
+                  {% elif check.match_type == "flexive" %}
+                    <span class="seo-assistant__match-type">Variante flexiva</span>
+                  {% elif check.match_type == "exact_and_flexive" %}
+                    <span class="seo-assistant__match-type">Coincidencia exacta y variante flexiva</span>
+                  {% endif %}
+                  {% if check.evidence %}
+                    <ul class="seo-assistant__evidence">
+                      {% for item in check.evidence %}
+                        <li><strong>{{ item.location }}:</strong> {{ item.text }}</li>
+                      {% endfor %}
+                    </ul>
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          </section>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="help-block help-info">Añade frases clave relacionadas y guarda la noticia para ver su análisis.</p>
+    {% endif %}
+  </section>
 </section>

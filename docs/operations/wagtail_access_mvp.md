@@ -207,14 +207,12 @@ change:
 The chooser-only image collection permission supports selecting an existing
 social image without granting image upload, change, or deletion.
 
-The SEO tab starts with a server-rendered read-only context. For news it is
-labelled `Contexto de la noticia — solo lectura` and includes the public title,
-section, date, faithful body rendering, featured image with contextual public
-metadata, public credits, and `Previsualizar borrador completo`. It does
-not expose internal contributors, age bands, privacy declarations, or
-authorization flags. Home and institutional pages show `Contexto de la página
-— solo lectura` with their title and the same explicit draft-preview action.
-These panels contain no form controls and do not expand the POST field set.
+For news, the SEO tab starts directly with `Configuración SEO`. Curador SEO uses
+Wagtail's native Preview action and split preview to inspect the complete news
+content; Preview does not expand the editable form or POST field set. Home and
+institutional pages retain `Contexto de la página — solo lectura` with their
+title and the explicit draft-preview action. These panels contain no form
+controls and do not expand the POST field set.
 
 ## Email recovery prerequisites
 
@@ -423,22 +421,21 @@ validaciones bloquean publicar si se elimina la firma, el pie o el alt.
 
 Resultado esperado: el workflow está activo y la noticia aún no es pública.
 
-### 5. Aislamiento SEO, contexto de solo lectura y solicitud de cambios
+### 5. Aislamiento SEO, vista previa nativa y solicitud de cambios
 
 1. Entra como `uat_seo`. En el dashboard confirma `Pendientes de tu revisión` y
    abre la noticia de workflow.
 2. Confirma que la única pestaña visible es `Asistente SEO`.
-3. En `Contexto de la noticia — solo lectura`, verifica título, `Política`,
-   fecha, cuerpo completo, imagen destacada, pie, texto alternativo, crédito y
-   `Redacción del Taller Horizonte`.
-4. Selecciona `Previsualizar borrador completo` y verifica la revisión en una
-   pestaña nueva.
-5. Confirma que el contexto no contiene `Ana Ficticia UAT`, `Menor de 14 años`,
-   los controles de privacidad ni la confirmación de autorizaciones.
-6. Confirma que el contexto no tiene controles editables. Los únicos campos
-   editables deben ser `Slug de la URL`, `Título SEO`, `Descripción meta`,
-   `Frase clave objetivo`, configuración social, `URL canonical` y `Excluir de
-   los resultados de búsqueda`.
+3. Confirma que la pestaña comienza con `Configuración SEO` y no contiene
+   `Contexto de la noticia — solo lectura`.
+4. Usa `Vista previa` de Wagtail, incluida la vista dividida y la apertura en
+   otra pestaña, y verifica título, `Política`, fecha, cuerpo completo, imagen
+   destacada, pie, texto alternativo, crédito y `Redacción del Taller Horizonte`.
+5. Confirma que el formulario SEO no contiene `Ana Ficticia UAT`, `Menor de 14
+   años`, controles de privacidad ni confirmaciones de autorizaciones.
+6. Confirma que los únicos campos editables son `Slug de la URL`, `Título SEO`,
+   `Descripción meta`, `Frase clave principal`, configuración social,
+   `URL canonical` y `Excluir de los resultados de búsqueda`.
 7. Cambia `Descripción meta` a:
 
    ```text

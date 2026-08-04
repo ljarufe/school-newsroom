@@ -54,6 +54,7 @@ NEWS_0011 = ("news", "0011_alter_newspage_body")
 NEWS_0012 = ("news", "0012_editorial_taxonomy_schema")
 NEWS_0013 = ("news", "0013_migrate_editorial_taxonomy")
 NEWS_0014 = ("news", "0014_remove_singular_section")
+NEWS_0015 = ("news", "0015_newspagerelatedkeyphrase_and_more")
 HOME_0001 = ("home", "0001_initial")
 BEFORE_NEWS_0002 = [HOME_0001, NEWS_0001]
 
@@ -1224,6 +1225,42 @@ def test_epic5_001_migration_preserves_news_with_blank_safe_seo_defaults() -> No
 
 
 @pytest.mark.django_db(transaction=True)
+def test_epic5_009_migration_leaves_historical_news_without_related_phrases() -> None:
+    page_id = None
+    try:
+        migrate_to(NEWS_0014)
+        home = RuntimeHomePage.objects.first()
+        if home is None:
+            root = RuntimePage.get_first_root_node()
+            if root is None:
+                RuntimeLocale.objects.get_or_create(language_code="es")
+                root = RuntimePage.add_root(
+                    instance=RuntimePage(title="Root", slug="root")
+                )
+            home = RuntimeHomePage(title="Inicio", slug="inicio-epic5-009")
+            root.add_child(instance=home)
+        page = RuntimeNewsPage(
+            title="Noticia histórica ficticia EPIC5-009",
+            slug="noticia-historica-epic5-009",
+            live=False,
+            publication_date=timezone.datetime(2026, 8, 3).date(),
+            body=[("paragraph", "<p>Contenido histórico ficticio.</p>")],
+            coverage_province="Arequipa",
+        )
+        home.add_child(instance=page)
+        page_id = page.pk
+
+        apps = migrate_to(NEWS_0015)
+        RelatedKeyphrase = apps.get_model("news", "NewsPageRelatedKeyphrase")
+
+        assert not RelatedKeyphrase.objects.filter(page_id=page_id).exists()
+    finally:
+        if page_id is not None:
+            Revision.objects.filter(object_id=str(page_id)).delete()
+        migrate_to_latest()
+
+
+@pytest.mark.django_db(transaction=True)
 def test_epic3_006_migration_preserves_body_and_adds_table_schema() -> None:
     home_id = None
     page_id = None
@@ -1470,6 +1507,7 @@ def test_epic3_009_migrates_current_page_and_revision_relation_shape() -> None:
             {"pk": None, "page": page_id, "section": section.pk}
         ]
 
+        migrate_to(NEWS_0015)
         reconstructed = Revision.objects.get(pk=revision_id).as_object()
         assert list(
             reconstructed.section_assignments.values_list("section_id", flat=True)

@@ -659,13 +659,11 @@ La pestaña `Asistente SEO` reutiliza los
 campos nativos de Wagtail para la URL, el título SEO y la descripción meta, y
 añade herramientas editoriales para revisar la noticia antes de publicarla.
 
-Al inicio de la pestaña, `Contexto de la noticia — solo lectura` muestra el
-título, la sección, la fecha, una representación fiel del cuerpo, la imagen
-destacada con su metadata contextual pública y las firmas públicas.
-`Previsualizar borrador completo` abre la revisión completa en otra pestaña.
-Este contexto no contiene campos editables y nunca muestra colaboradores
-internos, franjas de edad, declaraciones de privacidad ni confirmaciones de
-autorización.
+La pestaña comienza directamente con `Configuración SEO`. Curador SEO puede
+usar la acción nativa `Vista previa` de Wagtail, incluida su vista dividida o la
+apertura en otra pestaña, para revisar el contenido completo de la noticia. La
+vista previa no amplía los campos editables: cuerpo, taxonomía, colaboradores,
+privacidad y créditos continúan fuera de la superficie del rol.
 
 En la Home y las páginas institucionales, `Contexto de la página — solo
 lectura` muestra el título y la misma acción de previsualización. Curador SEO
@@ -685,12 +683,23 @@ Los campos principales son:
 - `Slug de la URL`: parte final de la dirección pública de la noticia.
 - `Título SEO`: texto usado en la etiqueta `<title>` y como título de buscador.
 - `Descripción meta`: resumen preparado para buscadores.
-- `Frase clave objetivo`: frase exacta principal que se quiere trabajar.
+- `Frase clave principal`: frase central que se quiere trabajar.
+- `Frases clave relacionadas`: hasta cuatro expresiones opcionales que también
+  describen el tema.
 
-La frase clave puede quedar vacía en un borrador. Mientras falte, el análisis
-aparece incompleto. La versión actual compara la frase exacta sin distinguir
-mayúsculas, espacios repetidos ni tildes. No reconoce sinónimos, plurales,
-variantes gramaticales ni frases relacionadas.
+La frase principal puede quedar vacía en un borrador. Mientras falte, el
+análisis aparece incompleto. Las relacionadas se pueden añadir, eliminar y
+reordenar. No se permite repetir la principal ni otra relacionada aunque la
+diferencia sea sólo de mayúsculas, tildes, Unicode o espacios. Una fila vacía
+no cuenta para el máximo.
+
+El análisis distingue una `Coincidencia exacta` de una `Variante flexiva`. La
+coincidencia exacta conserva la comparación sin diferencias de mayúsculas,
+espacios repetidos ni tildes. La variante flexiva usa una herramienta
+lingüística local para reconocer, de forma conservadora, cambios cercanos como
+`investigación escolar` y `investigaciones escolares`. No busca sinónimos, no
+reordena palabras y no considera equivalentes `investigación escolar` y
+`estudio educativo`.
 
 El contador del título SEO usa estos rangos orientativos:
 
@@ -720,9 +729,10 @@ se deriva un extracto desde `Contenido`. El checklist recomienda completar la
 descripción meta de forma explícita.
 
 El título, la descripción, el slug y la URL canonical actualizan esta vista
-previa mientras se editan. El análisis completo del cuerpo se recalcula en el
-servidor después de guardar o volver a abrir la noticia. Esto incluye los
-cálculos SEO y de legibilidad del texto escrito o pegado en RichText.
+previa mientras se editan. El análisis completo del cuerpo y de las frases
+clave no se ejecuta en cada pulsación: se recalcula en el servidor después de
+guardar o volver a abrir la noticia. Esto incluye los cálculos SEO, lingüísticos
+y de legibilidad del contenido estructurado.
 
 ### Configuración y vista previa social
 
@@ -766,7 +776,7 @@ forma autoritativa después de guardar o recargar.
 
 El análisis revisa de forma determinística:
 
-- presencia de la frase clave objetivo;
+- presencia de la frase clave principal;
 - frase clave en título SEO, slug, descripción meta, introducción, subtítulos y
   cuerpo;
 - repetición evidente de la frase clave;
@@ -784,6 +794,32 @@ añadir enlaces irrelevantes.
 
 Cuando no hay subtítulos, imágenes del cuerpo o texto suficiente para una
 comprobación, el resultado puede mostrarse como `No aplica`.
+
+### Análisis de frases clave
+
+`Análisis de la frase principal` conserva todos los resultados exactos y añade
+resultados orientativos para variantes flexivas, la introducción y la
+distribución. La introducción corresponde a los primeros 100 tokens
+significativos del contenido. La distribución se aplica a partir de 300
+palabras significativas y divide aproximadamente el cuerpo en tres zonas.
+
+`Análisis de frases relacionadas` presenta un grupo independiente por cada
+frase, en el orden editorial. Cada grupo explica presencia, ubicaciones y
+distribución. Las ubicaciones distinguen título público o SEO, descripción,
+introducción, subtítulos y cuerpo. Las evidencias son fragmentos breves: una
+predicción flexiva nunca se presenta como coincidencia exacta.
+
+Las relacionadas, las variantes flexivas y la distribución nueva no cambian
+el estado general `Incompleto`, `Necesita mejoras` o `Bueno`. Son orientación
+adicional y no una puntuación lingüística global.
+
+Si la herramienta lingüística local no está disponible, aparece `El análisis
+lingüístico avanzado no está disponible. Revisa la configuración del servidor.`
+Los resultados exactos existentes continúan visibles y se puede guardar,
+enviar a workflow o publicar según los permisos habituales. Si el contenido
+supera el límite técnico configurado, aparece `El texto es demasiado extenso
+para el análisis lingüístico configurado.`; el texto no se trunca
+silenciosamente.
 
 ### Legibilidad en español
 

@@ -5,12 +5,13 @@ from pathlib import Path
 
 import pytest
 from django.contrib.auth import get_user_model
-from django.test import Client
+from django.test import Client, override_settings
 from django.urls import reverse
 from wagtail.models import Page, Site
 
 from apps.home.models import HomePage
 from apps.news.models import NewsPage, NewsPageSection, NewsSection
+from apps.news.seo.nlp import reset_runtime_cache
 from apps.news.taxonomy_forms import NewsSubsectionAdminForm
 
 
@@ -563,6 +564,15 @@ def test_news_page_create_surface_transforms_promote_tab_into_seo_assistant(
     assert_contains_text(response, "Vista previa social")
     assert_contains_text(response, "Análisis SEO")
     assert_contains_text(response, "Legibilidad")
+    assert_contains_text(response, "Análisis de la frase principal")
+    assert_contains_text(response, "Análisis de frases relacionadas")
+    assert_contains_telepath_text(response, "Frase clave principal")
+    assert_contains_telepath_text(response, "Frases clave relacionadas")
+    assert_contains_telepath_text(
+        response,
+        "Añade hasta cuatro frases relacionadas que también describan el tema. "
+        "Se analizan con menos exigencia que la frase principal.",
+    )
     assert_contains_text(response, "Estado general")
     assert_contains_text(response, "Indexación y canonical")
     assert_contains_text(response, "Navegación y menús")
@@ -576,6 +586,43 @@ def test_news_page_create_surface_transforms_promote_tab_into_seo_assistant(
     assert "Promocionar" not in content
     settings_panel = NewsPage.edit_handler.children[2]
     assert settings_panel.children == Page.settings_panels
+
+
+@pytest.mark.django_db
+@override_settings(SEO_NLP_MODEL="missing_admin_test_model")
+def test_seo_assistant_shows_visible_nlp_fallback_without_hiding_exact_checks(
+    admin_client,
+) -> None:
+    home = HomePage.objects.first()
+    if home is None:
+        root = Page.get_first_root_node()
+        home = HomePage(title="Inicio", slug="inicio-nlp-fallback")
+        root.add_child(instance=home)
+    page = NewsPage(
+        title="Periodismo escolar ficticio",
+        slug="nlp-fallback-admin",
+        live=False,
+        publication_date=dt.date(2026, 8, 3),
+        body=[("paragraph", "<p>El periodismo escolar continúa.</p>")],
+        coverage_province="Arequipa",
+        focus_keyphrase="periodismo escolar",
+    )
+    home.add_child(instance=page)
+    reset_runtime_cache()
+    try:
+        response = admin_client.get(reverse("wagtailadmin_pages:edit", args=(page.pk,)))
+    finally:
+        reset_runtime_cache()
+
+    assert response.status_code == 200
+    assert_contains_text(response, "Análisis lingüístico no disponible")
+    assert_contains_text(
+        response,
+        "El análisis lingüístico avanzado no está disponible. "
+        "Revisa la configuración del servidor.",
+    )
+    assert_contains_text(response, "Frase clave en el cuerpo")
+    assert_contains_text(response, "La frase clave aparece en este elemento.")
 
 
 @pytest.mark.django_db

@@ -2,19 +2,37 @@ from django import forms
 from wagtail.admin.forms import WagtailAdminPageForm
 from wagtail.blocks.stream_block import StreamBlockValidationError
 
-from .access import FULL_EDITOR_PERMISSION
+from .access import (
+    FULL_EDITOR_PERMISSION,
+    NEWS_SEO_FORMSET_NAMES,
+    SEO_EDITOR_PERMISSION,
+)
 from .image_metadata import REQUIRED_METADATA_PARTS, effective_text
+from .seo.keyphrases import normalize_for_match
 from .widgets import TaxonomyTreeWidget
 
 
 class MvpAccessPageAdminForm(WagtailAdminPageForm):
     """Apply the MVP field boundary and protect child relations server-side."""
 
+    @property
+    def show_comments_toggle(self):
+        formsets = getattr(self, "formsets", None)
+        if formsets is not None:
+            return "comments" in formsets
+        return "comments" in self.__class__.formsets
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         if self.for_user and not self.for_user.has_perm(FULL_EDITOR_PERMISSION):
-            self.formsets.clear()
+            allowed_formsets = (
+                NEWS_SEO_FORMSET_NAMES
+                if self.for_user.has_perm(SEO_EDITOR_PERMISSION)
+                else frozenset()
+            )
+            for name in set(self.formsets).difference(allowed_formsets):
+                del self.formsets[name]
 
     def save(self, commit=True):
         if (
@@ -54,6 +72,12 @@ class NewsPageAdminForm(MvpAccessPageAdminForm):
     TAXONOMY_REQUIRED_ERROR = (
         "Selecciona al menos una sección o subsección antes de publicar la noticia."
     )
+    RELATED_KEYPHRASE_LIMIT_ERROR = (
+        "No puedes añadir más de cuatro frases clave relacionadas."
+    )
+    RELATED_KEYPHRASE_DUPLICATE_ERROR = (
+        "Esta frase ya está usada como frase principal o relacionada."
+    )
     IMAGE_CONTEXTS = (
         ("featured_image", "imagen destacada"),
         ("og_image", "imagen para redes sociales"),
@@ -61,6 +85,12 @@ class NewsPageAdminForm(MvpAccessPageAdminForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        related_formset = self.formsets.get("related_keyphrases")
+        if related_formset is not None:
+            related_formset.error_messages["too_many_forms"] = (
+                self.RELATED_KEYPHRASE_LIMIT_ERROR
+            )
+            self._mark_blank_related_keyphrases_for_deletion(related_formset)
         field = self.fields.get("taxonomy_sections")
         if field is None:
             return
@@ -89,6 +119,22 @@ class NewsPageAdminForm(MvpAccessPageAdminForm):
                 )
             ]
 
+    @staticmethod
+    def _mark_blank_related_keyphrases_for_deletion(formset) -> None:
+        if not formset.is_bound:
+            return
+        data = formset.data.copy()
+        try:
+            total_forms = int(data.get(f"{formset.prefix}-TOTAL_FORMS", 0))
+        except (TypeError, ValueError):
+            return
+        for index in range(total_forms):
+            phrase_name = f"{formset.prefix}-{index}-phrase"
+            if str(data.get(phrase_name, "")).strip():
+                continue
+            data[f"{formset.prefix}-{index}-DELETE"] = "on"
+        formset.data = data
+
     def add_error(self, field, error):
         if field == "body" and isinstance(error, StreamBlockValidationError):
             error.message = self.BODY_BLOCK_ERROR
@@ -96,6 +142,8 @@ class NewsPageAdminForm(MvpAccessPageAdminForm):
 
     def clean(self):
         cleaned_data = super().clean()
+
+        self._validate_related_keyphrases(cleaned_data)
 
         if (
             "taxonomy_sections" in self.fields
@@ -141,6 +189,34 @@ class NewsPageAdminForm(MvpAccessPageAdminForm):
             )
 
         return cleaned_data
+
+    def _validate_related_keyphrases(self, cleaned_data) -> None:
+        formset = self.formsets.get("related_keyphrases")
+        if formset is None or not formset.is_bound:
+            return
+
+        formset.is_valid()
+        seen = {normalize_for_match(cleaned_data.get("focus_keyphrase", ""))}
+        seen.discard("")
+        for form in formset.forms:
+            if not hasattr(form, "cleaned_data"):
+                continue
+            if formset.can_delete and formset._should_delete_form(form):
+                continue
+            phrase = form.cleaned_data.get("phrase", "")
+            normalized = normalize_for_match(phrase)
+            if not normalized:
+                continue
+            if normalized in seen:
+                form.add_error(
+                    "phrase",
+                    forms.ValidationError(
+                        self.RELATED_KEYPHRASE_DUPLICATE_ERROR,
+                        code="duplicate_related_keyphrase",
+                    ),
+                )
+                continue
+            seen.add(normalized)
 
     def _sync_taxonomy_assignments(self, section_values) -> None:
         from .models import NewsPageSection, NewsSection

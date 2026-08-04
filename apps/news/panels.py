@@ -141,18 +141,3 @@ class PageSeoContextPanel(Panel):
                 else None
             )
             return context
-
-
-class NewsSeoContextPanel(Panel):
-    class BoundPanel(Panel.BoundPanel):
-        template_name = "news/admin/news_seo_context_panel.html"
-
-        def get_context_data(self, parent_context=None):
-            context = super().get_context_data(parent_context)
-            context["draft_preview_url"] = (
-                reverse("wagtailadmin_pages:view_draft", args=(self.instance.pk,))
-                if self.instance.pk
-                else None
-            )
-            context["classification_paths"] = self.instance.taxonomy.visible_paths
-            return context

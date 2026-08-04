@@ -40,6 +40,9 @@ services:
       BROWSER_TEST_PAGE_ID: "3"
       BROWSER_TEST_USERNAME: epic3-006-browser
       BROWSER_TEST_PASSWORD: browser-test-password
+      BROWSER_TEST_SEO_USERNAME: epic5-009-seo-browser
+      BROWSER_TEST_SEO_PASSWORD: browser-test-password
+      BROWSER_TEST_SEO_PAGE_ID: "4"
       SEO_DEFAULT_NOINDEX: "true"
     depends_on:
       browser-db:
@@ -69,6 +72,9 @@ services:
       BROWSER_TEST_PAGE_ID: "3"
       BROWSER_TEST_USERNAME: epic3-006-browser
       BROWSER_TEST_PASSWORD: browser-test-password
+      BROWSER_TEST_SEO_USERNAME: epic5-009-seo-browser
+      BROWSER_TEST_SEO_PASSWORD: browser-test-password
+      BROWSER_TEST_SEO_PAGE_ID: "4"
       PLAYWRIGHT_BASE_URL: http://browser-web:8000
     depends_on:
       browser-web:

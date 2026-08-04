@@ -2,11 +2,16 @@ from dataclasses import dataclass
 from urllib.parse import urlsplit
 
 from ..image_metadata import effective_text
-from .content import ContentSnapshot, LinkInfo, extract_content
+from .content import ContentSnapshot, LinkInfo, build_page_segments, extract_content
 from .keyphrases import (
     contains_exact_phrase,
     keyphrase_usage,
     normalize_for_match,
+)
+from .linguistics import (
+    LinguisticFinding,
+    RelatedKeyphraseAnalysis,
+    analyze_linguistic_keyphrases,
 )
 from .readability import readability_checks
 
@@ -22,6 +27,9 @@ class CheckResult:
 class AnalysisResult:
     seo_checks: tuple[CheckResult, ...]
     readability_checks: tuple[CheckResult, ...]
+    primary_linguistic_checks: tuple[LinguisticFinding, ...]
+    related_keyphrase_groups: tuple[RelatedKeyphraseAnalysis, ...]
+    nlp_warning: str
     overall_status: str
     overall_label: str
 
@@ -68,7 +76,7 @@ def _keyphrase_location_check(
         return _result(
             "not_applicable",
             label,
-            "Añade una frase clave objetivo para activar esta comprobación.",
+            "Añade una frase clave principal para activar esta comprobación.",
         )
     if contains_exact_phrase(value, keyphrase, slug=slug):
         return _result("good", label, "La frase clave aparece en este elemento.")
@@ -233,14 +241,18 @@ def _seo_checks(
     checks: list[CheckResult] = []
     if keyphrase:
         checks.append(
-            _result("good", "Frase clave objetivo", "La frase clave está configurada."),
+            _result(
+                "good",
+                "Frase clave principal",
+                "La frase clave está configurada.",
+            ),
         )
     else:
         checks.append(
             _result(
                 "problem",
-                "Frase clave objetivo",
-                "Añade una frase clave objetivo para completar el análisis.",
+                "Frase clave principal",
+                "Añade una frase clave principal para completar el análisis.",
             ),
         )
     checks.extend(
@@ -277,7 +289,7 @@ def _seo_checks(
             _result(
                 "not_applicable",
                 "Frase clave en subtítulos",
-                "Añade una frase clave objetivo para activar esta comprobación.",
+                "Añade una frase clave principal para activar esta comprobación.",
             ),
         )
     elif not snapshot.headings:
@@ -426,6 +438,18 @@ def analyze_page(page, *, site_hostname: str = "") -> AnalysisResult:
         _result(status, label, explanation)
         for status, label, explanation in readability_checks(snapshot)
     )
+    related_manager = getattr(page, "related_keyphrases", ())
+    related_values = (
+        related_manager.all() if hasattr(related_manager, "all") else related_manager
+    )
+    related_phrases = tuple(
+        str(getattr(item, "phrase", item) or "") for item in related_values
+    )
+    linguistic = analyze_linguistic_keyphrases(
+        build_page_segments(page, snapshot),
+        str(getattr(page, "focus_keyphrase", "") or ""),
+        related_phrases,
+    )
     incomplete = not all(
         (
             (page.focus_keyphrase or "").strip(),
@@ -448,6 +472,9 @@ def analyze_page(page, *, site_hostname: str = "") -> AnalysisResult:
     return AnalysisResult(
         seo_checks=seo_checks,
         readability_checks=readability,
+        primary_linguistic_checks=linguistic.primary_findings,
+        related_keyphrase_groups=linguistic.related_groups,
+        nlp_warning=linguistic.warning,
         overall_status=overall_status,
         overall_label=overall_label,
     )

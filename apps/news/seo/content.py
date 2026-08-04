@@ -20,6 +20,14 @@ class ContentEvent:
     text: str
 
 
+@dataclass(frozen=True)
+class ContentSegment:
+    kind: str
+    order: int
+    text: str
+    reference: str
+
+
 @dataclass
 class ContentSnapshot:
     text: str = ""
@@ -28,6 +36,7 @@ class ContentSnapshot:
     body_image_alts: list[str] = field(default_factory=list)
     links: list[LinkInfo] = field(default_factory=list)
     events: list[ContentEvent] = field(default_factory=list)
+    segments: list[ContentSegment] = field(default_factory=list)
 
     @property
     def introduction(self) -> str:
@@ -39,7 +48,7 @@ class ContentSnapshot:
 
 
 class _RichTextExtractor(HTMLParser):
-    captured_tags = {"p": "paragraph", "li": "paragraph", "blockquote": "paragraph"}
+    captured_tags = {"p": "paragraph", "li": "list", "blockquote": "quote"}
     heading_tags = {"h2", "h3", "h4"}
 
     def __init__(self) -> None:
@@ -79,7 +88,7 @@ class _RichTextExtractor(HTMLParser):
                 self.events.append(ContentEvent("heading", text))
             else:
                 self.paragraphs.append(text)
-                self.events.append(ContentEvent("paragraph", text))
+                self.events.append(ContentEvent(self.captured_tags[tag], text))
             return
 
     def handle_data(self, data: str) -> None:
@@ -103,7 +112,7 @@ def extract_content(body) -> ContentSnapshot:
     if not body:
         return snapshot
 
-    for child in body:
+    for block_index, child in enumerate(body):
         if child.block_type == "paragraph":
             value = child.value
             source = value.source if isinstance(value, RichText) else str(value or "")
@@ -117,11 +126,107 @@ def extract_content(body) -> ContentSnapshot:
             snapshot.headings.extend(parser.headings)
             snapshot.links.extend(parser.links)
             snapshot.events.extend(parser.events)
+            for event_index, event in enumerate(parser.events):
+                snapshot.segments.append(
+                    ContentSegment(
+                        kind=event.kind,
+                        order=len(snapshot.segments),
+                        text=event.text,
+                        reference=f"body:{block_index}:{event_index}",
+                    )
+                )
             if visible_text and not parser.events:
                 snapshot.paragraphs.append(visible_text)
                 snapshot.events.append(ContentEvent("paragraph", visible_text))
+                snapshot.segments.append(
+                    ContentSegment(
+                        kind="paragraph",
+                        order=len(snapshot.segments),
+                        text=visible_text,
+                        reference=f"body:{block_index}:0",
+                    )
+                )
         elif child.block_type == "article_image":
-            snapshot.body_image_alts.append(str(child.value.get("alt_text") or ""))
+            alt_text = normalize_whitespace(str(child.value.get("alt_text") or ""))
+            snapshot.body_image_alts.append(alt_text)
+            if alt_text:
+                snapshot.segments.append(
+                    ContentSegment(
+                        kind="image_alt",
+                        order=len(snapshot.segments),
+                        text=alt_text,
+                        reference=f"body:{block_index}:alt",
+                    )
+                )
+        elif child.block_type == "table":
+            value = child.value or {}
+            caption = normalize_whitespace(str(value.get("table_caption") or ""))
+            table_rows = value.get("data") or []
+            visible_rows = [
+                normalize_whitespace(
+                    " ".join("" if cell is None else str(cell) for cell in row)
+                )
+                for row in table_rows
+                if isinstance(row, list)
+            ]
+            table_text = normalize_whitespace(
+                " ".join([caption, *(row for row in visible_rows if row)])
+            )
+            if table_text:
+                snapshot.segments.append(
+                    ContentSegment(
+                        kind="table",
+                        order=len(snapshot.segments),
+                        text=table_text,
+                        reference=f"body:{block_index}:table",
+                    )
+                )
 
     snapshot.text = normalize_whitespace(" ".join(text_parts))
     return snapshot
+
+
+def build_page_segments(page, snapshot: ContentSnapshot) -> tuple[ContentSegment, ...]:
+    """Return stable, visible analysis segments without reparsing StreamField."""
+
+    segments: list[ContentSegment] = []
+
+    def add(kind: str, value: str, reference: str) -> None:
+        text = normalize_whitespace(value or "")
+        if not text:
+            return
+        segments.append(
+            ContentSegment(
+                kind=kind,
+                order=len(segments),
+                text=text,
+                reference=reference,
+            )
+        )
+
+    public_title = str(getattr(page, "title", "") or "")
+    effective_seo_title = str(getattr(page, "seo_title", "") or "").strip()
+    effective_seo_title = effective_seo_title or public_title
+    add("public_title", public_title, "page:title")
+    if normalize_whitespace(effective_seo_title) != normalize_whitespace(public_title):
+        add("seo_title", effective_seo_title, "page:seo_title")
+    add(
+        "description",
+        str(getattr(page, "search_description", "") or ""),
+        "page:search_description",
+    )
+    add(
+        "image_alt",
+        str(getattr(page, "featured_image_alt_text", "") or ""),
+        "page:featured_image_alt_text",
+    )
+    for body_segment in snapshot.segments:
+        segments.append(
+            ContentSegment(
+                kind=body_segment.kind,
+                order=len(segments),
+                text=body_segment.text,
+                reference=body_segment.reference,
+            )
+        )
+    return tuple(segments)

@@ -12,6 +12,7 @@ from apps.news.models import (
     ContributorGroup,
     MinorContributor,
     NewsPage,
+    NewsPageRelatedKeyphrase,
     NewsPageSection,
     NewsSection,
     School,
@@ -73,6 +74,14 @@ def test_custom_editor_visible_labels_are_spanish() -> None:
     assert ContributorGroup._meta.verbose_name_plural == "Grupos de colaboradores"
     assert MinorContributor._meta.verbose_name == "Colaborador menor"
     assert MinorContributor._meta.verbose_name_plural == "Colaboradores menores"
+    assert NewsPageRelatedKeyphrase._meta.verbose_name == ("Frase clave relacionada")
+    assert NewsPageRelatedKeyphrase._meta.verbose_name_plural == (
+        "Frases clave relacionadas"
+    )
+    assert NewsPageRelatedKeyphrase._meta.get_field("phrase").verbose_name == (
+        "Frase relacionada"
+    )
+    assert NewsPageRelatedKeyphrase._meta.get_field("phrase").max_length == 255
 
     assert NewsPage._meta.get_field("publication_date").verbose_name == (
         "Fecha de publicación"
@@ -103,7 +112,7 @@ def test_custom_editor_visible_labels_are_spanish() -> None:
             "Crédito de imagen"
         )
     assert NewsPage._meta.get_field("focus_keyphrase").verbose_name == (
-        "Frase clave objetivo"
+        "Frase clave principal"
     )
     assert NewsPage._meta.get_field("og_title").verbose_name == (
         "Título para redes sociales"
@@ -248,6 +257,30 @@ def test_social_image_metadata_panels_remain_in_seo_assistant() -> None:
         "og_image_credit",
     ]
     assert all(not isinstance(panel, HelpPanel) for panel in image_panel.children)
+
+
+def test_related_keyphrase_inline_is_immediately_after_primary_keyphrase() -> None:
+    assert NewsPage.promote_panels[0].heading == "Configuración SEO"
+    seo_panel = next(
+        panel
+        for panel in NewsPage.promote_panels
+        if isinstance(panel, MultiFieldPanel) and panel.heading == "Configuración SEO"
+    )
+    primary_index = next(
+        index
+        for index, panel in enumerate(seo_panel.children)
+        if isinstance(panel, FieldPanel) and panel.field_name == "focus_keyphrase"
+    )
+    related_panel = seo_panel.children[primary_index + 1]
+
+    assert isinstance(related_panel, InlinePanel)
+    assert related_panel.relation_name == "related_keyphrases"
+    assert related_panel.heading == "Frases clave relacionadas"
+    assert related_panel.max_num == 4
+    assert related_panel.help_text == (
+        "Añade hasta cuatro frases relacionadas que también describan el tema. "
+        "Se analizan con menos exigencia que la frase principal."
+    )
 
 
 def test_tag_help_text_resolves_to_spanish() -> None:

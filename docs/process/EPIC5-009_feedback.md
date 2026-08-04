@@ -1,6 +1,6 @@
-# EPIC5-009 Implementation Feedback
+# EPIC5-009 Closing Feedback
 
-Status: Implementation Closing Draft
+Status: Closing Feedback Final
 
 ## Outcome
 
@@ -82,8 +82,9 @@ Modelcluster revisions serialize phrases and order. Automated coverage verifies
 zero-to-four effective rows, whitespace deletion, normalized duplicate rules,
 save/reopen, ordered revision reconstruction, and a revert-style reconstruction
 from an earlier revision. The browser fixture saves and reopens related phrases
-on a page in the real SEO workflow. No migration was applied to the maintainer's
-persistent database.
+on a page in the real SEO workflow. Codex did not apply this migration to the
+maintainer's persistent database; applying persistent migrations remained a
+maintainer-owned action.
 
 ## Degradation and privacy
 
@@ -308,13 +309,24 @@ flexive matches, zone distribution, a maximum of three evidence fragments, one
 pipeline load, and no warning. A failed model load is cached per process, so
 the failed process must be recreated or restarted after correcting its image.
 
+## Pull Request, CI, and review
+
+Luis reported that the implementation was committed and pushed, the Pull
+Request was opened against `main`, CI completed successfully, and review
+finished without findings. No later implementation delta or invalidated
+technical evidence was reported. This is maintainer-reported operational state;
+the feedback does not claim an additional independent GitHub verification.
+
 ## Closing state
 
 - Maintainer UAT: approved; no maintainer UAT remains pending.
-- Pending real commit.
-- Pending real push.
-- Pending PR/CI evidence.
-- Pending PR review.
+- Implementation commit and push: completed, as reported by Luis.
+- Pull Request: open against `main`, as reported by Luis.
+- CI: green, as reported by Luis.
+- Review: completed without findings, as reported by Luis.
+- The ticket is ready for maintainer-controlled squash merge and operational
+  cleanup. Merge, local `main` synchronization, branch deletion, and the Planka
+  move to `Done` are not claimed in this pre-merge feedback.
 
 ## Warnings, known issues, and New Work Discovered
 
@@ -352,3 +364,11 @@ the failed process must be recreated or restarted after correcting its image.
   when validating per-process caching.
 - Execution-guide candidate: distinguish Docker or network startup failure from
   an application or NLP failure.
+- Execution-guide candidate: defer non-material feedback corrections during
+  implementation and produce one complete Stage B replacement after UAT, CI,
+  and review are stable.
+- Execution-guide candidate: keep Git close commands proportional and quiet.
+  Check the branch before staging, exclude temporary artifacts, inspect status
+  before commit, and avoid repeating equivalent `status`, `diff`, `show`, and
+  untracked-file commands after every successful step unless a hook, partial
+  stage, unexpected delta, or failure invalidates the earlier evidence.

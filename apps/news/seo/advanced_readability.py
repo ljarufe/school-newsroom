@@ -174,13 +174,13 @@ def _load_hyphenator():
                 raise HyphenationUnavailableError from None
             return _HYPHENATOR
 
-        _HYPHENATION_ATTEMPTED = True
         _HYPHENATION_LOAD_ATTEMPTS += 1
         try:
             pyphen_module = importlib.import_module("pyphen")
             hyphenator = pyphen_module.Pyphen(lang=HYPHENATION_DICTIONARY)
         except Exception as error:
             _HYPHENATION_ERROR = True
+            _HYPHENATION_ATTEMPTED = True
             logger.error(
                 "SEO syllabification initialization failed (dictionary=%s, error=%s).",
                 HYPHENATION_DICTIONARY,
@@ -189,6 +189,7 @@ def _load_hyphenator():
             raise HyphenationUnavailableError from None
 
         _HYPHENATOR = hyphenator
+        _HYPHENATION_ATTEMPTED = True
         return _HYPHENATOR
 
 

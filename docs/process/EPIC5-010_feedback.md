@@ -1,10 +1,13 @@
-# EPIC5-010 Stage A Feedback
+# EPIC5-010 Stage B Feedback
 
-## Stage A status
+## Stage B status
 
-Implementation and automated validation are complete. This file records
-technical evidence produced by Codex. Maintainer UAT is pending and is not
-claimed as passed.
+Implementation, automated validation, and maintainer UAT A-C are complete.
+Maintainer UAT D was intentionally omitted because the approved degradation
+boundaries already have automated coverage. This is the final repository
+feedback unless the post-correction GitHub run produces another material
+failure or review finding. Post-correction GitHub CI and re-review have not yet
+run and are not claimed as passed.
 
 ## Implementation structure
 
@@ -21,7 +24,9 @@ claimed as passed.
   same immutable analyzed segments feed the advanced rules.
 - `apps.news.seo.advanced_readability` owns the fixed connector lexicon,
   advanced rule formulas, immutable findings and evidence, Spanish
-  hyphenation initialization, and its process-local success/failure cache.
+  hyphenation initialization, and its process-local success/failure cache. Its
+  attempted state is published under the initialization lock only after the
+  hyphenator or cached error state is complete.
 - `apps.news.seo.analysis` adds `advanced_readability_checks` to the aggregate
   result while preserving the established `readability_checks` and overall
   status calculation.
@@ -38,7 +43,9 @@ the block location, and an optional local metric.
 
 Advanced denominators contain only visible `paragraph`, `list`, and `quote`
 segments from `body`. Headings remain ordered segment boundaries but their
-words are excluded. Public and SEO titles, meta description, slug, tables,
+words are excluded. A preserved heading breaks a consecutive-opening run,
+while consecutive authorized prose segments may share a run. Public and SEO
+titles, meta description, slug, tables,
 image alt text, captions, credits, embeds, taxonomy, tags, school and coverage,
 public credits, internal contributors, privacy fields, and hidden Admin data
 are excluded. Each segment is a separate spaCy document, so a sentence cannot
@@ -184,8 +191,10 @@ multiword and single-sentence counting, accepted `fue revisado`, rejected
 three clause heads, nominal coordination rejection, 49/50-word density,
 49/50/more MATTR inputs, exact formula, INFLESZ boundaries, 99/100-word and
 sentence gates, authorized/excluded inputs, segment boundaries, evidence order
-and limit, immutable NLP data, one inference batch, model/inference failure,
-Pyphen-only failure, and unchanged overall status.
+and limit, heading-separated versus consecutive authorized opening runs,
+immutable NLP data, one inference batch, model/inference failure, Pyphen-only
+failure, concurrent first-use Pyphen initialization, and unchanged overall
+status.
 
 The aggregate result keeps the existing seven-position constructor contract;
 the additive advanced tuple is a trailing field with an empty default.
@@ -205,8 +214,9 @@ Current focused evidence:
 - Installed-artifact smoke with container networking disabled: passed with the
   expected dictionary and notice hashes.
 - `pip check`: passed with `No broken requirements found`.
-- Django smoke through the rebuilt image and real entrypoint: passed with the
-  five pre-existing Treebeard `E001` forward-compatibility warnings.
+- Django check through the rebuilt image and real entrypoint after the
+  Treebeard compatibility correction: passed with no issues and nothing
+  silenced.
 - Explicit migration check: passed with `No changes detected`.
 - `make browser-test`: 4 passed. The existing Curador SEO regression now also
   verifies the separate advanced card and a visible connector finding with
@@ -219,6 +229,14 @@ Current focused evidence:
   trailing default so the existing positional constructor remains compatible.
   The complete 43-test advanced causal module and focused Ruff/format checks
   passed afterward; no broader evidence was invalidated.
+- The heading-boundary correction preserved headings as zero-denominator
+  editorial boundaries, prevented a run from crossing a heading, and retained
+  runs across consecutive paragraph, list, and quote segments. The complete
+  45-test advanced causal module passed afterward.
+- The final concurrent Pyphen initialization correction retained the existing
+  lock and published the attempted flag only after success or failure state was
+  assigned. The complete 46-test advanced causal module and focused
+  Ruff/format checks passed afterward.
 
 The final diff review includes the complete relevant tracked and untracked
 delta. `git diff --check` passed.
@@ -287,32 +305,35 @@ larger representative corpus.
 
 ## UAT
 
-Maintainer UAT A-D is pending. The UAT A analysis described above is automated
-calibration only and is not attributed to Luis. Runtime inspection found the
-real Compose services `db` and `web`; only the persistent `db` service was
-running. To rebuild the image and recreate only the real `web` service before
-UAT, Luis must run:
+The maintainer completed and passed UAT A-C:
 
-```console
-docker compose up -d --build --no-deps --force-recreate web
-```
+- UAT A passed for the Director/editor advanced-readability card, approved
+  finding order, metrics, bounded evidence, conservative detections, and
+  orientative presentation.
+- UAT B passed for minimum-corpus `No aplica` behavior, continued basic
+  readability compatibility, unchanged overall-status participation, and no
+  HTTP 500.
+- UAT C passed for Curador SEO visibility, readable findings and evidence,
+  retained native Preview, restricted non-SEO fields, and SEO-only save
+  behavior.
 
-Codex did not run that command, replace or stop a persistent UAT web runtime,
-apply migrations, or modify the maintainer's persistent database.
+The disposable UAT D degradation exercise was intentionally omitted because
+the approved NLP-unavailable and Pyphen-unavailable boundaries already have
+automated causal and integration coverage. UAT A automated calibration
+described above remains separate supporting evidence rather than a substitute
+for the maintainer's completed UAT.
 
 ## New Work Discovered
 
-The Django system check continues to report five pre-existing Treebeard `E001`
-forward-compatibility warnings. They are unrelated to advanced readability and
-were not implemented in this ticket. No other out-of-scope product work was
-identified.
+No unresolved new work or genuine product warning remains from this ticket.
+The Treebeard compatibility finding was explicitly approved and resolved in
+the addendum below. The concurrent Pyphen review finding was corrected within
+the approved implementation scope and is also resolved below.
 
 ## Maintainer-approved addendum: Treebeard compatibility
 
 After Stage A, the maintainer explicitly approved resolving the five recurring
-`treebeard.E001` warnings on this branch. This addendum supersedes only the
-Treebeard item recorded under New Work Discovered; the earlier entry remains as
-the historical Stage A observation.
+`treebeard.E001` warnings on this branch. Their final disposition is resolved.
 
 The installed dependency set was Django 5.2.16, Wagtail 7.4.2, and
 django-treebeard 5.3.0. Treebeard 5.3 checks every materialized-path model's
@@ -361,3 +382,44 @@ because the newly built development image had no collected static manifest;
 the advanced and model cases in that invocation passed. The same focused set
 was rerun once with the repository's `config.settings.test` setting and all 107
 tests passed. Neither failure indicated an application or dependency defect.
+
+## Actionable GitHub Codex review correction: Pyphen initialization
+
+The actionable GitHub Codex review found a publication race in the lazy
+Pyphen initializer. The initializing caller set `_HYPHENATION_ATTEMPTED` before
+the constructor assigned `_HYPHENATOR` or the exception path assigned
+`_HYPHENATION_ERROR`. A concurrent first-use caller could therefore take the
+unlocked completed-state path, receive `None`, and temporarily mark only
+Flesch-Szigriszt unavailable even though initialization ultimately succeeded.
+
+The correction retains the existing process-local lock, lazy initialization,
+single construction attempt, cached failure, offline dictionary, and all
+degradation behavior. The attempted flag is now assigned inside the lock only
+after the initialized hyphenator has been assigned on success or the cached
+error flag has been assigned on failure. While the first constructor is still
+running, the flag remains false, so another first-use caller enters the same
+lock and waits instead of observing incomplete state.
+
+The deterministic regression replaces the lock with an observed wrapper over
+a real `threading.Lock` and patches the Pyphen constructor with two
+`threading.Event` synchronization points. It blocks the first constructor,
+proves that the second caller reaches and waits at the lock, releases the
+constructor, and verifies that both futures receive the identical initialized
+object with one constructor call and one recorded load attempt. It uses no
+sleep or timing-based scheduling assumption; timeouts only bound a failed test.
+The existing cached-failure test remains unchanged and passed in the same
+module.
+
+Final corrective validation:
+
+- Complete advanced-readability/Pyphen module: 46 passed.
+- Focused Ruff and format checks for the two changed Python files: passed.
+- `git diff --check`: passed.
+- Per the correction scope, build, general checks, browser tests, and
+  maintainer UAT were not rerun.
+
+Post-correction GitHub CI and re-review can run only after these changes reach
+GitHub. They are not claimed as passed in this feedback. A green run with no
+further implementation delta does not require another documentation-only
+change; this Stage B document remains final unless that run reports a material
+failure or finding.

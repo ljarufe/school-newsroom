@@ -1,4 +1,6 @@
 import importlib.metadata
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 
 import pytest
@@ -412,6 +414,64 @@ def test_real_pyphen_uses_bundled_es_dictionary_and_single_initialization() -> N
         assert pyphen_module.language_fallback("es_ES") == "es"
         assert pyphen_module.LANGUAGES["es"].is_file()
         assert first.inserted("extraordinario") == "ex-tra-or-di-na-rio"
+        assert advanced.hyphenation_load_attempts() == 1
+    finally:
+        advanced.reset_hyphenation_cache()
+
+
+def test_concurrent_pyphen_callers_wait_for_complete_initialization(
+    monkeypatch,
+) -> None:
+    constructor_entered = threading.Event()
+    release_constructor = threading.Event()
+    second_waiting_at_lock = threading.Event()
+    hyphenator = object()
+    construction_attempts = 0
+
+    class ObservedLock:
+        def __init__(self) -> None:
+            self.lock = threading.Lock()
+
+        def __enter__(self):
+            if constructor_entered.is_set():
+                second_waiting_at_lock.set()
+            self.lock.acquire()
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback) -> None:
+            self.lock.release()
+
+    def construct_hyphenator(*, lang):
+        nonlocal construction_attempts
+        assert lang == advanced.HYPHENATION_DICTIONARY
+        construction_attempts += 1
+        constructor_entered.set()
+        assert release_constructor.wait(timeout=2)
+        return hyphenator
+
+    pyphen_module = SimpleNamespace(Pyphen=construct_hyphenator)
+    advanced.reset_hyphenation_cache()
+    monkeypatch.setattr(advanced, "_HYPHENATION_LOCK", ObservedLock())
+    monkeypatch.setattr(
+        advanced.importlib,
+        "import_module",
+        lambda name: pyphen_module,
+    )
+    try:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            first = executor.submit(advanced._load_hyphenator)
+            try:
+                assert constructor_entered.wait(timeout=2)
+                second = executor.submit(advanced._load_hyphenator)
+                assert second_waiting_at_lock.wait(timeout=2)
+                assert not second.done()
+            finally:
+                release_constructor.set()
+
+            assert first.result(timeout=2) is hyphenator
+            assert second.result(timeout=2) is hyphenator
+
+        assert construction_attempts == 1
         assert advanced.hyphenation_load_attempts() == 1
     finally:
         advanced.reset_hyphenation_cache()

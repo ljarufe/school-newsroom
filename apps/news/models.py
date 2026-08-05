@@ -37,6 +37,7 @@ from .panels import (
 from .seo_metadata import (
     build_news_article_data,
     build_public_metadata,
+    build_public_share_links,
     canonical_is_self,
     effective_noindex,
     safe_json_dumps,
@@ -542,6 +543,8 @@ class NewsPage(Page):
         context["seo_json_ld"] = safe_json_dumps(
             build_news_article_data(self, metadata),
         )
+        if self.live and not getattr(request, "is_preview", False):
+            context["public_share"] = build_public_share_links(metadata)
         return context
 
     @cached_property

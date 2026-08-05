@@ -22,6 +22,7 @@ on:
       - "apps/news/access.py"
       - "apps/news/blocks.py"
       - "apps/news/models.py"
+      - "apps/news/seo_metadata.py"
       - "apps/news/forms.py"
       - "apps/news/panels.py"
       - "apps/news/taxonomy.py"
@@ -39,6 +40,7 @@ on:
       - "static/news/js/taxonomy_tree.js"
       - "static/news/js/writing_mode.js"
       - "static/public/css/site.css"
+      - "static/public/js/**"
       - "templates/news/news_page.html"
   workflow_dispatch:
 

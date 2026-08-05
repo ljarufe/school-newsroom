@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load wagtailcore_tags wagtailimages_tags %}
+{% load static wagtailcore_tags wagtailimages_tags %}
 
 {% block title %}{{ seo_metadata.title }}{% endblock title %}
 
@@ -64,6 +64,41 @@
       {% include_block page.body %}
     </div>
 
+    {% if public_share %}
+      <section
+        class="public-share content-width mx-auto mt-5 pt-4"
+        data-public-share
+        data-share-title="{{ public_share.title }}"
+        data-share-description="{{ public_share.description }}"
+        data-share-url="{{ public_share.canonical_url }}"
+      >
+        <h2 class="public-share__heading">Compartir esta noticia</h2>
+        <div class="public-share__actions">
+          <button class="public-share__action" type="button" data-share-channel="native" hidden>Compartir</button>
+          <a class="public-share__action" data-share-channel="whatsapp" href="{{ public_share.whatsapp_url }}" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+          <a class="public-share__action" data-share-channel="x" href="{{ public_share.x_url }}" target="_blank" rel="noopener noreferrer">X</a>
+          <a class="public-share__action" data-share-channel="facebook" href="{{ public_share.facebook_url }}" target="_blank" rel="noopener noreferrer">Facebook</a>
+          <a class="public-share__action" data-share-channel="email" href="{{ public_share.email_url }}">Correo</a>
+          <button class="public-share__action" type="button" data-share-channel="copy" hidden>Copiar enlace</button>
+        </div>
+        <div class="public-share__notification" data-share-notification aria-live="polite" aria-atomic="true" hidden>
+          <div class="public-share__notification-header">
+            <p class="public-share__status" data-share-status></p>
+            <button class="public-share__close" type="button" data-share-close>Cerrar</button>
+          </div>
+          <div class="public-share__manual" data-share-manual-fallback hidden>
+            <label>
+              <span>Enlace para copiar</span>
+              <input data-share-manual-url type="text" readonly value="{{ public_share.canonical_url }}">
+            </label>
+          </div>
+        </div>
+        <noscript>
+          <p class="public-share__noscript">Enlace de la noticia: <a href="{{ public_share.canonical_url }}">{{ public_share.canonical_url }}</a></p>
+        </noscript>
+      </section>
+    {% endif %}
+
     {% with tags=page.tags.all %}
       {% if tags %}
         <footer class="article-tags content-width mx-auto mt-5 pt-4">
@@ -76,3 +111,7 @@
     {% endwith %}
   </article>
 {% endblock content %}
+
+{% block extra_js %}
+  {% if public_share %}<script src="{% static 'public/js/share.js' %}" defer></script>{% endif %}
+{% endblock extra_js %}

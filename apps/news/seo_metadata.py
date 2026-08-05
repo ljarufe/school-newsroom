@@ -1,6 +1,6 @@
 import json
 from dataclasses import dataclass
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlencode, urlsplit
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -22,6 +22,17 @@ class PublicMetadata:
     og_type: str
     site_name: str
     twitter_card: str
+
+
+@dataclass(frozen=True)
+class PublicShareLinks:
+    canonical_url: str
+    title: str
+    description: str
+    whatsapp_url: str
+    x_url: str
+    facebook_url: str
+    email_url: str
 
 
 def validate_canonical_url(value: str) -> None:
@@ -102,6 +113,36 @@ def build_public_metadata(page, request=None) -> PublicMetadata:
         og_type="article",
         site_name=site_name,
         twitter_card="summary_large_image" if image_url else "summary",
+    )
+
+
+def build_public_share_links(metadata: PublicMetadata) -> PublicShareLinks:
+    title = metadata.og_title
+    description = metadata.og_description
+    canonical_url = metadata.canonical_url
+    whatsapp_url = "https://wa.me/?" + urlencode({"text": f"{title}\n{canonical_url}"})
+    x_url = "https://x.com/intent/tweet?" + urlencode(
+        [("text", title), ("url", canonical_url)]
+    )
+    facebook_url = "https://www.facebook.com/sharer/sharer.php?" + urlencode(
+        {"u": canonical_url}
+    )
+    email_body = (
+        f"{description}\r\n\r\n{canonical_url}" if description else canonical_url
+    )
+    email_query = urlencode(
+        [("subject", title), ("body", email_body)],
+        quote_via=quote,
+        safe="",
+    )
+    return PublicShareLinks(
+        canonical_url=canonical_url,
+        title=title,
+        description=description,
+        whatsapp_url=whatsapp_url,
+        x_url=x_url,
+        facebook_url=facebook_url,
+        email_url=f"mailto:?{email_query}",
     )
 
 

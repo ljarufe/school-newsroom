@@ -263,6 +263,114 @@ h3,
   border-top: 1px solid var(--editorial-rule);
 }
 
+.public-share {
+  border-top: 1px solid var(--editorial-rule);
+}
+
+.public-share__heading {
+  margin-bottom: 1rem;
+  color: var(--editorial-accent-dark);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.public-share__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: stretch;
+}
+
+.public-share__action {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  padding: 0.55rem 0.85rem;
+  color: var(--editorial-accent-dark);
+  background: #fff;
+  border: 1px solid var(--editorial-rule);
+  border-radius: 0.25rem;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.public-share__action:hover {
+  color: var(--editorial-accent);
+  background: var(--editorial-paper);
+}
+
+.public-share__notification {
+  position: fixed;
+  z-index: 1500;
+  right: 1rem;
+  bottom: 1rem;
+  width: min(28rem, calc(100vw - 2rem));
+  padding: 1rem;
+  color: #fff;
+  background: var(--editorial-ink);
+  border: 1px solid var(--editorial-rule);
+  border-radius: 0.4rem;
+  box-shadow: 0 0.75rem 2rem rgb(23 33 43 / 25%);
+}
+
+.public-share__notification-header {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.public-share__status {
+  margin: 0;
+}
+
+.public-share__close {
+  flex: 0 0 auto;
+  padding: 0.2rem 0.35rem;
+  color: #fff;
+  background: transparent;
+  border: 1px solid rgb(255 255 255 / 65%);
+  border-radius: 0.25rem;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.public-share__close:hover {
+  background: rgb(255 255 255 / 12%);
+}
+
+.public-share__manual {
+  margin-top: 0.85rem;
+}
+
+.public-share__manual label,
+.public-share__manual span {
+  display: block;
+}
+
+.public-share__manual span {
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+}
+
+.public-share__manual input {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--editorial-muted);
+  border-radius: 0.25rem;
+}
+
+.public-share__noscript {
+  margin-block: 0.75rem 0;
+}
+
 .site-footer {
   padding-block: 2rem;
   color: rgb(255 255 255 / 82%);

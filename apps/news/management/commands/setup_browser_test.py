@@ -148,9 +148,56 @@ class Command(BaseCommand):
                 f"expected {expected_seo_page_id}, found {seo_page.pk}."
             )
 
+        public_share_page = NewsPage(
+            title='Feria ficticia "A & B" comparte aprendizajes',
+            slug="nota-publica-browser-epic6-003",
+            live=True,
+            publication_date=dt.date(2026, 8, 4),
+            coverage_province="Arequipa",
+            coverage_district="Cercado",
+            body=[
+                (
+                    "paragraph",
+                    "<h2>Aprendizajes del taller ficticio</h2>"
+                    "<p>Una comunidad ficticia comparte una práctica escolar "
+                    "sin incluir información real de menores.</p>",
+                )
+            ],
+            og_title='Aprendizajes <ficticios> "A & B"',
+            og_description=(
+                "Una comunidad ficticia comparte aprendizajes de un taller "
+                "escolar sin incluir datos reales de menores."
+            ),
+            canonical_url=(
+                "https://example.org/noticia-ficticia"
+                "?origen=school-newsroom&grupo=A%20%26%20B"
+            ),
+            seo_noindex=True,
+        )
+        home.add_child(instance=public_share_page)
+        public_share_page.tags.add("browser-share")
+        public_share_page.save()
+        NewsPagePublicCredit.objects.create(
+            page=public_share_page,
+            sort_order=0,
+            display_name="Redacción pública ficticia",
+        )
+        public_share_page.save_revision(user=user)
+
+        expected_public_share_page_id = int(
+            os.environ["BROWSER_TEST_PUBLIC_SHARE_PAGE_ID"]
+        )
+        if public_share_page.pk != expected_public_share_page_id:
+            raise CommandError(
+                "The disposable public share fixture page ID changed: "
+                f"expected {expected_public_share_page_id}, "
+                f"found {public_share_page.pk}."
+            )
+
         self.stdout.write(
             self.style.SUCCESS(
                 "Disposable browser fixtures ready: "
-                f"editor page {page.pk}, SEO page {seo_page.pk}."
+                f"editor page {page.pk}, SEO page {seo_page.pk}, "
+                f"public share page {public_share_page.pk}."
             )
         )

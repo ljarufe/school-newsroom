@@ -962,6 +962,33 @@ versión no guarda ese tipo, los autores JSON-LD se publican sólo con su nombre
 sin inferir `Person` u `Organization`. La herramienta no promete elegibilidad
 para resultados enriquecidos.
 
+### Acciones públicas para compartir
+
+El detalle público de una noticia publicada muestra `Compartir esta noticia`
+después del cuerpo y antes de las etiquetas. Las acciones disponibles son
+`Compartir`, `WhatsApp`, `X`, `Facebook`, `Correo` y `Copiar enlace`.
+
+Todas usan la URL canonical efectiva. Si `URL canonical` está vacía, se comparte
+la URL pública propia; si contiene una canonical externa, se comparte esa URL
+externa. La marca `Excluir de los resultados de búsqueda` no oculta las acciones,
+pero estas no aparecen en la vista previa de un borrador.
+
+`Compartir` aparece únicamente cuando el navegador y el dispositivo admiten el
+selector nativo para el contenido de la noticia. Las opciones del selector
+dependen de las aplicaciones disponibles; el sitio no promete una aplicación
+concreta ni la creación directa de una historia. Cuando Web Share no es
+compatible, sólo se muestran las demás acciones que sí pueden funcionar.
+
+`Copiar enlace` usa el portapapeles del navegador. El resultado se muestra en
+una notificación temporal que puede cerrarse. Cuando la copia automática no es
+posible, la notificación incluye un campo de solo lectura para seleccionar y
+copiar la canonical de forma manual, y permanece disponible hasta pulsar
+`Cerrar`.
+
+School Newsroom prepara los enlaces y abre el compositor o manejador disponible,
+pero no puede confirmar si la persona terminó una publicación, un mensaje o un
+correo en una plataforma externa.
+
 Los endpoints técnicos son:
 
 ```text

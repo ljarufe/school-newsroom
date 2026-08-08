@@ -1,6 +1,6 @@
 # Oracle Always Free Demo/Staging Runbook
 
-This runbook provisions and operates the School Newsroom demo/staging environment manually. It is not a production design. The maintainer-approved EPIC8-001 amendment permits upgrading the account from Free Tier to **Individual Pay As You Go** solely to improve access to `VM.Standard.A1.Flex` capacity. The environment must still use only resources covered by Oracle Always Free allowances, and expected infrastructure cost remains zero. The upgrade is not authorization for paid resources, usage above Always Free limits, trial-only resources, automatic deployment, or real data about minors.
+This runbook provisions the School Newsroom demo/staging environment manually and documents its ongoing operations. Routine code deployment is operator-triggered from the local repository through `make staging-deploy`; initial infrastructure provisioning and recovery procedures remain manual. It is not a production design. The maintainer-approved EPIC8-001 amendment permits upgrading the account from Free Tier to **Individual Pay As You Go** solely to improve access to `VM.Standard.A1.Flex` capacity. The environment must still use only resources covered by Oracle Always Free allowances, and expected infrastructure cost remains zero. The upgrade is not authorization for paid resources, usage above Always Free limits, trial-only resources, unattended or scheduled deployment, or real data about minors.
 
 The repository configuration uses this topology:
 
@@ -558,7 +558,7 @@ unset APPROVED_REPOSITORY_URL
 unset APPROVED_COMMIT_SHA
 ```
 
-Deploy an immutable reviewed commit SHA. Do not configure automatic pulls from `main`, a `staging` branch, or GitHub Actions in EPIC8-001. If the repository is private, use a narrowly scoped deploy credential outside the clone and follow the hosting provider's secret guidance; never commit it.
+Deploy an immutable reviewed commit SHA. EPIC8-001 used only this manual checkout flow. EPIC8-002 later adds an operator-triggered local deployment command that resolves an approved SHA from `origin/main`; it does not add a `staging` branch, GitHub Actions deployment, scheduled polling, or deploy-on-merge behavior. If the repository is private, use a narrowly scoped deploy credential outside the clone and follow the hosting provider's secret guidance; never commit it.
 
 ## 14. Create the real staging environment without printing secrets
 
@@ -721,9 +721,11 @@ Use nominal adult identity data approved for the demo. Do not create accounts fo
 
 Do not use a superuser to demonstrate role isolation. Do not store usernames with passwords in scripts, Git, tickets, screenshots, or UAT evidence.
 
-## 18. Start, stop, restart, and update
+## 18. Start, stop, restart, and deploy code
 
-Define no aliases that print or export the environment. Run explicit commands from `/opt/school-newsroom`.
+### Routine service operations on the staging host
+
+Define no aliases that print or export the environment. Run explicit service commands from `/opt/school-newsroom`.
 
 ```bash
 # Status
@@ -747,31 +749,106 @@ sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compos
 
 Never use `down -v`, `docker volume rm`, or delete `/srv/school-newsroom/media` during normal operation.
 
-For a manual code update:
+### Normal code deployment — EPIC8-002
 
-1. Fetch and check out an explicitly approved commit.
-2. Review status and commit SHA.
-3. Build, migrate, bootstrap, reconcile the Wagtail Site, and start.
+Run deployment from the repository root on the maintainer's **host**, not from the Dev Container:
 
-Backup policy, scheduled backups, and restore drills remain EPIC8-003 scope and are not an EPIC8-001 deployment prerequisite:
+```bash
+cd ~/Projects/school-newsroom
+make staging-deploy
+```
+
+The command prepares `.venv-ops` automatically, installs the pinned local operations dependencies when required, runs Fabric, fetches `origin/main`, resolves `origin/main^{commit}`, validates that SHA locally and remotely, and deploys it through the stable SSH alias:
+
+```text
+school-newsroom-staging
+```
+
+The alias lives outside the repository in `~/.ssh/config`. The validated local contract uses the dedicated staging key, disables the interfering desktop SSH agent, and keeps strict host-key checking:
+
+```sshconfig
+Host school-newsroom-staging
+    HostName school-newsroom.duckdns.org
+    User ubuntu
+    Port 22
+    IdentityFile ~/.ssh/school_newsroom_oracle_staging
+    IdentityAgent none
+    IdentitiesOnly yes
+    PreferredAuthentications publickey
+    PasswordAuthentication no
+    KbdInteractiveAuthentication no
+    StrictHostKeyChecking yes
+```
+
+The private-key passphrase remains in the maintainer's password manager. Because deployments are infrequent, the maintainer-approved EPIC8-002 interaction amendment allows Fabric to prompt **once locally at startup** for this passphrase. Do not put the passphrase in `.env`, Git, shell scripts, Fabric configuration, command arguments, or staging files. After the startup passphrase prompt, the deploy must not request an SSH login password, `sudo` password, confirmation, editor input, or remote input.
+
+For an older approved commit already belonging to `origin/main` history:
+
+```bash
+make staging-deploy SHA=<sha>
+```
+
+The optional SHA is resolved to a full commit and must be an ancestor of the fetched `origin/main`. The local branch and local worktree are not deployment authority.
+
+The remote automation uses:
+
+```text
+Repository: /opt/school-newsroom
+Compose: docker-compose.staging.yml
+Environment: /etc/school-newsroom/staging.env
+Media: /srv/school-newsroom/media
+```
+
+Before mutation it validates SSH connectivity, `sudo -n`, the remote checkout and origin, fetch capability, environment/Compose/media prerequisites, Compose syntax, remote worktree cleanliness, available disk space, current services, and the non-blocking deployment lock.
+
+Within the lock it:
+
+1. records the deployment start;
+2. fetches the remote origin and verifies the approved target SHA;
+3. checks out the target detached;
+4. builds `web`;
+5. runs `python manage.py migrate --noinput`;
+6. runs `python manage.py bootstrap_mvp_access`;
+7. reconciles the default Wagtail Site to `STAGING_HOSTNAME` on port 443;
+8. runs `docker compose up -d`;
+9. waits for bounded health checks;
+10. verifies HTTP-to-HTTPS redirect, Home, `/noticias/`, `/admin/`, TLS certificate, and hostname;
+11. verifies remote HEAD;
+12. appends deployment history and updates the current successful deployment record.
+
+Safe deployment records are stored on the host at:
+
+```text
+/var/lib/school-newsroom/deployments/current.json
+/var/lib/school-newsroom/deployments/history.jsonl
+```
+
+A second invocation for the same target reports `already_deployed` and skips build, migrations, recreate, HTTPS smoke, and material deployment registration.
+
+Build, migration, bootstrap, or Wagtail Site failure restores only the Git checkout to the previous SHA before service recreation. Migration rollback is never attempted automatically. After service recreation begins, health or smoke failure does not perform a blind rollback; inspect bounded diagnostics and the printed failure stage/code before retrying.
+
+### Manual recovery path
+
+Use the long sequence below only when the automated deploy cannot be used and the maintainer has deliberately chosen manual recovery. It remains the canonical recovery procedure and preserves the same immutable-SHA boundary:
 
 ```bash
 cd /opt/school-newsroom
 git fetch --prune
 read -r -p "New approved commit SHA: " NEW_APPROVED_COMMIT_SHA
 git rev-parse --verify "${NEW_APPROVED_COMMIT_SHA}^{commit}"
+git merge-base --is-ancestor "$NEW_APPROVED_COMMIT_SHA" origin/main
 git checkout --detach "$NEW_APPROVED_COMMIT_SHA"
 git status --short --branch
 git rev-parse HEAD
 unset NEW_APPROVED_COMMIT_SHA
-sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml build --pull web
+sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml build web
 sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml run --rm web python manage.py migrate --noinput
 sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml run --rm web python manage.py bootstrap_mvp_access
 sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml run --rm web python manage.py shell -c 'import os; from wagtail.models import Site; site = Site.objects.get(is_default_site=True); site.hostname = os.environ["STAGING_HOSTNAME"]; site.port = 443; site.save(update_fields=["hostname", "port"]); print(f"Default Wagtail Site: {site.hostname}:{site.port}")'
 sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml up -d
 ```
 
-This is manual deployment. Do not add a GitHub deployment workflow or automatically follow `main` in this ticket.
+Do not add a GitHub deployment workflow, permanent `staging` branch, deploy-on-merge hook, webhook, runner, or polling loop under EPIC8-002. Backup policy, scheduled backups, and restore drills remain EPIC8-003 scope.
 
 ## 19. Logs and operational inspection
 
@@ -897,7 +974,7 @@ EPIC8-001 acceptance combines repository-local validation with real maintainer e
 
 The following remain outside this ticket and must not be represented as EPIC8-001 evidence:
 
-- automated deployment or a permanent `staging` branch (EPIC8-002);
+- EPIC8-001 itself did not include deployment automation; EPIC8-002 later adds only the maintainer-triggered local `make staging-deploy` path and still does not introduce a permanent `staging` branch or GitHub CD;
 - backup generation, retention, off-server custody, restore procedures, and restore drills (EPIC8-003);
 - production-grade monitoring, transactional email, a real-domain lifecycle, or production readiness.
 

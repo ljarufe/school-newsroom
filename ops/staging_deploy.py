@@ -276,7 +276,10 @@ class StagingDeployer:
             self._stage("lock")
             self._acquire_lock()
 
-            if self.previous_sha == self.target_sha:
+            if (
+                self.previous_sha == self.target_sha
+                and self._last_successful_deployment_matches_target()
+            ):
                 duration = max(0, round(self.clock() - started))
                 self.output("already_deployed")
                 self._print_success(
@@ -655,6 +658,51 @@ class StagingDeployer:
             running_services=services,
         )
 
+    def _last_successful_deployment_matches_target(self) -> bool:
+        existence = self.remote.run(
+            f"sudo -n test -f {shlex.quote(CURRENT_DEPLOYMENT)}",
+            timeout=15,
+        )
+        if existence.exited == 1:
+            return False
+        if not existence.ok:
+            raise self._error(
+                "idempotency",
+                "current_deployment_read_failed",
+                "Inspect the deployment record before retrying.",
+            )
+
+        current = self.remote.run(
+            f"sudo -n cat {shlex.quote(CURRENT_DEPLOYMENT)}",
+            timeout=15,
+        )
+        if not current.ok:
+            raise self._error(
+                "idempotency",
+                "current_deployment_read_failed",
+                "Inspect the deployment record before retrying.",
+            )
+
+        try:
+            record = json.loads(current.stdout)
+        except (json.JSONDecodeError, TypeError):
+            raise self._error(
+                "idempotency",
+                "current_deployment_invalid",
+                "Inspect the deployment record before retrying.",
+            ) from None
+        if not isinstance(record, dict):
+            raise self._error(
+                "idempotency",
+                "current_deployment_invalid",
+                "Inspect the deployment record before retrying.",
+            )
+
+        return (
+            record.get("result") == "success"
+            and record.get("target_sha") == self.target_sha
+        )
+
     def _acquire_lock(self) -> None:
         token = uuid.uuid4().hex
         owner = f"{LOCK_DIRECTORY}/owner"
@@ -723,11 +771,11 @@ class StagingDeployer:
                     else "Restore the previous remote SHA manually before retrying."
                 )
                 raise self._error("checkout", code, next_action)
-        remote_head = self._remote_stdout(
+        verification = self.remote.run(
             f"cd {shlex.quote(REMOTE_REPOSITORY)} && git rev-parse HEAD",
-            stage="checkout",
-            code="checkout_verification_failed",
+            timeout=60,
         )
+        remote_head = verification.stdout.strip().lower() if verification.ok else ""
         if remote_head != self.target_sha:
             restored = self._restore_checkout()
             self._record_failure("checkout_verification_failed", "checkout")

@@ -85,6 +85,8 @@ class FakeRemote:
         lock_busy: bool = False,
         health: bool = True,
         sudo_ok: bool = True,
+        current_target: str | None = None,
+        checkout_verification_fails: bool = False,
     ):
         self.previous = previous
         self.fail_contains = fail_contains
@@ -93,6 +95,8 @@ class FakeRemote:
         self.lock_busy = lock_busy
         self.health = health
         self.sudo_ok = sudo_ok
+        self.current_target = current_target
+        self.checkout_verification_fails = checkout_verification_fails
         self.calls: list[str] = []
         self.closed = False
 
@@ -110,10 +114,25 @@ class FakeRemote:
             return CommandResult(command, f"{next(iter(EXPECTED_ORIGINS))}\n")
         if "git status --porcelain" in command:
             return CommandResult(command, "?? unexpected\n" if self.dirty else "")
+        if command == f"sudo -n test -f {CURRENT_DEPLOYMENT}":
+            return CommandResult(
+                command,
+                exited=0 if self.current_target is not None else 1,
+            )
+        if command == f"sudo -n cat {CURRENT_DEPLOYMENT}":
+            if self.current_target is None:
+                return CommandResult(command, exited=1)
+            return CommandResult(
+                command,
+                (f'{{"result":"success","target_sha":"{self.current_target}"}}\n'),
+            )
         if "git rev-parse HEAD" in command:
             checked_out = any(
                 f"git checkout --detach {TARGET}" in call for call in self.calls
             )
+            if checked_out and self.checkout_verification_fails:
+                self.checkout_verification_fails = False
+                return CommandResult(command, exited=255)
             head = TARGET if checked_out else self.previous
             return CommandResult(command, f"{head}\n")
         if "df -Pk" in command:
@@ -163,7 +182,10 @@ def make_deployer(tmp_path, remote=None, smoke=None, output=None, **kwargs):
 
 
 def test_default_sha_uses_origin_main(tmp_path):
-    deployer, _, _, _ = make_deployer(tmp_path, remote=FakeRemote(previous=TARGET))
+    deployer, _, _, _ = make_deployer(
+        tmp_path,
+        remote=FakeRemote(previous=TARGET, current_target=TARGET),
+    )
     result = deployer.deploy()
     assert result.already_deployed is True
     assert (
@@ -175,7 +197,10 @@ def test_default_sha_uses_origin_main(tmp_path):
 
 
 def test_optional_sha_is_resolved_as_commit_and_checked_against_main(tmp_path):
-    deployer, _, _, _ = make_deployer(tmp_path, remote=FakeRemote(previous=TARGET))
+    deployer, _, _, _ = make_deployer(
+        tmp_path,
+        remote=FakeRemote(previous=TARGET, current_target=TARGET),
+    )
     deployer.deploy("abc123")
     assert ("git", "rev-parse", "--verify", "abc123^{commit}") in deployer.local.calls
     assert (
@@ -248,7 +273,8 @@ def test_remote_preflight_failures_do_not_mutate(tmp_path, remote, code):
 
 def test_already_deployed_is_noop_and_releases_lock(tmp_path):
     deployer, remote, smoke, output = make_deployer(
-        tmp_path, remote=FakeRemote(previous=TARGET)
+        tmp_path,
+        remote=FakeRemote(previous=TARGET, current_target=TARGET),
     )
     result = deployer.deploy()
     joined = "\n".join(remote.calls)
@@ -261,6 +287,22 @@ def test_already_deployed_is_noop_and_releases_lock(tmp_path):
     assert smoke.hostnames == []
     assert "already_deployed" in output
     assert remote.closed is True
+
+
+def test_matching_remote_head_without_success_record_replays_deploy(tmp_path):
+    deployer, remote, smoke, output = make_deployer(
+        tmp_path,
+        remote=FakeRemote(previous=TARGET),
+    )
+    result = deployer.deploy()
+    joined = "\n".join(remote.calls)
+    assert result.already_deployed is False
+    assert "build web" in joined
+    assert "migrate --noinput" in joined
+    assert "up -d" in joined
+    assert smoke.hostnames == [HOSTNAME]
+    assert '"result":"success"' in joined
+    assert "already_deployed" not in output
 
 
 def test_successful_deploy_runs_ordered_stages_and_records_success(tmp_path):
@@ -277,6 +319,20 @@ def test_successful_deploy_runs_ordered_stages_and_records_success(tmp_path):
     assert DEPLOYMENT_HISTORY in joined
     assert '"result":"success"' in joined
     assert "Deployment succeeded" in output
+    assert remote.closed is True
+
+
+def test_checkout_verification_failure_restores_previous_sha(tmp_path):
+    remote = FakeRemote(checkout_verification_fails=True)
+    deployer, _, _, _ = make_deployer(tmp_path, remote=remote)
+    with pytest.raises(DeploymentError) as captured:
+        deployer.deploy()
+    joined = "\n".join(remote.calls)
+    assert captured.value.code == "checkout_verification_failed"
+    target_checkout = joined.index(f"git checkout --detach {TARGET}")
+    previous_checkout = joined.rfind(f"git checkout --detach {PREVIOUS}")
+    assert target_checkout < previous_checkout
+    assert "checkout_verification_failed" in joined
     assert remote.closed is True
 
 

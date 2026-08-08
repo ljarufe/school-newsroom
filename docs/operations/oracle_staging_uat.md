@@ -141,3 +141,151 @@ Overall EPIC8-001 operational acceptance: PASS
 ## Cleanup
 
 Follow the canonical cleanup sequence for fictional pages, media, and snippets. Cancel active workflows before page cleanup and preserve attribution where required. Keep approved nominal adult accounts active only while access remains authorized; deactivate temporary accounts. Never delete the owned groups, tasks, workflow, PostgreSQL named volume, or Oracle data volume during ordinary UAT cleanup.
+
+## EPIC8-002 operator-triggered deployment UAT — Pending post-merge
+
+Status: **Pending — execute only after EPIC8-002 is merged to `main` and the maintainer has synchronized the local checkout**.
+
+This matrix extends the accepted EPIC8-001 environment without changing the OCI topology, cost boundary, backup boundary, product schema, permissions, workflow, or staging data policy. Use only fictional/non-sensitive editorial content and preserve the evidence rules above.
+
+The maintainer-approved EPIC8-002 interaction amendment allows exactly one local startup prompt for the encrypted staging SSH private-key passphrase. The passphrase remains in the maintainer's password manager and must not be written to `.env`, Git, shell scripts, logs, evidence, or staging files. After that startup prompt, the deployment must run without SSH login-password prompts, `sudo` prompts, confirmations, editors, pauses, or remote input.
+
+### A. First automated deploy — Pending
+
+From the maintainer host, outside the Dev Container:
+
+```bash
+cd ~/Projects/school-newsroom
+make staging-deploy
+```
+
+Record safe pass/fail evidence for:
+
+- `.venv-ops` bootstrap completes automatically when required;
+- Fabric prompts once locally for the private-key passphrase;
+- `origin/main` is fetched and its current full SHA becomes the target;
+- the local branch and local worktree are not deployment authority;
+- the SSH alias resolves and the remote preflight passes;
+- `sudo -n` succeeds without another prompt;
+- the remote checkout is clean and detached;
+- the non-blocking deployment lock is acquired;
+- the previous SHA and target SHA are printed;
+- checkout, build, `migrate --noinput`, `bootstrap_mvp_access`, Wagtail Site reconciliation, and `up -d` execute in order;
+- `db` and `web` become healthy, `proxy` runs, and the health timeout is bounded;
+- HTTP redirects to HTTPS;
+- HTTPS Home and `/noticias/` return successfully;
+- `/admin/` redirects to the HTTPS login path;
+- TLS certificate and hostname verification pass;
+- remote HEAD equals the target SHA;
+- `/var/lib/school-newsroom/deployments/history.jsonl` contains the safe deployment result;
+- `/var/lib/school-newsroom/deployments/current.json` represents the successful target only after all checks pass;
+- no environment values, passphrase, private key, passwords, tokens, OCI identifiers, or private information are printed.
+
+### B. Idempotent second deploy — Pending
+
+Run again with unchanged `origin/main`:
+
+```bash
+make staging-deploy
+```
+
+Confirm:
+
+- the same target SHA is detected;
+- the result is `already_deployed`;
+- no build runs;
+- no migrations run;
+- no service recreate runs;
+- no HTTPS smoke is repeated as a material deployment;
+- the lock is released cleanly;
+- the command exits successfully.
+
+### C. Optional approved SHA — Test-covered; real rollback not required
+
+The automated tests must prove that:
+
+```bash
+make staging-deploy SHA=<sha>
+```
+
+resolves a commit and rejects a SHA outside `origin/main` history.
+
+A real deployment of an older approved SHA is optional and must be performed only when operationally useful. Do not roll back database migrations automatically and do not move staging backward solely to satisfy this UAT.
+
+### D. Controlled failure behavior — Test-covered
+
+Use doubles or a disposable environment to validate:
+
+- SSH connection failure before mutation;
+- `sudo -n` failure before mutation;
+- dirty remote checkout;
+- occupied lock;
+- build failure;
+- migration failure without database rollback;
+- bootstrap and Wagtail Site failure;
+- service recreate failure;
+- bounded health timeout and diagnostics;
+- HTTPS smoke failure;
+- transport exceptions preserving the active deployment stage rather than being mislabeled as a connection failure.
+
+Do not deliberately break the real staging database or induce a real failed migration.
+
+### E. Public/editorial regression after the first automated deploy — Pending
+
+Using fictional/non-sensitive content, confirm the deployed staging environment still passes:
+
+- Home;
+- `/noticias/`;
+- one published news detail;
+- HTTPS images;
+- captions, alt text, and credits;
+- classification and public byline;
+- internal contributor/minor data absent from public HTML and metadata;
+- HTTPS Admin;
+- Director/editor and Curador SEO boundaries;
+- persistence after restarting `web`.
+
+### F. Deferred EPIC6-003 sharing observations — Pending
+
+Using the same fictional published news item, confirm:
+
+- the sharing component appears after the body and before tags;
+- the effective canonical is the public HTTPS URL;
+- the public social image and existing caption/alt/credit behavior remain intact;
+- Web Share works when supported by the device/browser;
+- Clipboard works;
+- WhatsApp receives title and URL;
+- X receives title and URL;
+- Facebook receives the canonical URL;
+- email receives subject, description, and canonical URL.
+
+Record only the observed behavior of external previews:
+
+- WhatsApp preview;
+- X card/preview through the currently available mechanism;
+- Facebook crawler/preview;
+- cache/refetch behavior when the platform exposes it.
+
+External services may change UI, cache metadata, require a session, or delay refreshes. This UAT validates the deployed HTTPS URL, metadata, image, and observed behavior; it does not guarantee permanent third-party preview behavior.
+
+### EPIC8-002 acceptance record — Pending
+
+Update this block only after the real post-merge execution:
+
+```text
+First automated deploy: PENDING
+Single local passphrase prompt: PENDING
+No later interactive prompts: PENDING
+Default origin/main target: PENDING
+Remote detached HEAD matches target: PENDING
+Build/migrate/bootstrap/Site/recreate: PENDING
+Health and HTTPS smoke: PENDING
+Deployment records: PENDING
+Idempotent second deploy: PENDING
+Optional SHA contract: TEST-COVERED
+Controlled failure matrix: TEST-COVERED
+Public/editorial regression: PENDING
+EPIC6-003 sharing regression: PENDING
+External preview observations: PENDING
+Overall EPIC8-002 operational acceptance: PENDING
+```

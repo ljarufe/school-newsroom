@@ -10,7 +10,7 @@ OPS_REQUIREMENTS = requirements-ops.txt
 OPS_REQUIREMENTS_STAMP = $(OPS_VENV)/.requirements.sha256
 export STAGING_DEPLOY_SHA := $(SHA)
 
-.PHONY: build up down logs shell bash migrate makemigrations compilemessages createsuperuser test lint format migration-check check browser-test staging-deploy
+.PHONY: build up down logs shell bash migrate makemigrations compilemessages createsuperuser test coverage lint format migration-check check browser-test staging-deploy
 
 ifeq ($(IN_CONTAINER),1)
 WEB =
@@ -96,6 +96,9 @@ createsuperuser:
 test:
 	$(WEB_RUN) sh -c "$(WAIT_FOR_DB) DJANGO_SETTINGS_MODULE=config.settings.test pytest -o cache_dir=$(PYTEST_CACHE_DIR)"
 
+coverage:
+	$(WEB_RUN) sh -c "$(WAIT_FOR_DB) DJANGO_SETTINGS_MODULE=config.settings.test pytest -o cache_dir=$(PYTEST_CACHE_DIR) --cov --cov-config=.coveragerc --cov-report=term-missing:skip-covered --cov-fail-under=90"
+
 lint:
 	$(WEB_RUN) sh -c "RUFF_CACHE_DIR=$(RUFF_CACHE_DIR) ruff check ."
 
@@ -105,4 +108,4 @@ format:
 migration-check:
 	$(WEB_RUN) python manage.py makemigrations --check --skip-checks
 
-check: lint migration-check test
+check: lint migration-check coverage

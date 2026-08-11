@@ -301,6 +301,7 @@ make migrate
 make makemigrations
 make createsuperuser
 make test
+make coverage
 make lint
 make format
 make migration-check
@@ -322,10 +323,11 @@ Command summary:
 | `make makemigrations`  | Create Django migrations.                          |
 | `make createsuperuser` | Create a local Wagtail/Django admin user.          |
 | `make test`            | Run pytest.                                        |
+| `make coverage`        | Run pytest with branch coverage (minimum 90%).     |
 | `make lint`            | Run Ruff checks.                                   |
 | `make format`          | Format code with Ruff.                             |
 | `make migration-check` | Check for model changes missing migrations.        |
-| `make check`           | Run linting, migration drift, and tests.           |
+| `make check`           | Run linting, migration drift, and coverage tests.  |
 | `make browser-test`    | Run the disposable host-side browser regression.   |
 
 ## Quality Tools
@@ -334,6 +336,12 @@ Run tests:
 
 ```bash
 make test
+```
+
+Run the full suite with branch coverage and the 90% minimum:
+
+```bash
+make coverage
 ```
 
 Run Ruff linting:
@@ -374,7 +382,8 @@ make check
 
 ## Git Hooks
 
-This project uses `pre-commit` for fast commit-time checks and a pre-push hook that runs the general repository validation command.
+This project uses `pre-commit` for fast commit-time checks and a proportional
+pre-push validation hook.
 
 If you run Git on the host, install `pre-commit` on the host:
 
@@ -411,7 +420,18 @@ Run the pre-push hook manually without pushing:
 pre-commit run --hook-stage pre-push --all-files
 ```
 
-The pre-push hook runs `make check`. On the host, `make check` delegates to Docker Compose. Inside the Dev Container, it uses the current container runtime directly. Pull requests should use `.github/pull_request_template.md`.
+The pre-push hook uses pre-commit's `PRE_COMMIT_*` push-ref environment
+contract. For an existing destination branch, it compares the remote endpoint
+directly with the local pushed endpoint. For a new branch, it compares the
+local endpoint with the configured remote's `main` branch from their merge base.
+A push whose resulting delta contains only the documented documentation paths
+takes the lightweight route and does not run `make check`. Any executable or
+configuration path, deletion, missing ref, or unresolvable comparison fails
+closed to `make check`. On the host, `make check` delegates to Docker Compose.
+Inside the Dev Container, it uses the current container runtime directly.
+Running the pre-push hook manually without the real pre-commit environment also
+takes the full route. Pull requests use the same path policy but continue to
+compare the PR merge base with its head; use `.github/pull_request_template.md`.
 
 ## Project Structure
 

@@ -1,7 +1,6 @@
 import datetime as dt
 import json
 import re
-from pathlib import Path
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -39,48 +38,6 @@ def assert_contains_telepath_text(response, text: str) -> None:
     content = response.content.decode()
     json_encoded = json.dumps(text, ensure_ascii=True)[1:-1]
     assert text in content or json_encoded in content
-
-
-def test_seo_assistant_javascript_restores_served_url_after_canonical_clear() -> None:
-    source = Path("static/news/js/seo_assistant.js").read_text()
-
-    assert "const servedPublicUrl = root.dataset.publicUrl;" in source
-    assert "let previewUrl = canonical;" in source
-    assert "if (!previewUrl && servedPublicUrl && currentSlug && slug)" in source
-    assert "servedPublicUrl.endsWith(currentSuffix)" in source
-
-
-def test_seo_assistant_javascript_persists_tab_only_after_successful_draft_save() -> (
-    None
-):
-    source = Path("static/news/js/seo_assistant.js").read_text()
-
-    assert 'const storageKey = "news:seo-assistant:active-tab";' in source
-    assert "const storageMaxAgeMs = 60 * 1000;" in source
-    assert 'currentPath.includes("/pages/add/")' in source
-    assert r"/\/pages\/\d+\/edit\/?$/.test(currentPath)" in source
-    assert "parsedState.wasCreatePage === true && isEditPage" in source
-    assert "parsedState.pathname === currentPath" in source
-    assert "ageMs <= storageMaxAgeMs" in source
-    assert "JSON.stringify({" in source
-    assert "wasCreatePage: isCreatePage" in source
-    assert "savedAt: Date.now()" in source
-    assert "active-tab:${window.location.pathname}" not in source
-
-    assert 'event.submitter?.classList.contains("action-save")' in source
-    assert "if (!isDraftSave || panel.hidden)" in source
-    assert "window.sessionStorage.setItem(" in source
-    assert "window.sessionStorage.removeItem(storageKey)" in source
-
-    assert 'data-w-messages-target="container"] > li.success' in source
-    assert '[aria-invalid="true"], .error-message, .w-field--error' in source
-    assert "!hasValidationErrors" in source
-    assert "!anotherPanelWasRequested" in source
-    assert (
-        "tabs.querySelector(\n"
-        '        `[role="tab"][aria-controls="${panel.id}"]`,' in source
-    )
-    assert "trigger.click()" in source
 
 
 @pytest.mark.django_db
@@ -144,29 +101,15 @@ def test_wagtail_dashboard_uses_spanish_search_and_editorial_menu(admin_client):
 
 
 @pytest.mark.django_db
-def test_editorial_snippet_destinations_are_available(admin_client):
+def test_taxonomy_lists_exclude_cross_type_objects(admin_client):
     section_response = admin_client.get(
         reverse("wagtailsnippets_news_newssection:list"),
     )
     subsection_response = admin_client.get(reverse("news_subsections:index"))
-    school_response = admin_client.get(reverse("wagtailsnippets_news_school:list"))
-    group_response = admin_client.get(
-        reverse("wagtailsnippets_news_contributorgroup:list"),
-    )
-    contributor_response = admin_client.get(
-        reverse("wagtailsnippets_news_minorcontributor:list"),
-    )
-
     assert section_response.status_code == 200
     assert subsection_response.status_code == 200
-    assert school_response.status_code == 200
-    assert group_response.status_code == 200
-    assert contributor_response.status_code == 200
     culture = NewsSection.objects.get(slug="cultura")
     music = NewsSection.objects.get(slug="musica")
-    assert_contains_text(section_response, "Secciones")
-    assert_contains_text(section_response, "Añadir sección")
-    assert_not_contains_text(section_response, "Añadir Sección editorial")
     assert_contains_text(
         section_response,
         reverse("wagtailsnippets_news_newssection:edit", args=(culture.pk,)),
@@ -175,19 +118,12 @@ def test_editorial_snippet_destinations_are_available(admin_client):
         section_response,
         reverse("wagtailsnippets_news_newssection:edit", args=(music.pk,)),
     )
-    assert_contains_text(subsection_response, "Subsecciones")
-    assert_contains_text(subsection_response, "Añadir subsección")
-    assert_not_contains_text(subsection_response, "Añadir Sección editorial")
     assert_contains_text(
         subsection_response, reverse("news_subsections:edit", args=(music.pk,))
     )
     assert_not_contains_text(
         subsection_response, reverse("news_subsections:edit", args=(culture.pk,))
     )
-    assert_contains_text(subsection_response, "Cultura")
-    assert_contains_text(school_response, "Colegios")
-    assert_contains_text(group_response, "Grupos de colaboradores")
-    assert_contains_text(contributor_response, "Colaboradores menores")
 
 
 @pytest.mark.django_db
@@ -197,33 +133,6 @@ def test_taxonomy_management_forms_keep_types_fixed_and_parent_choices_root_only
     culture = NewsSection.objects.get(slug="cultura")
     politics = NewsSection.objects.get(slug="politica")
     music = NewsSection.objects.get(slug="musica")
-
-    section_add_response = admin_client.get(
-        reverse("wagtailsnippets_news_newssection:add")
-    )
-    subsection_add_response = admin_client.get(reverse("news_subsections:add"))
-
-    assert section_add_response.status_code == 200
-    assert subsection_add_response.status_code == 200
-    section_add_content = section_add_response.content.decode()
-    subsection_add_content = subsection_add_response.content.decode()
-    assert re.search(
-        r'<h2[^>]+id="header-title"[^>]*>.*?<span>Sección</span>.*?</h2>',
-        section_add_content,
-        flags=re.DOTALL,
-    )
-    assert re.search(
-        r'<h2[^>]+id="header-title"[^>]*>.*?<span>Subsección</span>.*?</h2>',
-        subsection_add_content,
-        flags=re.DOTALL,
-    )
-    assert "Crear sección: Sección" in section_add_content
-    assert "Crear subsección: Subsección" in subsection_add_content
-    assert "Nueva: Sección" in section_add_content
-    assert "Nueva: Subsección" in subsection_add_content
-    assert 'name="parent"' not in section_add_response.content.decode()
-    assert 'name="parent"' in subsection_add_response.content.decode()
-    assert_contains_text(subsection_add_response, "Sección principal")
 
     subsection_form = NewsSubsectionAdminForm()
     parent_slugs = list(

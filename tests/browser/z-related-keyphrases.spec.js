@@ -106,3 +106,43 @@ test("SEO curator manages related keyphrases without other editorial access", as
 
   await page.goto("/admin/");
 });
+
+test("SEO assistant restores the served preview URL and active tab after a draft save", async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  const pageErrors = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+
+  await page.goto("/admin/login/");
+  await page.locator("#id_username").fill(process.env.BROWSER_TEST_USERNAME);
+  await page.locator("#id_password").fill(process.env.BROWSER_TEST_PASSWORD);
+  await page.locator('button[type="submit"]').click();
+  await page.goto(`/admin/pages/${process.env.BROWSER_TEST_PAGE_ID}/edit/`);
+
+  const seoTab = page.getByRole("tab", {
+    name: "Asistente SEO",
+    exact: true,
+  });
+  await seoTab.click();
+  await expect(seoTab).toHaveAttribute("aria-selected", "true");
+
+  const seoAssistant = page.locator("[data-seo-assistant]");
+  const previewUrl = seoAssistant.locator("[data-seo-preview-url]");
+  const servedUrl = await seoAssistant.getAttribute("data-public-url");
+  expect(servedUrl).toBeTruthy();
+  await expect(seoAssistant).toBeVisible();
+  await expect(previewUrl).toHaveText(servedUrl);
+
+  const canonicalUrl = page.locator('[name="canonical_url"]');
+  await expect(canonicalUrl).toBeVisible();
+  await canonicalUrl.fill("https://canonical.example.test/nota");
+  await expect(previewUrl).toHaveText("https://canonical.example.test/nota");
+  await canonicalUrl.fill("");
+  await expect(previewUrl).toHaveText(servedUrl);
+
+  await saveDraft(page);
+  await expect(seoTab).toHaveAttribute("aria-selected", "true");
+  await expect(seoAssistant).toBeVisible();
+  expect(pageErrors).toEqual([]);
+});

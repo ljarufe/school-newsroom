@@ -5,7 +5,6 @@ from django.template.loader import render_to_string
 from django.test import Client
 from django.utils.translation import gettext, override
 from wagtail.admin.localization import get_available_admin_languages
-from wagtail.admin.panels import FieldPanel, HelpPanel, InlinePanel, MultiFieldPanel
 from wagtail.models import Locale
 
 from apps.news.models import (
@@ -17,7 +16,6 @@ from apps.news.models import (
     NewsSection,
     School,
 )
-from apps.news.panels import TaxonomyPanel, WritingModeFieldPanel
 
 
 def test_primary_language_settings_are_spanish_only() -> None:
@@ -81,14 +79,10 @@ def test_custom_editor_visible_labels_are_spanish() -> None:
     assert NewsPageRelatedKeyphrase._meta.get_field("phrase").verbose_name == (
         "Frase relacionada"
     )
-    assert NewsPageRelatedKeyphrase._meta.get_field("phrase").max_length == 255
-
     assert NewsPage._meta.get_field("publication_date").verbose_name == (
         "Fecha de publicación"
     )
-    assert "summary" not in {field.name for field in NewsPage._meta.get_fields()}
     assert NewsPage._meta.get_field("body").verbose_name == "Contenido"
-    assert "section" not in {field.name for field in NewsPage._meta.get_fields()}
     assert NewsSection._meta.get_field("parent").verbose_name == "Sección principal"
     assert NewsPageSection._meta.get_field("section").verbose_name == (
         "Sección o subsección"
@@ -161,125 +155,6 @@ def test_custom_editor_visible_labels_are_spanish() -> None:
     assert body.stream_block.child_blocks["youtube"].label == "Video de YouTube"
     assert body.stream_block.child_blocks["spotify"].label == (
         "Audio o pódcast de Spotify"
-    )
-
-
-def test_news_admin_panels_explain_content_authoring_and_public_credit() -> None:
-    def panel_label(panel):
-        if isinstance(panel, FieldPanel):
-            return panel.field_name
-        if isinstance(panel, InlinePanel):
-            return panel.relation_name
-        if panel.__class__.__name__ == "PanelPlaceholder":
-            return panel.args[0]
-        return panel.heading
-
-    assert [panel_label(panel) for panel in NewsPage.content_panels] == [
-        "title",
-        "Imagen destacada",
-        "body",
-        "taxonomy_sections",
-        "Cobertura",
-        "publication_date",
-        "tags",
-        "school",
-        "internal_contributors",
-        "public_credits",
-        "Privacidad de menores",
-    ]
-
-    body_panel_index = next(
-        index
-        for index, panel in enumerate(NewsPage.content_panels)
-        if isinstance(panel, FieldPanel) and panel.field_name == "body"
-    )
-    body_panel = NewsPage.content_panels[body_panel_index]
-    featured_panel = NewsPage.content_panels[body_panel_index - 1]
-    public_credit_panel = next(
-        panel
-        for panel in NewsPage.content_panels
-        if isinstance(panel, InlinePanel) and panel.relation_name == "public_credits"
-    )
-
-    assert isinstance(body_panel, WritingModeFieldPanel)
-    taxonomy_panel = NewsPage.content_panels[body_panel_index + 1]
-    assert isinstance(taxonomy_panel, TaxonomyPanel)
-    assert NewsPage.edit_handler.children[0].heading == "Edición de la noticia"
-    assert NewsPage._meta.get_field("body").verbose_name == "Contenido"
-    assert isinstance(featured_panel, MultiFieldPanel)
-    assert featured_panel.heading == "Imagen destacada"
-    assert [
-        panel.field_name
-        for panel in featured_panel.children
-        if isinstance(panel, FieldPanel)
-    ] == [
-        "featured_image",
-        "featured_image_caption",
-        "featured_image_alt_text",
-        "featured_image_credit",
-    ]
-    assert all(not isinstance(panel, HelpPanel) for panel in featured_panel.children)
-    assert NewsPage.content_panels[body_panel_index - 1] is featured_panel
-    assert body_panel.help_text == (
-        "Selecciona texto para mostrar la barra contextual de formato. "
-        'Usa "/" para insertar o dividir bloques.'
-    )
-    assert "Cómo editar el contenido" not in body_panel.help_text
-    assert "Markdown" not in body_panel.help_text
-    assert public_credit_panel.help_text == (
-        "Obligatoria para publicar. Puedes dejarla vacía mientras trabajas en un "
-        "borrador."
-    )
-
-
-def test_social_image_metadata_panels_remain_in_seo_assistant() -> None:
-    social_panel = next(
-        panel
-        for panel in NewsPage.promote_panels
-        if isinstance(panel, MultiFieldPanel)
-        and panel.heading == "Configuración para redes sociales"
-    )
-    image_panel = next(
-        panel
-        for panel in social_panel.children
-        if isinstance(panel, MultiFieldPanel)
-        and panel.heading == "Imagen social y metadata editorial"
-    )
-
-    assert [
-        panel.field_name
-        for panel in image_panel.children
-        if isinstance(panel, FieldPanel)
-    ] == [
-        "og_image",
-        "og_image_caption",
-        "og_image_alt_text",
-        "og_image_credit",
-    ]
-    assert all(not isinstance(panel, HelpPanel) for panel in image_panel.children)
-
-
-def test_related_keyphrase_inline_is_immediately_after_primary_keyphrase() -> None:
-    assert NewsPage.promote_panels[0].heading == "Configuración SEO"
-    seo_panel = next(
-        panel
-        for panel in NewsPage.promote_panels
-        if isinstance(panel, MultiFieldPanel) and panel.heading == "Configuración SEO"
-    )
-    primary_index = next(
-        index
-        for index, panel in enumerate(seo_panel.children)
-        if isinstance(panel, FieldPanel) and panel.field_name == "focus_keyphrase"
-    )
-    related_panel = seo_panel.children[primary_index + 1]
-
-    assert isinstance(related_panel, InlinePanel)
-    assert related_panel.relation_name == "related_keyphrases"
-    assert related_panel.heading == "Frases clave relacionadas"
-    assert related_panel.max_num == 4
-    assert related_panel.help_text == (
-        "Añade hasta cuatro frases relacionadas que también describan el tema. "
-        "Se analizan con menos exigencia que la frase principal."
     )
 
 

@@ -25,9 +25,9 @@ repos:
         stages: [pre-commit]
   - repo: local
     hooks:
-      - id: make-check
-        name: make check
-        entry: make check
+      - id: validate-push-delta
+        name: validate push delta
+        entry: python3 scripts/validation_delta.py pre-push
         language: system
         pass_filenames: false
         always_run: true

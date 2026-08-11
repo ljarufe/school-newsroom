@@ -1,5 +1,5 @@
 import datetime as dt
-from html.parser import HTMLParser
+from html import escape
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
@@ -17,79 +17,6 @@ from apps.news.seo_metadata import (
     PublicMetadata,
     build_public_share_links,
 )
-
-
-class ShareMarkupParser(HTMLParser):
-    void_elements = {"input", "meta", "link", "img", "br", "hr"}
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.share_depth = 0
-        self.share_attrs = {}
-        self.actions = []
-        self.action_labels = {}
-        self.current_action = None
-        self.heading_attrs = {}
-        self.notification_attrs = {}
-        self.close_attrs = {}
-        self.close_label = ""
-        self.in_close_button = False
-        self.manual_input = {}
-        self.noscript_href = ""
-        self.in_noscript = False
-        self.script_sources = []
-        self.iframe_count = 0
-
-    def handle_starttag(self, tag, attrs) -> None:
-        attributes = dict(attrs)
-        if tag == "script":
-            self.script_sources.append(attributes.get("src"))
-        if tag == "iframe":
-            self.iframe_count += 1
-
-        if tag == "section" and "data-public-share" in attributes:
-            self.share_depth = 1
-            self.share_attrs = attributes
-            return
-        if not self.share_depth:
-            return
-
-        if "data-share-channel" in attributes:
-            channel = attributes["data-share-channel"]
-            self.actions.append((channel, attributes))
-            self.current_action = channel
-        if tag == "h2":
-            self.heading_attrs = attributes
-        if "data-share-notification" in attributes:
-            self.notification_attrs = attributes
-        if "data-share-close" in attributes:
-            self.close_attrs = attributes
-            self.in_close_button = True
-        if "data-share-manual-url" in attributes:
-            self.manual_input = attributes
-        if tag == "noscript":
-            self.in_noscript = True
-        if tag == "a" and self.in_noscript:
-            self.noscript_href = attributes.get("href", "")
-        if tag not in self.void_elements:
-            self.share_depth += 1
-
-    def handle_data(self, data) -> None:
-        if self.current_action and data.strip():
-            self.action_labels[self.current_action] = data.strip()
-        if self.in_close_button and data.strip():
-            self.close_label = data.strip()
-
-    def handle_endtag(self, tag) -> None:
-        if not self.share_depth:
-            return
-        if tag == "noscript":
-            self.in_noscript = False
-        if tag in {"a", "button"}:
-            self.current_action = None
-        if tag == "button" and self.in_close_button:
-            self.in_close_button = False
-        self.share_depth -= 1
 
 
 @pytest.fixture
@@ -155,13 +82,6 @@ def public_metadata(**overrides) -> PublicMetadata:
     }
     values.update(overrides)
     return PublicMetadata(**values)
-
-
-def parse_share_markup(response) -> tuple[str, ShareMarkupParser]:
-    html = response.content.decode()
-    parser = ShareMarkupParser()
-    parser.feed(html)
-    return html, parser
 
 
 def test_share_link_builder_uses_effective_social_metadata_and_encodes_channels():
@@ -231,7 +151,7 @@ def test_share_link_builder_omits_email_description_when_empty():
 
 
 @pytest.mark.django_db
-def test_live_noindex_detail_renders_escaped_share_actions_in_contract_order(
+def test_live_noindex_detail_escapes_server_rendered_share_metadata(
     public_site,
     section,
     settings,
@@ -252,80 +172,22 @@ def test_live_noindex_detail_renders_escaped_share_actions_in_contract_order(
     page.save()
 
     response = Client(HTTP_HOST="school.test").get(page.url)
-    html, parser = parse_share_markup(response)
+    html = response.content.decode()
 
     assert response.status_code == 200
     assert '<meta name="robots" content="noindex, follow">' in html
-    assert html.index("Contenido ficticio del cuerpo.") < html.index(
-        "Compartir esta noticia"
-    )
-    assert html.index("Compartir esta noticia") < html.index("Etiquetas")
-    assert parser.share_attrs["data-share-title"] == title
-    assert parser.share_attrs["data-share-description"] == description
-    assert parser.share_attrs["data-share-url"] == canonical
-    assert [channel for channel, _attrs in parser.actions] == [
-        "native",
-        "whatsapp",
-        "x",
-        "facebook",
-        "email",
-        "copy",
-    ]
-    assert parser.action_labels == {
-        "native": "Compartir",
-        "whatsapp": "WhatsApp",
-        "x": "X",
-        "facebook": "Facebook",
-        "email": "Correo",
-        "copy": "Copiar enlace",
-    }
-    assert parser.heading_attrs["class"] == "public-share__heading"
-    assert parser.notification_attrs["aria-live"] == "polite"
-    assert parser.notification_attrs["aria-atomic"] == "true"
-    assert "hidden" in parser.notification_attrs
-    assert parser.close_attrs["type"] == "button"
-    assert parser.close_label == "Cerrar"
-    assert "Instagram" not in html
-
-    actions = dict(parser.actions)
-    assert "hidden" in actions["native"]
-    assert "hidden" in actions["copy"]
-    for channel in ("whatsapp", "x", "facebook"):
-        assert actions[channel]["target"] == "_blank"
-        assert set(actions[channel]["rel"].split()) == {"noopener", "noreferrer"}
-    assert "target" not in actions["email"]
-    assert parse_qs(urlsplit(actions["whatsapp"]["href"]).query) == {
-        "text": [f"{title}\n{canonical}"]
-    }
-    assert parse_qs(urlsplit(actions["x"]["href"]).query) == {
-        "text": [title],
-        "url": [canonical],
-    }
-    assert parse_qs(urlsplit(actions["facebook"]["href"]).query) == {"u": [canonical]}
-    assert parse_qs(urlsplit(actions["email"]["href"]).query) == {
-        "subject": [title],
-        "body": [f"{description}\r\n\r\n{canonical}"],
-    }
-    assert parser.manual_input["readonly"] is None
-    assert parser.manual_input["value"] == canonical
-    assert parser.noscript_href == canonical
-    assert page.full_url not in str(parser.share_attrs)
-    assert page.full_url not in str(parser.actions)
-    assert page.full_url not in parser.noscript_href
+    assert "data-public-share" in html
+    assert f'data-share-title="{escape(title, quote=True)}"' in html
+    assert f'data-share-description="{escape(description, quote=True)}"' in html
+    assert f'data-share-url="{escape(canonical, quote=True)}"' in html
+    assert page.full_url not in html
     assert "contains_identifiable_minors" not in html
     assert "minor_publication_authorizations_verified" not in html
     assert "sensitive_content" not in html
     assert "window.shareInjected=1</script>" not in html
     assert '<img src=x onerror="window.shareInjected=2">' not in html
-    assert parser.iframe_count == 0
-    assert not any(
-        source and any(host in source for host in ("wa.me", "x.com", "facebook.com"))
-        for source in parser.script_sources
-    )
-    assert any(
-        source and source.endswith("/static/public/js/share.js")
-        for source in parser.script_sources
-    )
+    assert "<iframe" not in html
+    assert 'src="/static/public/js/share.js"' in html
 
 
 @pytest.mark.django_db

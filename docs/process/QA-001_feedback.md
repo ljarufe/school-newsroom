@@ -351,3 +351,25 @@ Validation, Browser Regression in the actual PR, UAT A, post-merge docs-only
 UAT B, and required-check UAT C. Browser Regression was not rerun for this
 correction because no Playwright spec, browser fixture behavior, or browser
 trigger boundary changed.
+
+## Pull Request operational evidence
+
+The QA-001 implementation was committed as `6c327c3` and pushed through the
+real repository pre-push hook. The hook completed successfully.
+
+The Pull Request was opened against `main` and the real GitHub workflows
+completed successfully:
+
+- `Pull Request Validation / Validate repository`: passed.
+- `Browser Regression / Browser regression`: passed.
+- GitGuardian Security Checks: passed.
+- The Pull Request reported no conflicts with `main`.
+- Automatic GitHub/Codex review completed without findings.
+
+This closes the pre-merge operational evidence for QA-001.
+
+Still intentionally deferred until after merge:
+
+- UAT B: real documentation-only new-branch pre-push and temporary PR probe.
+- UAT C: verify/configure `Validate repository` as required on `main`, while
+  Browser Regression remains conditional and not globally required.

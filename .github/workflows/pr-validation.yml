@@ -4,10 +4,6 @@ on:
   pull_request:
     branches:
       - main
-    types:
-      - opened
-      - reopened
-      - synchronize
 
 permissions:
   contents: read
@@ -21,12 +17,37 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Classify validation delta
+        id: delta
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.sha }}
+        run: |
+          route="$(python3 scripts/validation_delta.py classify --base-ref "$BASE_REF" --head-ref "$HEAD_REF" | sed -n 's/^validation route: //p')"
+          test "$route" = "documentation-only" || test "$route" = "full-validation"
+          echo "route=$route" >> "$GITHUB_OUTPUT"
+          echo "Selected validation route: $route"
+
+      - name: Validate documentation-only delta
+        if: steps.delta.outputs.route == 'documentation-only'
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python3 scripts/validation_delta.py classify --base-ref "$BASE_REF" --head-ref "$HEAD_REF"
+          echo "Documentation-only validation selected; make check was intentionally not run."
 
       - name: Prepare CI environment
+        if: steps.delta.outputs.route == 'full-validation'
         run: cp .env.example .env
 
       - name: Check Docker Compose
+        if: steps.delta.outputs.route == 'full-validation'
         run: docker compose version
 
       - name: Validate repository
+        if: steps.delta.outputs.route == 'full-validation'
         run: make check

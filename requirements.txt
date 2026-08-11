@@ -11,5 +11,6 @@ pyphen==0.17.2
 es-core-news-sm @ https://github.com/explosion/spacy-models/releases/download/es_core_news_sm-3.8.0/es_core_news_sm-3.8.0-py3-none-any.whl#sha256=e451a83d6df79b87e9eed0cb553f03e99e36a3bab18a7b79f0dcfd1fdf875e12
 pytest>=8.4,<9.0
 pytest-django>=4.11,<5.0
+pytest-cov>=6.0,<7.0
 ruff>=0.12,<1.0
 pre-commit>=4.2,<5.0

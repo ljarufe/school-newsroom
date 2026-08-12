@@ -29,8 +29,11 @@ on:
       - "apps/news/taxonomy_forms.py"
       - "apps/news/widgets.py"
       - "apps/news/smart_paste.py"
+      - "apps/news/smart_paste_contracts.py"
+      - "apps/news/smart_paste_views.py"
       - "apps/news/views.py"
       - "apps/news/wagtail_hooks.py"
+      - "apps/news/wagtail_hook_handlers.py"
       - "apps/news/seo/**"
       - "apps/news/management/commands/setup_browser_test.py"
       - "apps/news/migrations/**"
@@ -62,7 +65,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
 

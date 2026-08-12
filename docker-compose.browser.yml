@@ -2,7 +2,7 @@ name: school_newsroom_browser
 
 services:
   browser-db:
-    image: postgres:16
+    image: postgres:16.14@sha256:95206741a5b214807675e14165369d05b93a9cf692223b616d07cca227e74b0b
     environment:
       POSTGRES_DB: school_newsroom_browser
       POSTGRES_USER: school_newsroom_browser

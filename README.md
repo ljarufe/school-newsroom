@@ -9,7 +9,7 @@ public accounts, custom authentication, automatic deployment, or a public write 
 
 ## Stack
 
-- Python 3.12 inside Docker
+- Python 3.12.11 inside Docker
 - Django 5.2 LTS
 - Wagtail 7.x
 - PostgreSQL 16
@@ -286,7 +286,7 @@ For editor diagnostics, check `View -> Problems`. For Python or Pylance details,
 
 If port `8001` is unavailable, check the VS Code Ports panel while the debug profile is running.
 
-More details are available in `docs/process/devcontainer.md`.
+More details are available in [`docs/development/devcontainer.md`](docs/development/devcontainer.md).
 
 ## Make Commands
 
@@ -307,6 +307,7 @@ make format
 make migration-check
 make check
 make browser-test
+make lock
 ```
 
 Command summary:
@@ -329,6 +330,24 @@ Command summary:
 | `make migration-check` | Check for model changes missing migrations.        |
 | `make check`           | Run linting, migration drift, and coverage tests.  |
 | `make browser-test`    | Run the disposable host-side browser regression.   |
+| `make lock`            | Regenerate the hashed Python locks from direct inputs (host only). |
+
+## Dependency Locks
+
+`requirements.in` and `requirements-ops.in` are the human-maintained direct
+dependency declarations. `requirements.txt` and `requirements-ops.txt` are
+generated, fully transitive locks with hashes; do not edit them manually.
+
+From the host (outside the Dev Container), regenerate both locks with:
+
+```bash
+make lock
+```
+
+The command uses Python 3.12.11 and fixed `pip-tools==7.6.0` in the pinned
+Python image. Existing generated pins constrain ordinary regeneration; make
+deliberate dependency changes in the relevant `.in` file. Runtime and host-ops
+installs use pip hash-checking mode.
 
 ## Quality Tools
 
@@ -437,6 +456,9 @@ compare the PR merge base with its head; use `.github/pull_request_template.md`.
 
 ```text
 school-newsroom/
+├── .devcontainer/       # Compose-based VS Code development environment
+├── .github/workflows/   # Proportional repository and browser validation
+├── .vscode/             # Workspace tasks, test discovery, and debugging
 ├── apps/
 │   ├── home/
 │   └── news/
@@ -449,21 +471,34 @@ school-newsroom/
 │   ├── urls.py
 │   └── wsgi.py
 ├── docker/
-│   └── web/
-│       └── Dockerfile
+│   ├── browser/         # Playwright-only browser runner
+│   ├── staging/         # Manual Oracle staging runtime
+│   └── web/             # Django/Wagtail image
 ├── docs/
-│   ├── adr/
-│   ├── ops/
+│   ├── development/
+│   ├── editorial/
+│   ├── operations/
 │   ├── process/
 │   └── product/
+├── ops/                 # Host-only staging deployment implementation
+├── scripts/             # Shared repository validation policy
 ├── static/
 ├── templates/
+├── tests/
+│   ├── browser/         # Node/Playwright tests only
+│   └── ops/
+├── docker-compose.browser.yml
+├── docker-compose.staging.yml
 ├── docker-compose.yml
 ├── Makefile
 ├── manage.py
+├── package.json          # Browser regression tooling only
 ├── pyproject.toml
 ├── pytest.ini
-└── requirements.txt
+├── requirements.in
+├── requirements.txt
+├── requirements-ops.in
+└── requirements-ops.txt
 ```
 
 ## Environment Variables

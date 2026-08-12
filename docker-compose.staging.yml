@@ -10,7 +10,7 @@ x-default-logging: &default-logging
 # never embed them in this Compose file.
 services:
   proxy:
-    image: caddy:2-alpine
+    image: caddy:2.11.4-alpine@sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648
     environment:
       ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in the staging environment file}
       STAGING_HOSTNAME: ${STAGING_HOSTNAME:?Set STAGING_HOSTNAME in the staging environment file}
@@ -86,7 +86,7 @@ services:
       - backend
 
   db:
-    image: postgres:16
+    image: postgres:16.14@sha256:95206741a5b214807675e14165369d05b93a9cf692223b616d07cca227e74b0b
     environment:
       POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in the staging environment file}
       POSTGRES_PASSWORD:

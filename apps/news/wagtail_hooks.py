@@ -1,30 +1,19 @@
-from django.contrib import messages
-from django.contrib.contenttypes.models import ContentType
-from django.shortcuts import get_object_or_404, redirect
-from django.urls import path, reverse
+from django.shortcuts import get_object_or_404
+from django.urls import reverse
 from wagtail import hooks
 from wagtail.admin.admin_url_finder import ModelAdminURLFinder
 from wagtail.admin.panels import FieldPanel
 from wagtail.admin.views import generic
 from wagtail.admin.views.generic import history, usage
 from wagtail.admin.viewsets.model import ModelViewSet
-from wagtail.models import Page, Revision
 from wagtail.permission_policies import ModelPermissionPolicy
 from wagtail.snippets.models import register_snippet
 from wagtail.snippets.views import snippets as snippet_views
 from wagtail.snippets.views.snippets import SnippetViewSet, SnippetViewSetGroup
 
-from .models import (
-    ContributorGroup,
-    MinorContributor,
-    NewsPage,
-    NewsPageSection,
-    NewsSection,
-    School,
-)
-from .taxonomy import revision_content_references_section
+from . import wagtail_hook_handlers
+from .models import ContributorGroup, MinorContributor, NewsSection, School
 from .taxonomy_forms import NewsSubsectionAdminForm
-from .views import normalize_smart_paste
 
 
 class MainSectionObjectQuerySetMixin:
@@ -283,79 +272,27 @@ class EditorialViewSetGroup(SnippetViewSetGroup):
 register_snippet(EditorialViewSetGroup)
 
 
-def _news_section_deletion_is_protected(sections) -> bool:
-    section_ids = {section.pk for section in sections}
-    if NewsSection.objects.filter(parent_id__in=section_ids).exists():
-        return True
-    if NewsPageSection.objects.filter(section_id__in=section_ids).exists():
-        return True
-
-    news_page_content_type = ContentType.objects.get_for_model(NewsPage)
-    return any(
-        revision_content_references_section(content, section_ids)
-        for content in Revision.objects.filter(
-            content_type=news_page_content_type
-        ).values_list("content", flat=True)
-    )
-
-
-def _news_section_deletion_protection_response(
-    request,
-    sections,
-    *,
-    redirect_name,
-):
-    if not _news_section_deletion_is_protected(sections):
-        return None
-
-    messages.error(
-        request,
-        (
-            "No puedes eliminar esta clasificación porque contiene subsecciones "
-            "o está asociada a noticias."
-        ),
-    )
-    return redirect(redirect_name)
+_news_section_deletion_is_protected = (
+    wagtail_hook_handlers.news_section_deletion_is_protected
+)
+_news_section_deletion_protection_response = (
+    wagtail_hook_handlers.news_section_deletion_protection_response
+)
 
 
 @hooks.register("before_delete_snippet")
 def protect_news_section_deletion(request, snippets):
-    sections = [snippet for snippet in snippets if isinstance(snippet, NewsSection)]
-    if not sections:
-        return None
-
-    if any(section.parent_id is not None for section in sections):
-        messages.error(
-            request,
-            "La clasificación solicitada no está disponible en Secciones.",
-        )
-        return redirect("wagtailsnippets_news_newssection:list")
-
-    return _news_section_deletion_protection_response(
-        request,
-        sections,
-        redirect_name="wagtailsnippets_news_newssection:list",
-    )
+    return wagtail_hook_handlers.protect_news_section_deletion(request, snippets)
 
 
 @hooks.register("register_admin_urls")
 def register_news_admin_urls():
-    return [
-        path(
-            "news/smart-paste/normalize/",
-            normalize_smart_paste,
-            name="news_smart_paste_normalize",
-        ),
-    ]
+    return wagtail_hook_handlers.register_news_admin_urls()
 
 
 @hooks.register("after_edit_page")
 def redirect_after_workflow_action_when_edit_access_ends(request, page):
-    """Keep completed moderation actions away from a now-forbidden edit view."""
-    if request.method != "POST" or "action-workflow-action" not in request.POST:
-        return None
-
-    refreshed_page = Page.objects.get(pk=page.pk).specific
-    if refreshed_page.permissions_for_user(request.user).can_edit():
-        return None
-    return redirect("wagtailadmin_home")
+    return wagtail_hook_handlers.redirect_after_workflow_action_when_edit_access_ends(
+        request,
+        page,
+    )

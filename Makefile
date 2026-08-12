@@ -8,9 +8,11 @@ OPS_PYTHON = $(OPS_VENV)/bin/python
 OPS_FAB = $(OPS_VENV)/bin/fab
 OPS_REQUIREMENTS = requirements-ops.txt
 OPS_REQUIREMENTS_STAMP = $(OPS_VENV)/.requirements.sha256
+LOCK_IMAGE = python:3.12.11-slim-bookworm@sha256:519591d6871b7bc437060736b9f7456b8731f1499a57e22e6c285135ae657bf7
+LOCK_CONTAINER = docker run --rm --user "$(shell id -u):$(shell id -g)" --volume "$(CURDIR):/app" --workdir /app --env HOME=/tmp --env PIP_CACHE_DIR=/tmp/pip-cache $(LOCK_IMAGE)
 export STAGING_DEPLOY_SHA := $(SHA)
 
-.PHONY: build up down logs shell bash migrate makemigrations compilemessages createsuperuser test coverage lint format migration-check check browser-test staging-deploy
+.PHONY: build up down logs shell bash migrate makemigrations compilemessages createsuperuser test coverage lint format migration-check check browser-test lock staging-deploy
 
 ifeq ($(IN_CONTAINER),1)
 WEB =
@@ -21,6 +23,10 @@ build up down logs:
 
 browser-test:
 	@echo "Browser tests use an isolated Docker Compose runner and must run from the host."
+	@exit 1
+
+lock:
+	@echo "Lock generation uses the pinned Python image and must run from the host."
 	@exit 1
 
 staging-deploy:
@@ -61,6 +67,9 @@ browser-test:
 	$(BROWSER_COMPOSE) up --build --abort-on-container-exit --exit-code-from browser-test || status=$$?; \
 	exit "$$status"
 
+lock:
+	$(LOCK_CONTAINER) sh -ec 'python -m venv /tmp/lock-venv; /tmp/lock-venv/bin/pip install --disable-pip-version-check pip==25.3 pip-tools==7.6.0; /tmp/lock-venv/bin/pip-compile --allow-unsafe --generate-hashes --strip-extras --output-file requirements.txt requirements.in; /tmp/lock-venv/bin/pip-compile --allow-unsafe --generate-hashes --strip-extras --output-file requirements-ops.txt requirements-ops.in'
+
 staging-deploy:
 	@set -eu; \
 	if [ ! -x "$(OPS_PYTHON)" ]; then \
@@ -69,7 +78,7 @@ staging-deploy:
 	requirements_sha="$$(sha256sum "$(OPS_REQUIREMENTS)" | awk '{print $$1}')"; \
 	installed_sha="$$(cat "$(OPS_REQUIREMENTS_STAMP)" 2>/dev/null || true)"; \
 	if [ ! -x "$(OPS_FAB)" ] || [ "$$requirements_sha" != "$$installed_sha" ]; then \
-		PIP_DISABLE_PIP_VERSION_CHECK=1 "$(OPS_PYTHON)" -m pip install --no-input -r "$(OPS_REQUIREMENTS)"; \
+		PIP_DISABLE_PIP_VERSION_CHECK=1 "$(OPS_PYTHON)" -m pip install --no-input --require-hashes -r "$(OPS_REQUIREMENTS)"; \
 		printf '%s\n' "$$requirements_sha" > "$(OPS_REQUIREMENTS_STAMP)"; \
 	fi; \
 	"$(OPS_FAB)" --prompt-for-passphrase staging-deploy

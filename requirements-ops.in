@@ -1,0 +1,2 @@
+# Direct host-operations dependency. Generate requirements-ops.txt with `make lock`.
+fabric==3.2.3

@@ -1,0 +1,18 @@
+# Direct application and development dependencies. Generate requirements.txt
+# with `make lock`; do not edit the generated lock manually.
+django>=5.2,<5.3
+wagtail>=7.0,<8.0
+django-treebeard>=5.2,<5.3
+psycopg[binary]>=3.2,<4.0
+django-environ>=0.12,<1.0
+whitenoise>=6.9,<7.0
+gunicorn>=23.0,<24.0
+click==8.4.2
+spacy==3.8.14
+pyphen==0.17.2
+es-core-news-sm @ https://github.com/explosion/spacy-models/releases/download/es_core_news_sm-3.8.0/es_core_news_sm-3.8.0-py3-none-any.whl#sha256=e451a83d6df79b87e9eed0cb553f03e99e36a3bab18a7b79f0dcfd1fdf875e12
+pytest>=8.4,<9.0
+pytest-django>=4.11,<5.0
+pytest-cov>=6.0,<7.0
+ruff>=0.12,<1.0
+pre-commit>=4.2,<5.0

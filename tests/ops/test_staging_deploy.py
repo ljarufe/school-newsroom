@@ -432,9 +432,13 @@ def test_command_contracts_use_safe_paths_and_no_destructive_commands():
 def test_repository_contract_files_keep_fabric_local_and_prompt_once():
     makefile = Path("Makefile").read_text()
     requirements = Path("requirements-ops.txt").read_text()
+    requirements_input = Path("requirements-ops.in").read_text()
     runtime_requirements = Path("requirements.txt")
-    assert requirements == "fabric==3.2.3\n"
+    assert "fabric==3.2.3" in requirements_input
+    assert "fabric==3.2.3" in requirements
+    assert "--hash=sha256:" in requirements
     assert "--prompt-for-passphrase" in makefile
+    assert "--require-hashes" in makefile
     assert ".venv-ops" in makefile
     if runtime_requirements.exists():
         assert "fabric" not in runtime_requirements.read_text().lower()

@@ -1,4 +1,4 @@
-# EPIC2-006 Feedback — Stage A implementation-closing draft
+# EPIC2-006 Feedback — Closing Feedback Final
 
 ## Scope and structural inventory
 
@@ -60,20 +60,25 @@ Registry inspection confirmed the Playwright index exposes `linux/amd64` and
   90% threshold.
 - `git diff --check` — passed.
 
-## ARM64 evidence and deferred maintainer check
+## Maintainer UAT and ARM64 evidence
 
-The selected Playwright manifest explicitly provides both `linux/amd64` and
-`linux/arm64`. The local default Buildx driver advertises only amd64/386, so it
-cannot truthfully produce local ARM64 build evidence. The amd64 web image was
-built locally from the locked inputs and reports Python 3.12.11.
+Maintainer UAT completed successfully.
 
-If native ARM64 confirmation is required, Luis can run this read/build-only
-command on an ARM64 Docker host; it does not deploy, recreate services, migrate,
-or alter volumes or media:
-
-```bash
-docker buildx build --platform linux/arm64 --load -t school-newsroom:epic2-006-arm64 -f docker/web/Dockerfile . && docker run --rm --platform linux/arm64 school-newsroom:epic2-006-arm64 python --version
-```
+- Lock regeneration from the host reproduced both generated lock files with no
+  delta.
+- The VS Code Dev Container reported Python 3.12.11 at
+  `/usr/local/bin/python`; pytest discovery and Test Explorer worked after the
+  configured interpreter was selected and VS Code was reloaded. No repository
+  change was required for that local editor-state issue.
+- Public smart-paste, view, model, and Wagtail discovery imports remained
+  available through their documented façades.
+- Clean-checkout onboarding verification passed, including the moved
+  `docs/development/devcontainer.md` path and removal of the obsolete
+  `docs/process/devcontainer.md` reference.
+- Native ARM64 evidence was completed on the existing Oracle A1 ARM64 host
+  without deploying staging or modifying running services, volumes, media, or
+  database state. The locked web image built successfully for `linux/arm64`
+  and reported Python 3.12.11 at runtime.
 
 ## Failures, warnings, and New Work Discovered
 
@@ -85,7 +90,34 @@ docker buildx build --platform linux/arm64 --load -t school-newsroom:epic2-006-a
   The generator now uses `--allow-unsafe`, producing a hashed exact
   `setuptools` entry; clean hash-checked installation passed.
 - New Work Discovered: local Buildx/QEMU support for ARM64 is absent. This is an
-  environment capability gap, not a repository or staging change; native ARM64
-  evidence remains maintainer-only as described above.
-- No staging deployment, Oracle access, maintainer UAT, migration creation, or
-  Planka action was performed.
+  local environment capability gap rather than a repository defect. Required
+  ARM64 evidence was completed on the existing Oracle ARM64 host, so it does
+  not block EPIC2-006.
+- No staging deployment or migration creation was performed.
+
+## Operational closure
+
+The maintainer reported the following late lifecycle evidence after the
+implementation delta was committed:
+
+- real commit and push completed successfully with the repository hooks;
+- the Pull Request was opened against `main`;
+- required CI completed green for the current PR delta;
+- automatic GitHub/Codex review completed with no findings;
+- no implementation delta was introduced after the validated/UAT-approved
+  state.
+
+No additional validation, UAT, or diff review is required before merge because
+there is no later code/configuration delta capable of invalidating the existing
+evidence.
+
+The remaining lifecycle actions are operational only:
+
+1. Squash and merge the Pull Request.
+2. Synchronize local `main`.
+3. Remove the ticket branch and prune remote references.
+4. Move the Planka Card from `Review` to `Done`.
+5. Hand this Closing Feedback Final to the planning/consolidation chat.
+
+`Released` does not apply because EPIC2-006 did not perform a real product
+deployment.

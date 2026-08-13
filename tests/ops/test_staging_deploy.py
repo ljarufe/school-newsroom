@@ -281,6 +281,7 @@ def test_already_deployed_is_noop_and_releases_lock(tmp_path):
     assert result.already_deployed is True
     assert "build web" not in joined
     assert "migrate --noinput" not in joined
+    assert "update_index --backend default" not in joined
     assert "up -d" not in joined
     assert DEPLOYMENT_HISTORY not in joined
     assert "rmdir" in joined
@@ -313,7 +314,12 @@ def test_successful_deploy_runs_ordered_stages_and_records_success(tmp_path):
     assert smoke.hostnames == [HOSTNAME]
     assert joined.index("git checkout --detach") < joined.index("build web")
     assert joined.index("build web") < joined.index("migrate --noinput")
-    assert joined.index("migrate --noinput") < joined.index("bootstrap_mvp_access")
+    assert joined.index("migrate --noinput") < joined.index(
+        "update_index --backend default"
+    )
+    assert joined.index("update_index --backend default") < joined.index(
+        "bootstrap_mvp_access"
+    )
     assert joined.index("bootstrap_mvp_access") < joined.index("up -d")
     assert CURRENT_DEPLOYMENT in joined
     assert DEPLOYMENT_HISTORY in joined
@@ -341,6 +347,7 @@ def test_checkout_verification_failure_restores_previous_sha(tmp_path):
     [
         ("build web", "build_failed", "no"),
         ("migrate --noinput", "migration_failed", "no"),
+        ("update_index --backend default", "search_index_failed", "no"),
         ("bootstrap_mvp_access", "bootstrap_failed", "no"),
         ("Default Wagtail Site", "site_reconciliation_failed", "no"),
         ("up -d", "recreate_failed", "unknown"),
@@ -415,6 +422,7 @@ def test_command_contracts_use_safe_paths_and_no_destructive_commands():
     assert f"-f {COMPOSE_FILE}" in commands
     assert REMOTE_REPOSITORY in commands
     assert "migrate --noinput" in commands
+    assert "update_index --backend default" in commands
     assert "checkout --detach" in commands
     assert "logs --tail=100" in commands
     for forbidden in (

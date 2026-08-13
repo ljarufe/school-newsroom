@@ -1747,8 +1747,22 @@ def test_public_news_search_migration_is_forward_and_reverse_reproducible():
         migrate_to(NEWS_0015)
         with connection.cursor() as cursor:
             cursor.execute(
+                "SELECT extname FROM pg_extension "
+                "WHERE extname IN ('pg_trgm', 'unaccent')"
+            )
+            assert {row[0] for row in cursor.fetchall()} == {"pg_trgm", "unaccent"}
+            cursor.execute(
                 "SELECT 1 FROM pg_ts_config WHERE cfgname = 'school_newsroom_es'"
             )
             assert cursor.fetchone() is None
+            cursor.execute("SELECT 1 FROM pg_proc WHERE proname = 'f_unaccent'")
+            assert cursor.fetchone() is None
+            cursor.execute(
+                "SELECT indexname FROM pg_indexes "
+                "WHERE tablename = 'wagtailsearch_indexentry'"
+            )
+            indexes = {row[0] for row in cursor.fetchall()}
+            assert "news_archive_title_text_unaccent_trgm" not in indexes
+            assert "news_archive_body_text_unaccent_trgm" not in indexes
     finally:
         migrate_to_latest()

@@ -38,8 +38,6 @@ class Migration(migrations.Migration):
                 DROP INDEX IF EXISTS news_archive_title_text_unaccent_trgm;
                 DROP TEXT SEARCH CONFIGURATION IF EXISTS school_newsroom_es;
                 DROP FUNCTION IF EXISTS f_unaccent(text);
-                DROP EXTENSION IF EXISTS pg_trgm;
-                DROP EXTENSION IF EXISTS unaccent;
             """,
         ),
     ]

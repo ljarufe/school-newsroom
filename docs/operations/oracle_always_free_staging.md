@@ -32,7 +32,7 @@ Real backup generation and restore validation were explicitly removed from the E
 
 This recorded state does not make Oracle labels, limits, Console paths, or third-party terms permanent. Recheck volatile provider facts before future infrastructure changes.
 
-Only Caddy publishes host ports. PostgreSQL and Gunicorn remain on private Compose networks. PostgreSQL uses the stable named volume `school_newsroom_staging_postgres_data`. Static assets are collected before Gunicorn starts and are served by WhiteNoise. Migrations, access bootstrap, site reconciliation, and user creation are deliberate operator actions, not container-restart side effects.
+Only Caddy publishes host ports. PostgreSQL and Gunicorn remain on private Compose networks. PostgreSQL uses the stable named volume `school_newsroom_staging_postgres_data`. Static assets are collected before Gunicorn starts and are served by WhiteNoise. Migrations, default search-index rebuilding, access bootstrap, site reconciliation, and user creation are deliberate operator actions, not container-restart side effects.
 
 ## Non-negotiable stop conditions
 
@@ -651,6 +651,13 @@ sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compos
 
 If migration `0009_reconcile_mvp_access` stops because `Moderadores` or `Editores` has users or an unexpected dependency, stop. Reconcile those accounts/dependencies deliberately; never delete access history blindly.
 
+Rebuild the default Wagtail search index before starting application services so
+existing public content uses the current search fields:
+
+```bash
+sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml run --rm web python manage.py update_index --backend default
+```
+
 Run access bootstrap twice and confirm idempotency:
 
 ```bash
@@ -808,13 +815,14 @@ Within the lock it:
 3. checks out the target detached;
 4. builds `web`;
 5. runs `python manage.py migrate --noinput`;
-6. runs `python manage.py bootstrap_mvp_access`;
-7. reconciles the default Wagtail Site to `STAGING_HOSTNAME` on port 443;
-8. runs `docker compose up -d`;
-9. waits for bounded health checks;
-10. verifies HTTP-to-HTTPS redirect, Home, `/noticias/`, `/admin/`, TLS certificate, and hostname;
-11. verifies remote HEAD;
-12. appends deployment history and updates the current successful deployment record.
+6. runs `python manage.py update_index --backend default`;
+7. runs `python manage.py bootstrap_mvp_access`;
+8. reconciles the default Wagtail Site to `STAGING_HOSTNAME` on port 443;
+9. runs `docker compose up -d`;
+10. waits for bounded health checks;
+11. verifies HTTP-to-HTTPS redirect, Home, `/noticias/`, `/admin/`, TLS certificate, and hostname;
+12. verifies remote HEAD;
+13. appends deployment history and updates the current successful deployment record.
 
 Safe deployment records are stored on the host at:
 
@@ -825,7 +833,7 @@ Safe deployment records are stored on the host at:
 
 A second invocation for the same target reports `already_deployed` and skips build, migrations, recreate, HTTPS smoke, and material deployment registration.
 
-Build, migration, bootstrap, or Wagtail Site failure restores only the Git checkout to the previous SHA before service recreation. Migration rollback is never attempted automatically. After service recreation begins, health or smoke failure does not perform a blind rollback; inspect bounded diagnostics and the printed failure stage/code before retrying.
+Build, migration, search-index, bootstrap, or Wagtail Site failure restores only the Git checkout to the previous SHA before service recreation. Migration rollback is never attempted automatically. After service recreation begins, health or smoke failure does not perform a blind rollback; inspect bounded diagnostics and the printed failure stage/code before retrying.
 
 ### Manual recovery path
 
@@ -843,6 +851,7 @@ git rev-parse HEAD
 unset NEW_APPROVED_COMMIT_SHA
 sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml build web
 sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml run --rm web python manage.py migrate --noinput
+sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml run --rm web python manage.py update_index --backend default
 sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml run --rm web python manage.py bootstrap_mvp_access
 sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml run --rm web python manage.py shell -c 'import os; from wagtail.models import Site; site = Site.objects.get(is_default_site=True); site.hostname = os.environ["STAGING_HOSTNAME"]; site.port = 443; site.save(update_fields=["hostname", "port"]); print(f"Default Wagtail Site: {site.hostname}:{site.port}")'
 sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml up -d

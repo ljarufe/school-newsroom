@@ -85,7 +85,12 @@ A real `update_index --backend default` call in the disposable test database
 rebuilt an existing NewsPage index entry and made its existing title content
 searchable.
 
-For an existing maintained environment, apply the migration and run:
+The official staging deployment rebuilds the default Wagtail search index after
+migrations and before access bootstrap, Wagtail Site reconciliation, and service
+recreation. Existing staging content therefore does not depend on remembering a
+separate manual step before archive search is exposed.
+
+For other maintained environments or recovery work, apply the migration and run:
 
 ```text
 python manage.py update_index --backend default
@@ -94,10 +99,17 @@ python manage.py update_index --backend default
 before relying on the new search fields/configuration for previously indexed
 content.
 
+The two accepted PR review findings were remediated by adding that official
+staging index-rebuild stage and by correcting the `news.0016` reverse contract:
+it removes the project-owned trigram indexes, `school_newsroom_es`
+configuration, and `f_unaccent(text)` function, but intentionally retains the
+database-wide `pg_trgm` and `unaccent` extensions after rollback.
+
 ## Automated validation
 
 Final validation after the maintainer UAT remediation:
 
+- focused PR-review deployment and migration tests: `10 passed, 35 deselected`;
 - focused UAT-remediation public-rendering tests:
   `4 passed, 34 deselected`;
 - focused UAT-remediation Playwright archive scenario: `1 passed`;
@@ -105,8 +117,8 @@ Final validation after the maintainer UAT remediation:
 - browser fixture unit tests: `2 passed`;
 - migration forward/reverse test: `1 passed`;
 - changed-file Ruff and formatting checks: passed;
-- `make check`: passed with `444 passed`, 90.4% coverage, lint green, and
-  migration detection green;
+- final `make check`: passed with `445 passed`, the configured 90% coverage
+  gate satisfied, lint green, and migration detection green;
 - `make browser-test`: passed all 7 Chromium scenarios;
 - `git diff --check`: passed.
 

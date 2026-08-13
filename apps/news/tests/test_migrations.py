@@ -7,6 +7,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connection, transaction
 from django.db.migrations.executor import MigrationExecutor
+from django.test import override_settings
 from django.utils import timezone
 from wagtail.models import (
     GroupApprovalTask as RuntimeGroupApprovalTask,
@@ -55,8 +56,24 @@ NEWS_0012 = ("news", "0012_editorial_taxonomy_schema")
 NEWS_0013 = ("news", "0013_migrate_editorial_taxonomy")
 NEWS_0014 = ("news", "0014_remove_singular_section")
 NEWS_0015 = ("news", "0015_newspagerelatedkeyphrase_and_more")
+NEWS_0016 = ("news", "0016_public_news_search_infrastructure")
 HOME_0001 = ("home", "0001_initial")
 BEFORE_NEWS_0002 = [HOME_0001, NEWS_0001]
+
+
+@pytest.fixture(autouse=True)
+def use_builtin_search_config_for_historical_migration_states():
+    """Historical states precede the project-owned FTS configuration."""
+    with override_settings(
+        WAGTAILSEARCH_BACKENDS={
+            "default": {
+                "BACKEND": "wagtail.search.backends.database",
+                "SEARCH_CONFIG": "spanish",
+                "FUZZY_SIMILARITY_THRESHOLD": 0.3,
+            },
+        }
+    ):
+        yield
 
 
 def migrate_to(targets):
@@ -1694,3 +1711,58 @@ def test_epic3_009_reverse_preserves_an_unclassified_page_as_null() -> None:
             home = RuntimePage.objects.filter(pk=home_id).first()
             if home is not None:
                 home.delete()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_public_news_search_migration_is_forward_and_reverse_reproducible():
+    try:
+        migrate_to(NEWS_0015)
+        migrate_to(NEWS_0016)
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT extname FROM pg_extension "
+                "WHERE extname IN ('pg_trgm', 'unaccent')"
+            )
+            extensions = {row[0] for row in cursor.fetchall()}
+            cursor.execute(
+                "SELECT 1 FROM pg_ts_config WHERE cfgname = 'school_newsroom_es'"
+            )
+            config_exists = cursor.fetchone() is not None
+            cursor.execute("SELECT 1 FROM pg_proc WHERE proname = 'f_unaccent'")
+            function_exists = cursor.fetchone() is not None
+            cursor.execute(
+                "SELECT indexname FROM pg_indexes "
+                "WHERE tablename = 'wagtailsearch_indexentry'"
+            )
+            indexes = {row[0] for row in cursor.fetchall()}
+
+        assert extensions == {"pg_trgm", "unaccent"}
+        assert config_exists
+        assert function_exists
+        assert {
+            "news_archive_title_text_unaccent_trgm",
+            "news_archive_body_text_unaccent_trgm",
+        }.issubset(indexes)
+
+        migrate_to(NEWS_0015)
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT extname FROM pg_extension "
+                "WHERE extname IN ('pg_trgm', 'unaccent')"
+            )
+            assert {row[0] for row in cursor.fetchall()} == {"pg_trgm", "unaccent"}
+            cursor.execute(
+                "SELECT 1 FROM pg_ts_config WHERE cfgname = 'school_newsroom_es'"
+            )
+            assert cursor.fetchone() is None
+            cursor.execute("SELECT 1 FROM pg_proc WHERE proname = 'f_unaccent'")
+            assert cursor.fetchone() is None
+            cursor.execute(
+                "SELECT indexname FROM pg_indexes "
+                "WHERE tablename = 'wagtailsearch_indexentry'"
+            )
+            indexes = {row[0] for row in cursor.fetchall()}
+            assert "news_archive_title_text_unaccent_trgm" not in indexes
+            assert "news_archive_body_text_unaccent_trgm" not in indexes
+    finally:
+        migrate_to_latest()

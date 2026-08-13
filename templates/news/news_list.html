@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}{% if selected_section %}{{ selected_section.name }} | {% endif %}Noticias | School Newsroom{% endblock title %}
 
@@ -7,31 +8,103 @@
     <header class="page-header mb-4">
       <p class="eyebrow">Archivo editorial</p>
       <h1 id="news-list-heading" class="display-4">{% if selected_section %}Noticias de {{ selected_section.name }}{% else %}Noticias{% endif %}</h1>
-      {% if selected_section %}
-        <p class="lead">Resultados de la sección editorial seleccionada.</p>
-        <a href="{% url 'news_list' %}">Ver todas las noticias</a>
-      {% else %}
-        <p class="lead mb-0">Todas las noticias publicadas, de la más reciente a la más antigua.</p>
-      {% endif %}
+      <p class="lead mb-0">Busca y explora las noticias publicadas.</p>
     </header>
 
-    {% if unknown_section_slug %}
+    <form id="buscar-noticias" class="row gy-3 mb-4" action="{% url 'news_list' %}" method="get" aria-label="Buscar y filtrar noticias">
+      <div class="col-12">
+        <label class="form-label" for="news-search">Buscar</label>
+        <div class="input-group">
+          <input class="form-control" id="news-search" name="buscar" type="search" value="{{ criteria.search }}" placeholder="Buscar por título, contenido o etiqueta">
+          <button class="btn btn-primary" type="submit">Buscar</button>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="news-section">Sección</label>
+        <select class="form-select" id="news-section" name="seccion">
+          <option value="">Todas</option>
+          {% for section, subsections in section_hierarchy %}<option value="{{ section.slug }}"{% if criteria.section_slug == section.slug %} selected{% endif %}>{{ section.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="news-subsection">Subsección</label>
+        <select class="form-select" id="news-subsection" name="subseccion" data-news-subsection>
+          <option value="">Todas</option>
+          {% for parent, subsections in section_hierarchy %}
+            {% if subsections %}
+              <optgroup label="{{ parent.name }}" data-parent-section="{{ parent.slug }}">
+                {% for subsection in subsections %}<option value="{{ subsection.slug }}" data-parent-section="{{ parent.slug }}"{% if criteria.subsection_slug == subsection.slug %} selected{% endif %}>{{ subsection.name }}</option>{% endfor %}
+              </optgroup>
+            {% endif %}
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4 d-flex align-items-end">
+        {% if criteria.tag_slug %}<input type="hidden" name="etiqueta" value="{{ criteria.tag_slug }}">{% endif %}
+        {% if criteria.order %}<input type="hidden" name="orden" value="{{ criteria.order }}">{% endif %}
+        <a class="btn btn-outline-secondary" href="{% url 'news_list' %}">Limpiar filtros</a>
+      </div>
+    </form>
+
+    {% if criteria.section_slug or criteria.subsection_slug or criteria.tag_slug %}
+      <div class="mb-3" aria-label="Filtros activos">
+        <span class="visually-hidden">Filtros activos:</span>
+        {% if archive.selected_section %}<span class="badge text-bg-light">{{ archive.selected_section.name }}</span>{% endif %}
+        {% if archive.selected_subsection %}<span class="badge text-bg-light">{{ archive.selected_subsection.name }}</span>{% endif %}
+        {% if archive.selected_tag %}<span class="badge text-bg-light">#{{ archive.selected_tag.name }}</span>{% endif %}
+      </div>
+    {% endif %}
+
+    {% if archive.invalid_criterion %}
       <div class="empty-state" role="status">
-        <h2>La sección solicitada no existe.</h2>
+        <h2>{% if archive.invalid_criterion == "section" %}La sección solicitada no existe.{% elif archive.invalid_criterion == "subsection" %}La subsección solicitada no existe.{% elif archive.invalid_criterion == "tag" %}La etiqueta solicitada no existe.{% else %}Los filtros solicitados no son compatibles.{% endif %}</h2>
         <p>Revisa la dirección o vuelve al listado completo de noticias.</p>
         <a class="btn btn-primary" href="{% url 'news_list' %}">Ver todas las noticias</a>
       </div>
-    {% elif news_pages %}
+    {% elif page_obj.paginator.count %}
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <p class="mb-0" role="status">{{ page_obj.paginator.count }} resultado{{ page_obj.paginator.count|pluralize:"s" }}</p>
+        <a class="btn btn-outline-secondary" href="{% url 'news_list' %}?{{ order_toggle_query }}" aria-label="Cambiar el orden cronológico">
+          {% if criteria.order == "asc" %}Mostrar más recientes primero{% else %}Mostrar más antiguas primero{% endif %}
+        </a>
+      </div>
       <div class="row g-4">
         {% for news in news_pages %}
           <div class="col-md-6 col-xl-4">{% include "includes/news_card.html" with news=news heading_level=2 only %}</div>
         {% endfor %}
       </div>
+      {% if page_obj.paginator.num_pages > 1 %}
+        <nav class="mt-5" aria-label="Paginación de noticias">
+          <ul class="pagination flex-wrap">
+            {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?{{ pagination_query }}{% if pagination_query %}&amp;{% endif %}pagina={{ page_obj.previous_page_number }}">Anterior</a></li>{% endif %}
+            {% for page_number in page_obj.paginator.page_range %}
+              <li class="page-item{% if page_number == page_obj.number %} active{% endif %}">
+                {% if page_number == page_obj.number %}<span class="page-link" aria-current="page">{{ page_number }}</span>{% else %}<a class="page-link" href="?{{ pagination_query }}{% if pagination_query %}&amp;{% endif %}pagina={{ page_number }}">{{ page_number }}</a>{% endif %}
+              </li>
+            {% endfor %}
+            {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?{{ pagination_query }}{% if pagination_query %}&amp;{% endif %}pagina={{ page_obj.next_page_number }}">Siguiente</a></li>{% endif %}
+          </ul>
+        </nav>
+      {% endif %}
     {% else %}
       <div class="empty-state" role="status">
-        <h2>{% if selected_section %}Aún no hay noticias publicadas en esta sección.{% else %}Aún no hay noticias publicadas.{% endif %}</h2>
+        {% if criteria.search %}
+          <h2>No encontramos noticias para “{{ criteria.search }}”.</h2>
+        {% elif archive.selected_subsection %}
+          <h2>Aún no hay noticias publicadas en esta subsección.</h2>
+        {% elif archive.selected_section %}
+          <h2>Aún no hay noticias publicadas en esta sección.</h2>
+        {% elif archive.selected_tag %}
+          <h2>Aún no hay noticias con esta etiqueta.</h2>
+        {% else %}
+          <h2>Aún no hay noticias publicadas.</h2>
+        {% endif %}
         <p class="mb-0">Las noticias aparecerán aquí cuando el equipo editorial las publique.</p>
       </div>
     {% endif %}
   </section>
 {% endblock content %}
+
+{% block extra_js %}
+  <script src="{% static 'public/js/news_archive.js' %}" defer></script>
+{% endblock extra_js %}

@@ -16,6 +16,7 @@ from wagtail.admin.panels import (
 )
 from wagtail.fields import StreamField
 from wagtail.models import Orderable, Page, Revision
+from wagtail.search import index
 
 from .access import FULL_EDITOR_PERMISSION, SEO_EDITOR_PERMISSION
 from .blocks import (
@@ -291,6 +292,16 @@ class NewsPage(Page):
     base_form_class = NewsPageAdminForm
     parent_page_types = ["home.HomePage"]
     subpage_types: list[str] = []
+
+    search_fields = Page.search_fields + [
+        # Four distinct boosts map to PostgreSQL's four weights.  The public
+        # archive contract requires title > tag > body.
+        index.SearchField("title", boost=16),
+        index.RelatedFields("tags", [index.SearchField("name", boost=8)]),
+        index.SearchField("body", boost=4),
+        index.FilterField("publication_date"),
+        index.FilterField("first_published_at"),
+    ]
 
     publication_date = models.DateField("Fecha de publicación")
     body = StreamField(

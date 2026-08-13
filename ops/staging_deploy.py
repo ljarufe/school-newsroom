@@ -321,6 +321,15 @@ class StagingDeployer:
                 ),
             )
 
+            self._stage("search_index")
+            self._run_before_recreate(
+                command=self._compose(
+                    "run --rm web python manage.py update_index --backend default"
+                ),
+                failure_code="search_index_failed",
+                next_action="Inspect search-index output before retrying.",
+            )
+
             self._stage("bootstrap")
             self._run_before_recreate(
                 command=self._compose(
@@ -1073,6 +1082,7 @@ class StagingDeployer:
         return {
             "build_failed": "build",
             "migration_failed": "migrations",
+            "search_index_failed": "search_index",
             "bootstrap_failed": "bootstrap",
             "site_reconciliation_failed": "wagtail_site",
         }[code]
@@ -1088,6 +1098,10 @@ def validate_command_contracts() -> tuple[str, ...]:
     return (
         f"{compose_prefix} build web",
         f"{compose_prefix} run --rm web python manage.py migrate --noinput",
+        (
+            f"{compose_prefix} run --rm web python manage.py "
+            "update_index --backend default"
+        ),
         f"{compose_prefix} run --rm web python manage.py bootstrap_mvp_access",
         f"{compose_prefix} up -d",
         f"cd {REMOTE_REPOSITORY} && git checkout --detach <sha>",

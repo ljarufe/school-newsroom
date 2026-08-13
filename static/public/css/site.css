@@ -65,6 +65,21 @@ button:focus-visible {
   color: #fff;
 }
 
+.public-search-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.public-search-link svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
 .site-main:focus-visible {
   outline: 3px solid #ffbf47;
   outline-offset: -3px;

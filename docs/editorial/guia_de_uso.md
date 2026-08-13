@@ -98,6 +98,46 @@ público. Para revisar el recorrido:
 Si no hay noticias públicas, o una sección real no tiene resultados, la página
 muestra un estado vacío. No se generan tarjetas ni datos de demostración.
 
+## Buscador y filtros públicos de noticias
+
+En el listado público de noticias (`/noticias/`) cualquier visitante puede usar
+el buscador y los filtros sin iniciar sesión. El buscador revisa el título, el
+contenido público y las etiquetas de las noticias publicadas; no muestra datos
+internos de colaboradores ni información de privacidad.
+
+El icono de lupa `Buscar noticias` está disponible en la navegación pública de
+la Home, el listado, los detalles y las páginas institucionales. Lleva
+directamente al buscador del listado de noticias.
+
+Para encontrar una noticia:
+
+1. Selecciona el icono `Buscar noticias`, abre `Noticias` desde la navegación
+   pública o visita `/noticias/`.
+2. Escribe una palabra o frase en `Buscar` y selecciona `Buscar`.
+3. Si corresponde, limita el resultado con `Sección` o `Subsección`. Una
+   sección principal incluye sus subsecciones; una subsección muestra sólo las
+   noticias asignadas a esa subsección. Al elegir una sección, el selector de
+   subsecciones muestra sólo las subsecciones de esa sección. Sin una sección
+   elegida, las subsecciones siguen disponibles agrupadas por sección principal.
+4. Desde el detalle de una noticia, selecciona una etiqueta para abrir el
+   listado filtrado por esa etiqueta exacta.
+
+Los filtros pueden combinarse. El enlace `Limpiar filtros` vuelve al listado
+completo. Si se cambia la sección y la subsección anterior no pertenece a ella,
+el selector limpia esa subsección. Si la dirección contiene una sección,
+subsección o etiqueta que no existe, o combina filtros incompatibles, el sitio
+explica el problema y ofrece volver a todas las noticias.
+
+Junto al número de resultados hay un control para alternar entre `Mostrar más
+antiguas primero` y `Mostrar más recientes primero`. Al usarlo se mantienen la
+búsqueda y los filtros activos, y el listado vuelve a la primera página. Los
+enlaces de paginación conservan la búsqueda, los filtros y el orden elegido.
+
+Los resultados de una búsqueda se ordenan por relevancia de forma predeterminada.
+Si se elige un orden cronológico explícito, se conservan las coincidencias de la
+búsqueda y se muestran por fecha de publicación. El listado muestra diez
+noticias por página y un estado vacío claro cuando no hay coincidencias.
+
 ## Secciones y subsecciones editoriales
 
 La administración de la taxonomía está separada en dos rutas:

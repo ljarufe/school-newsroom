@@ -104,7 +104,7 @@
         <footer class="article-tags content-width mx-auto mt-5 pt-4">
           <h2 class="h5">Etiquetas</h2>
           <ul class="list-inline mb-0">
-            {% for tag in tags %}<li class="list-inline-item"><span class="badge text-bg-light">{{ tag.name }}</span></li>{% endfor %}
+            {% for tag in tags %}<li class="list-inline-item"><a class="badge text-bg-light" href="{% url 'news_list' %}?etiqueta={{ tag.slug|urlencode }}">#{{ tag.name }}</a></li>{% endfor %}
           </ul>
         </footer>
       {% endif %}

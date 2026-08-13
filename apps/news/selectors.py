@@ -11,6 +11,7 @@ def public_news_pages():
         .public()
         .select_related("school", "featured_image")
         .prefetch_related(
+            "tags",
             Prefetch(
                 "public_credits",
                 queryset=NewsPagePublicCredit.objects.order_by("sort_order"),

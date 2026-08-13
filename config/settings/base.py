@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "wagtail",
     "modelcluster",
     "taggit",
+    "django.contrib.postgres",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -129,6 +130,16 @@ WAGTAIL_SITE_NAME = "School Newsroom"
 WAGTAILADMIN_BASE_URL = env("DJANGO_WAGTAILADMIN_BASE_URL")
 WAGTAILADMIN_PERMITTED_LANGUAGES = LANGUAGES
 WAGTAIL_CONTENT_LANGUAGES = LANGUAGES
+
+# ModelSearch is Wagtail's native database-search implementation in Wagtail 7.
+# The configuration is created by news migration 0016.
+WAGTAILSEARCH_BACKENDS = {
+    "default": {
+        "BACKEND": "wagtail.search.backends.database",
+        "SEARCH_CONFIG": "school_newsroom_es",
+        "FUZZY_SIMILARITY_THRESHOLD": 0.3,
+    },
+}
 
 LOGIN_URL = "wagtailadmin_login"
 LOGIN_REDIRECT_URL = "wagtailadmin_home"

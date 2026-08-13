@@ -12,7 +12,12 @@ from apps.news.access import (
     DIRECTOR_GROUP_NAME,
     SEO_CURATOR_GROUP_NAME,
 )
-from apps.news.models import NewsPage, NewsPagePublicCredit
+from apps.news.models import (
+    NewsPage,
+    NewsPagePublicCredit,
+    NewsPageSection,
+    NewsSection,
+)
 
 
 class Command(BaseCommand):
@@ -194,10 +199,45 @@ class Command(BaseCommand):
                 f"found {public_share_page.pk}."
             )
 
+        archive_section = NewsSection.objects.get(slug="cultura")
+        archive_subsection = NewsSection.objects.get(slug="musica")
+        for index in range(11):
+            slug = f"archivo-browser-epic6-002-{index}"
+            archive_page = NewsPage.objects.filter(slug=slug).first()
+            if archive_page is None:
+                archive_page = NewsPage(
+                    title=f"Archivo browser {index}",
+                    slug=slug,
+                    live=True,
+                    publication_date=dt.date(2026, 8, index + 1),
+                    coverage_province="Arequipa",
+                    coverage_district="Cercado",
+                    body=[("paragraph", "<p>Archivo browser para búsqueda.</p>")],
+                )
+                home.add_child(instance=archive_page)
+            archive_page.title = f"Archivo browser {index}"
+            archive_page.live = True
+            archive_page.publication_date = dt.date(2026, 8, index + 1)
+            archive_page.coverage_province = "Arequipa"
+            archive_page.coverage_district = "Cercado"
+            archive_page.body = [("paragraph", "<p>Archivo browser para búsqueda.</p>")]
+            archive_page.save()
+            NewsPageSection.objects.update_or_create(
+                page=archive_page,
+                section=archive_section,
+            )
+            if index == 0:
+                NewsPageSection.objects.update_or_create(
+                    page=archive_page,
+                    section=archive_subsection,
+                )
+            archive_page.tags.add("archivo-browser")
+            archive_page.save()
+
         self.stdout.write(
             self.style.SUCCESS(
                 "Disposable browser fixtures ready: "
                 f"editor page {page.pk}, SEO page {seo_page.pk}, "
-                f"public share page {public_share_page.pk}."
+                f"public share page {public_share_page.pk}; 11 archive pages."
             )
         )

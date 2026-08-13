@@ -20,8 +20,12 @@ on:
       - "config/settings/base.py"
       - "config/settings/browser_test.py"
       - "apps/news/access.py"
+      - "apps/news/apps.py"
+      - "apps/news/archive.py"
       - "apps/news/blocks.py"
       - "apps/news/models.py"
+      - "apps/news/search_signals.py"
+      - "apps/news/selectors.py"
       - "apps/news/seo_metadata.py"
       - "apps/news/forms.py"
       - "apps/news/panels.py"
@@ -52,7 +56,9 @@ on:
       - "static/public/js/**"
       - "config/urls.py"
       - "templates/base.html"
+      - "templates/includes/public_navigation.html"
       - "templates/news/news_page.html"
+      - "templates/news/news_list.html"
   workflow_dispatch:
 
 permissions:

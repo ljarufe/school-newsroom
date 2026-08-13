@@ -96,6 +96,18 @@ def test_browser_fixture_command_creates_the_disposable_regression_contract(
     assert public_share_page.live is True
     assert public_share_page.seo_noindex is True
     assert list(public_share_page.tags.names()) == ["browser-share"]
+    assert (
+        NewsPage.objects.filter(slug__startswith="archivo-browser-epic6-002-").count()
+        == 11
+    )
+    assert list(
+        NewsPage.objects.get(slug="archivo-browser-epic6-002-0").tags.names()
+    ) == ["archivo-browser"]
+    assert set(
+        NewsPage.objects.get(
+            slug="archivo-browser-epic6-002-0"
+        ).section_assignments.values_list("section__slug", flat=True)
+    ) == {"cultura", "musica"}
     assert NewsPagePublicCredit.objects.filter(
         page=public_share_page,
         display_name="Redacción pública ficticia",

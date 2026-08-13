@@ -2,6 +2,7 @@ import datetime as dt
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.management import call_command
 from django.db import connection
 from django.test import Client, RequestFactory
 from django.test.utils import CaptureQueriesContext
@@ -9,6 +10,7 @@ from django.utils import timezone
 from wagtail.embeds.exceptions import EmbedNotFoundException
 from wagtail.images import get_image_model
 from wagtail.models import Page, PageViewRestriction, Site
+from wagtail.search.models import IndexEntry
 
 from apps.home.models import HomePage
 from apps.news.models import (
@@ -111,6 +113,25 @@ def create_uploaded_image():
             content_type="image/gif",
         ),
     )
+
+
+@pytest.mark.django_db
+def test_update_index_rebuilds_existing_public_news_search_content(
+    public_site,
+    section,
+) -> None:
+    page = create_news_page(
+        public_site,
+        section,
+        title="Archivo reconstruido de festival",
+        slug="archivo-reconstruido-de-festival",
+        publication_date=dt.date(2026, 7, 1),
+    )
+    IndexEntry.objects.filter(object_id=page.pk).delete()
+
+    call_command("update_index", backend_name="default", verbosity=0)
+
+    assert page in NewsPage.objects.search("reconstruido", operator="or")
 
 
 @pytest.mark.django_db
@@ -342,6 +363,7 @@ def test_news_detail_renders_required_content(public_site, section) -> None:
     assert b"Etiquetas" in response.content
     assert b"student-reporting" in response.content
     assert b"local-news" in response.content
+    assert b"/noticias/?etiqueta=student-reporting" in response.content
 
 
 @pytest.mark.django_db
@@ -852,11 +874,218 @@ def test_main_section_filter_includes_descendants_without_duplicates(
 
 
 @pytest.mark.django_db
-def test_subsection_slug_does_not_enable_public_subsection_filter(public_site) -> None:
-    response = Client().get("/noticias/", {"seccion": "musica"})
+def test_news_list_supports_standalone_subsection_filter(public_site) -> None:
+    music = NewsSection.objects.get(slug="musica")
+    page = create_news_page(
+        public_site,
+        music,
+        title="Standalone subsection archive story",
+        slug="standalone-subsection-archive-story",
+        publication_date=dt.date(2026, 7, 1),
+    )
+
+    response = Client().get("/noticias/", {"subseccion": music.slug})
 
     assert response.status_code == 200
-    assert "La sección solicitada no existe." in response.content.decode()
+    assert page.title in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_news_list_groups_subsections_by_parent_with_plain_option_labels(
+    public_site,
+) -> None:
+    content = Client().get("/noticias/").content.decode()
+
+    assert '<optgroup label="Cultura" data-parent-section="cultura">' in content
+    assert (
+        '<option value="musica" data-parent-section="cultura">Música</option>'
+        in content
+    )
+    assert "Cultura › Música" not in content
+
+
+@pytest.mark.django_db
+def test_news_list_keeps_forced_incompatible_section_subsection_error(
+    public_site,
+) -> None:
+    response = Client().get(
+        "/noticias/",
+        {"seccion": "cultura", "subseccion": "politica-local"},
+    )
+
+    assert response.status_code == 200
+    assert "Los filtros solicitados no son compatibles." in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_news_list_supports_chronological_ordering_and_safe_invalid_order(
+    public_site,
+    section,
+) -> None:
+    create_news_page(
+        public_site,
+        section,
+        title="Older archive story",
+        slug="older-archive-story",
+        publication_date=dt.date(2026, 7, 1),
+    )
+    create_news_page(
+        public_site,
+        section,
+        title="Newest archive story",
+        slug="newest-archive-story",
+        publication_date=dt.date(2026, 7, 2),
+    )
+
+    ascending = Client().get("/noticias/", {"orden": "asc"}).content.decode()
+    descending = Client().get("/noticias/", {"orden": "desc"}).content.decode()
+    invalid = Client().get("/noticias/", {"orden": "unexpected"}).content.decode()
+
+    assert ascending.index("Older archive story") < ascending.index(
+        "Newest archive story"
+    )
+    assert descending.index("Newest archive story") < descending.index(
+        "Older archive story"
+    )
+    assert invalid.index("Newest archive story") < invalid.index("Older archive story")
+    assert "orden=asc" in descending
+
+
+@pytest.mark.django_db
+def test_news_list_filters_exact_subsection_tag_and_combinations(public_site) -> None:
+    culture = NewsSection.objects.get(slug="cultura")
+    music = NewsSection.objects.get(slug="musica")
+    matching = create_news_page(
+        public_site,
+        music,
+        title="Matching archive combination",
+        slug="matching-archive-combination",
+        publication_date=dt.date(2026, 7, 2),
+        tags=["podcast"],
+    )
+    create_news_page(
+        public_site,
+        music,
+        title="Wrong tag archive combination",
+        slug="wrong-tag-archive-combination",
+        publication_date=dt.date(2026, 7, 1),
+        tags=["entrevista"],
+    )
+
+    response = Client().get(
+        "/noticias/",
+        {
+            "buscar": "matching",
+            "seccion": culture.slug,
+            "subseccion": music.slug,
+            "etiqueta": "podcast",
+        },
+    )
+    content = response.content.decode()
+
+    assert matching.title in content
+    assert "Wrong tag archive combination" not in content
+
+
+@pytest.mark.django_db
+def test_news_list_paginates_ten_items_and_preserves_active_criteria(
+    public_site,
+    section,
+) -> None:
+    for index in range(11):
+        create_news_page(
+            public_site,
+            section,
+            title=f"Pagination archive story {index}",
+            slug=f"pagination-archive-story-{index}",
+            publication_date=dt.date(2026, 7, index + 1),
+            tags=["archivo"],
+        )
+
+    first = Client().get("/noticias/", {"etiqueta": "archivo"}).content.decode()
+    second = (
+        Client()
+        .get("/noticias/", {"etiqueta": "archivo", "pagina": "2"})
+        .content.decode()
+    )
+
+    assert first.count('class="card news-card') == 10
+    assert "etiqueta=archivo&amp;pagina=2" in first
+    assert second.count('class="card news-card') == 1
+    assert "Pagination archive story 0" in second
+
+
+@pytest.mark.django_db
+def test_news_list_uses_fts_then_native_fuzzy_fallback(public_site, section) -> None:
+    title_match = create_news_page(
+        public_site,
+        section,
+        title="Festival de educación",
+        slug="festival-educacion",
+        publication_date=dt.date(2026, 7, 3),
+        tags=["radioescolar"],
+    )
+    body_match = create_news_page(
+        public_site,
+        section,
+        title="Crónica del aula",
+        slug="cronica-aula",
+        publication_date=dt.date(2026, 7, 2),
+        body=[("paragraph", "<p>Festival de ciencia escolar.</p>")],
+    )
+    tag_match = create_news_page(
+        public_site,
+        section,
+        title="Otra crónica",
+        slug="otra-cronica",
+        publication_date=dt.date(2026, 7, 1),
+        tags=["festival"],
+    )
+
+    fts = Client().get("/noticias/", {"buscar": "festival"}).content.decode()
+    accentless = Client().get("/noticias/", {"buscar": "educacion"}).content.decode()
+    fuzzy_title = Client().get("/noticias/", {"buscar": "festivla"}).content.decode()
+    fuzzy_tag = Client().get("/noticias/", {"buscar": "radioescoalr"}).content.decode()
+    negative = (
+        Client().get("/noticias/", {"buscar": "xilofonoimprobable"}).content.decode()
+    )
+
+    assert (
+        fts.index(title_match.title)
+        < fts.index(tag_match.title)
+        < fts.index(body_match.title)
+    )
+    assert title_match.title in accentless
+    assert title_match.title in fuzzy_title
+    assert title_match.title in fuzzy_tag
+    assert "No encontramos noticias" in negative
+
+
+@pytest.mark.django_db
+def test_search_order_override_keeps_matching_but_uses_chronology(
+    public_site,
+    section,
+) -> None:
+    older = create_news_page(
+        public_site,
+        section,
+        title="Festival antiguo",
+        slug="festival-antiguo",
+        publication_date=dt.date(2026, 7, 1),
+    )
+    newer = create_news_page(
+        public_site,
+        section,
+        title="Festival nuevo",
+        slug="festival-nuevo",
+        publication_date=dt.date(2026, 7, 2),
+    )
+
+    response = Client().get("/noticias/", {"buscar": "festival", "orden": "asc"})
+    content = response.content.decode()
+
+    assert content.index(older.title) < content.index(newer.title)
+    assert '<meta name="robots" content="noindex, follow">' in content
 
 
 @pytest.mark.django_db
@@ -995,6 +1224,9 @@ def test_news_list_does_not_expose_internal_minor_or_privacy_data(
     )
 
     content = Client().get("/noticias/").content.decode()
+    searched_content = (
+        Client().get("/noticias/", {"buscar": contributor.full_name}).content.decode()
+    )
 
     assert "Safe fictional public byline" in content
     assert "Private fictional minor name" not in content
@@ -1003,6 +1235,7 @@ def test_news_list_does_not_expose_internal_minor_or_privacy_data(
     assert "contains_identifiable_minors" not in content
     assert "minor_publication_authorizations_verified" not in content
     assert "sensitive_content" not in content
+    assert page.title not in searched_content
 
 
 @pytest.mark.django_db
@@ -1025,6 +1258,8 @@ def test_shared_public_layout_renders_landmarks_and_navigation(
         assert response.status_code == 200
         assert '<html lang="es">' in content
         assert "Navegación principal" in content
+        assert 'href="/noticias/#buscar-noticias"' in content
+        assert 'aria-label="Buscar noticias"' in content
         assert "Saltar al contenido principal" in content
         assert "<header" in content
         assert "<nav" in content

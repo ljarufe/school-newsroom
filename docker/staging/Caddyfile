@@ -20,11 +20,48 @@
 	}
 
 	handle {
+		rate_limit {
+			zone general_dynamic {
+				key {remote_host}
+				events {$CADDY_RATE_LIMIT_GENERAL_EVENTS}
+				window {$CADDY_RATE_LIMIT_GENERAL_WINDOW}
+			}
+			zone news_search {
+				match {
+					path /noticias/
+					query buscar=*
+				}
+				key {remote_host}
+				events {$CADDY_RATE_LIMIT_SEARCH_EVENTS}
+				window {$CADDY_RATE_LIMIT_SEARCH_WINDOW}
+			}
+			zone wagtail_login_post {
+				match {
+					method POST
+					path /admin/login/
+				}
+				key {remote_host}
+				events {$CADDY_RATE_LIMIT_LOGIN_EVENTS}
+				window {$CADDY_RATE_LIMIT_LOGIN_WINDOW}
+			}
+		}
 		reverse_proxy web:8000
 	}
 
 	log {
-		output stdout
-		format json
+		output file /var/log/caddy/access.json {
+			mode 0640
+			roll_size 10MiB
+			roll_keep 3
+			roll_keep_for 72h
+		}
+		format filter {
+			request>uri query {
+				replace buscar REDACTED
+			}
+			request>headers>Authorization delete
+			request>headers>Cookie delete
+			request>headers>Proxy-Authorization delete
+		}
 	}
 }

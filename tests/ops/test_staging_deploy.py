@@ -271,6 +271,34 @@ def test_remote_preflight_failures_do_not_mutate(tmp_path, remote, code):
     assert remote.closed is True
 
 
+@pytest.mark.parametrize(
+    ("needle", "code"),
+    [
+        ("command -v iptables", "iptables_unavailable"),
+        ("iptables -w -n -L DOCKER-USER", "docker_user_chain_missing"),
+        ("command -v fail2ban-client", "fail2ban_unavailable"),
+        (
+            "fail2ban-client status school-newsroom-caddy-429",
+            "fail2ban_jail_inactive",
+        ),
+        (
+            "test -f /var/log/school-newsroom/caddy/access.json",
+            "caddy_access_log_missing",
+        ),
+    ],
+)
+def test_security_prerequisite_failure_stops_before_checkout(tmp_path, needle, code):
+    remote = FakeRemote(fail_contains=needle)
+    deployer, _, _, _ = make_deployer(tmp_path, remote=remote)
+
+    with pytest.raises(DeploymentError) as captured:
+        deployer.deploy()
+
+    assert captured.value.code == code
+    assert not any("git checkout --detach" in call for call in remote.calls)
+    assert remote.closed is True
+
+
 def test_already_deployed_is_noop_and_releases_lock(tmp_path):
     deployer, remote, smoke, output = make_deployer(
         tmp_path,
@@ -313,6 +341,7 @@ def test_successful_deploy_runs_ordered_stages_and_records_success(tmp_path):
     assert result.target_sha == TARGET
     assert smoke.hostnames == [HOSTNAME]
     assert joined.index("git checkout --detach") < joined.index("build web")
+    assert "build web proxy" in joined
     assert joined.index("build web") < joined.index("migrate --noinput")
     assert joined.index("migrate --noinput") < joined.index(
         "update_index --backend default"
@@ -422,6 +451,7 @@ def test_command_contracts_use_safe_paths_and_no_destructive_commands():
     assert f"-f {COMPOSE_FILE}" in commands
     assert REMOTE_REPOSITORY in commands
     assert "migrate --noinput" in commands
+    assert "build web proxy" in commands
     assert "update_index --backend default" in commands
     assert "checkout --detach" in commands
     assert "logs --tail=100" in commands

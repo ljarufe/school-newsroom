@@ -813,7 +813,7 @@ Within the lock it:
 1. records the deployment start;
 2. fetches the remote origin and verifies the approved target SHA;
 3. checks out the target detached;
-4. builds `web`;
+4. builds `web` and the pinned custom `proxy` image;
 5. runs `python manage.py migrate --noinput`;
 6. runs `python manage.py update_index --backend default`;
 7. runs `python manage.py bootstrap_mvp_access`;
@@ -849,7 +849,7 @@ git checkout --detach "$NEW_APPROVED_COMMIT_SHA"
 git status --short --branch
 git rev-parse HEAD
 unset NEW_APPROVED_COMMIT_SHA
-sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml build web
+sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml build web proxy
 sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml run --rm web python manage.py migrate --noinput
 sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml run --rm web python manage.py update_index --backend default
 sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compose.staging.yml run --rm web python manage.py bootstrap_mvp_access
@@ -886,7 +886,7 @@ sudo docker compose --env-file /etc/school-newsroom/staging.env -f docker-compos
 sudo journalctl -u school-newsroom-duckdns.service --since today --no-pager
 ```
 
-Review for errors, stack traces, unexpected request data, passwords, tokens, environment dumps, and private information about minors. Caddy access logs include network/request metadata. Systemd journal retention applies to host services such as `school-newsroom-duckdns.service`; it does not bound Docker's `json-file` logs, which are controlled by the Compose rotation settings above. Keep host journal retention minimal and appropriate for a demo, and do not add debug logging in staging.
+Review for errors, stack traces, unexpected request data, passwords, tokens, environment dumps, and private information about minors. Caddy runtime logs remain in the bounded Docker stream; EPIC8-005 access logs live separately at the bounded/redacted host path documented in section 25. Systemd journal retention applies to host services such as `school-newsroom-duckdns.service`; it does not bound Docker's `json-file` logs, which are controlled by the Compose rotation settings above. Keep host journal retention minimal and appropriate for a demo, and do not add debug logging in staging.
 
 ## 20. Persistence checks
 
@@ -988,3 +988,211 @@ The following remain outside this ticket and must not be represented as EPIC8-00
 - production-grade monitoring, transactional email, a real-domain lifecycle, or production readiness.
 
 Use [Oracle staging UAT](oracle_staging_uat.md) for the completed acceptance matrix and [Wagtail MVP Access Runbook](wagtail_access_mvp.md) for the canonical role/workflow procedure.
+
+## 25. EPIC8-005 staging abuse protection
+
+EPIC8-005 adds two local, zero-cloud-cost layers. Caddy 2.11.4 remains the
+only public service and now includes the Apache-2.0 `caddy-ratelimit` v0.1.0
+module. Fail2ban 1.0.x runs on the host and escalates repeated Caddy 429
+responses to temporary web-only bans. This is basic staging protection, not a
+production WAF or complete DDoS protection.
+
+The Caddy policy has three independent sliding-window zones keyed by
+`{remote_host}`, the immediate network peer Caddy observes:
+
+- general application traffic after the direct `/media/*` handler;
+- `/noticias/` requests containing a `buscar` query parameter;
+- `POST /admin/login/` only.
+
+Search and login requests consume both their specialized zone and the general
+zone. The specialized calibrated policy must be stricter than the general
+policy. Do not configure `trusted_proxies` in this topology and do not use
+`X-Forwarded-For` as a limiter or ban identity. Static requests still traverse
+the application handler and therefore count toward the general zone; include a
+normal page's asset requests when calibrating it. Media remains outside that
+zone because Caddy serves `/media/*` without Gunicorn or PostgreSQL. A later
+host-level ban still blocks an abusive address from both public web ports.
+
+### Required operational configuration
+
+The six Caddy values are mandatory in `/etc/school-newsroom/staging.env`:
+
+```text
+CADDY_RATE_LIMIT_GENERAL_EVENTS=<measured integer>
+CADDY_RATE_LIMIT_GENERAL_WINDOW=<Caddy duration>
+CADDY_RATE_LIMIT_SEARCH_EVENTS=<measured integer>
+CADDY_RATE_LIMIT_SEARCH_WINDOW=<Caddy duration>
+CADDY_RATE_LIMIT_LOGIN_EVENTS=<measured integer>
+CADDY_RATE_LIMIT_LOGIN_WINDOW=<Caddy duration>
+```
+
+`docker/staging/staging.env.example` intentionally leaves these values empty:
+it is an operator template, not a calibrated or executable staging policy.
+Measure ordinary Home, archive, article, media, login, and authenticated Admin
+navigation, including shared-NAT and asset behavior, before selecting the real
+staging values. Synthetic executable values exist only in
+`tests/fixtures/staging_security/staging-compose-test.env`; never copy them
+into `/etc/school-newsroom/staging.env`. Record the approved values and evidence
+in the ticket handoff without recording secrets or personal IP addresses.
+
+Fail2ban's host-local file owns its independent `findtime`, `maxretry`, and
+`bantime`. Start from:
+
+```text
+ops/staging_security/fail2ban/jail.d/school-newsroom.local.example
+```
+
+Copy it to an operator-only temporary location, replace every `CALIBRATE_*`
+token, and include only currently authorized operational addresses/CIDRs in
+`ignoreip`. Do not commit that rendered file. Loopback remains allowed by the
+template; no maintainer address is versioned.
+
+### One-time Fail2ban host bootstrap
+
+Keep an existing SSH session open. For the first secured deployment, materialize
+only the approved bootstrap directory without moving the current deployment
+checkout. On the staging host, after the EPIC8-005 SHA belongs to
+`origin/main`:
+
+```bash
+cd /opt/school-newsroom
+git fetch --prune origin
+SECURITY_BOOTSTRAP_SHA=<full-approved-sha>
+git merge-base --is-ancestor "$SECURITY_BOOTSTRAP_SHA" origin/main
+install -d -m 0700 /tmp/school-newsroom-security-bootstrap
+git archive "$SECURITY_BOOTSTRAP_SHA" ops/staging_security \
+  | tar -x -C /tmp/school-newsroom-security-bootstrap
+```
+
+This updates only remote Git refs and temporary bootstrap files; it does not
+checkout the target or dirty `/opt/school-newsroom`. Render the jail outside
+Git and inspect it before installation:
+
+```bash
+sudo install -o root -g root -m 0600 \
+  /tmp/school-newsroom-security-bootstrap/ops/staging_security/fail2ban/jail.d/school-newsroom.local.example \
+  /etc/school-newsroom/fail2ban-school-newsroom.local
+sudoedit /etc/school-newsroom/fail2ban-school-newsroom.local
+sudo grep -q 'CALIBRATE_' /etc/school-newsroom/fail2ban-school-newsroom.local \
+  && { echo 'STOP: uncalibrated Fail2ban values remain.' >&2; exit 1; }
+sudo /tmp/school-newsroom-security-bootstrap/ops/staging_security/bootstrap_fail2ban.sh \
+  /etc/school-newsroom/fail2ban-school-newsroom.local
+unset SECURITY_BOOTSTRAP_SHA
+```
+
+The explicit bootstrap installs the Ubuntu package; verifies Fail2ban 1.0.x
+and `DOCKER-USER`; creates the host log path; installs the versioned filter and
+action; validates the complete Fail2ban configuration; and enables/restarts
+the service. Normal Compose startup and `make staging-deploy` never run
+`apt-get`. The deploy preflight fails closed unless the jail is active and the
+access-log file exists. The first secured deployment therefore requires this
+bootstrap before deployment.
+
+The action inserts a dedicated chain from `DOCKER-USER` for TCP destination
+ports 80 and 443 only. Docker evaluates this forwarding boundary for published
+container ports; a conventional UFW/iptables `INPUT` action alone is not
+sufficient for this topology. The action never references port 22 and does not
+alter the existing UFW SSH rule or create a parallel native nftables ruleset.
+
+### Validation, status, bans, and logs
+
+Run the local custom-image and Caddy behavior harness from the maintainer host:
+
+```bash
+ops/validate_staging_abuse_protection.sh
+```
+
+It builds the pinned image, verifies Caddy 2.11.4 and
+`http.handlers.rate_limit`, validates the real Caddyfile with test-only values,
+and uses an isolated local listener to prove normal responses, search/login
+429 responses, `Retry-After`, cooldown recovery, and the media exclusion.
+
+On any Docker-capable host, validate the Fail2ban 1.0.x filter, action, and
+complete test-only jail using synthetic, non-personal IPv4/IPv6 data:
+
+```bash
+ops/validate_staging_fail2ban.sh
+```
+
+The harness uses a disposable Ubuntu 24.04 network namespace with `NET_ADMIN`.
+It proves two 429 matches and one non-match, complete configuration validity,
+a temporary documentation-range IPv4 ban, the 80/443-only `DOCKER-USER` jump,
+absence of a port-22 jump, unban, jail stop, and removal of the dedicated ban
+chain. It never changes host firewall rules.
+
+On staging, inspect only bounded/status data:
+
+```bash
+sudo fail2ban-client status school-newsroom-caddy-429
+sudo tail -n 100 /var/log/school-newsroom/caddy/access.json
+sudo ls -lh /var/log/school-newsroom/caddy/
+sudo iptables -w -n -L DOCKER-USER --line-numbers
+sudo iptables -w -n -L f2b-sn-web --line-numbers
+```
+
+Caddy writes JSON to `/var/log/school-newsroom/caddy/access.json`, rolls at
+10 MiB, retains at most three rolled files, and drops rolled files older than
+72 hours. It logs request metadata, status, and timestamp, but not bodies.
+`buscar` values are replaced with `REDACTED`; Authorization, Cookie, and
+Proxy-Authorization are explicitly deleted. Fail2ban uses `request.remote_ip`
+and status 429 from this bounded file. Its database is host operational state,
+is not a product backup input, and restores active temporary bans according to
+the packaged service's database behavior after restart.
+
+Manual web-only incident operations are:
+
+```bash
+sudo fail2ban-client set school-newsroom-caddy-429 banip <address>
+sudo fail2ban-client set school-newsroom-caddy-429 unbanip <address>
+```
+
+Update the allowlist by editing only the host-local
+`/etc/fail2ban/jail.d/school-newsroom.local`, run
+`sudo fail2ban-client -t`, then `sudo systemctl restart fail2ban`. Recheck jail
+status and the firewall chains. Do not place personal addresses in Git.
+
+### Break-glass and rollback
+
+Keep the current SSH session open throughout recovery. A web ban never targets
+SSH. Use the smallest reversible action needed:
+
+```bash
+# Remove one web ban.
+sudo fail2ban-client set school-newsroom-caddy-429 unbanip <address>
+
+# Disable only this automatic jail and remove its web chain.
+sudo fail2ban-client stop school-newsroom-caddy-429
+
+# Stop all Fail2ban processing only when the jail-specific stop is insufficient.
+sudo systemctl stop fail2ban
+```
+
+To disable Caddy limiting, restore `docker/staging/Caddyfile` and the proxy
+image/build definition from the previous known-good approved SHA, validate that
+configuration with its matching image, then rebuild/recreate only `proxy`.
+Do not roll back database migrations, remove volumes, alter UFW SSH rules, or
+delete media. Before recreating, keep a copy of the bounded proxy diagnostics.
+Afterward verify HTTPS, Home, `/noticias/`, media, `/admin/`, service health,
+and public port exposure.
+
+If EPIC8-005 host integration is fully rolled back and no other approved jail
+depends on these files, first stop the named jail, then remove only:
+
+```text
+/etc/fail2ban/jail.d/school-newsroom.local
+/etc/fail2ban/filter.d/school-newsroom-caddy-429.conf
+/etc/fail2ban/action.d/school-newsroom-docker-user-web.conf
+```
+
+Run `sudo fail2ban-client -t` before restarting the service. Do not remove the
+Fail2ban package if another jail uses it, and never remove or rewrite the SSH
+jail/UFW rule as part of this rollback. The temporary extracted bootstrap
+directory may be deleted after successful host configuration; it contains no
+secrets, while the rendered `/etc/school-newsroom/fail2ban-school-newsroom.local`
+must retain root-only permissions because it may contain an operational
+allowlist.
+
+EPIC8-005 creates no OCI resource, paid service, VM, storage expansion, public
+IP, WAF, load balancer, Redis, or external database. During real UAT, recheck
+the existing OCI inventory, Actual Spend, and Forecast Spend; any new paid SKU
+or non-zero expected cost is a stop-and-rollback condition.

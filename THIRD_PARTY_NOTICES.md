@@ -125,3 +125,24 @@ The current LibreOffice Spanish dictionary license may be consulted separately
 at <https://github.com/LibreOffice/dictionaries/blob/master/es/LICENSE.md> as
 external upstream provenance. It is not represented here as content bundled
 in Pyphen 0.17.2.
+
+## caddy-ratelimit
+
+- Version: `v0.1.0`
+- Purpose: per-network-peer HTTP rate limiting in the staging Caddy proxy
+- Source: <https://github.com/mholt/caddy-ratelimit/tree/v0.1.0>
+- License: Apache License 2.0
+
+The module is compiled into the custom Caddy 2.11.4 staging image. It is not an
+official module of the Caddy Web Server organization.
+
+## Fail2ban
+
+- Supported host version: Ubuntu Noble package `1.0.2-3ubuntu0.1` (Fail2ban
+  `1.0.x` configuration contract)
+- Purpose: temporary host-level escalation after repeated Caddy 429 responses
+- Source: <https://github.com/fail2ban/fail2ban/tree/1.0.2>
+- License: GNU General Public License v2.0
+
+Fail2ban is an explicit host prerequisite. It is not installed in an
+application container or by normal application startup.

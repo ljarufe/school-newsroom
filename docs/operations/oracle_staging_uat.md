@@ -289,3 +289,68 @@ EPIC6-003 sharing regression: PENDING
 External preview observations: PENDING
 Overall EPIC8-002 operational acceptance: PENDING
 ```
+
+## EPIC8-005 staging abuse-protection UAT — Pending secured deployment
+
+Status: **Pending — execute only after calibrated Caddy/Fail2ban values are
+approved, the host bootstrap is complete, and the approved SHA is deployed**.
+
+Use fictional search terms and a controlled fictional login identity. Keep an
+existing SSH session open. Do not print a password, request body, Cookie,
+Authorization value, personal allowlist address, or unrestricted log/config
+output into evidence. Use only small controlled bursts; this is not a load
+test.
+
+Record pass/fail evidence for:
+
+- HTTPS Home, `/noticias/`, filters, ordering, pagination, public search,
+  several article details, and media;
+- Wagtail login plus an authenticated Admin edit/save flow;
+- normal desktop/mobile navigation, refresh, assets, and a shared-NAT scenario
+  remain below all calibrated limits;
+- a controlled general excess returns 429 and later recovers;
+- repeated `/noticias/?buscar=<fictional>` requests reach the stricter search
+  zone, return 429 with `Retry-After`, and later recover;
+- repeated credential-free or fictional `POST /admin/login/` requests reach
+  the stricter login zone without limiting ordinary authenticated Admin pages;
+- the bounded JSON log contains remote IP, timestamp, path identity, and 429,
+  while the `buscar` value is `REDACTED` and credentials/bodies are absent;
+- repeated 429 responses produce a temporary automatic Fail2ban ban;
+- `fail2ban-client status school-newsroom-caddy-429` shows that ban;
+- the ban blocks only HTTP/HTTPS, while the existing SSH session remains usable;
+- automatic expiry restores web access;
+- manual `banip` and `unbanip` both work;
+- a controlled operational allowlist prevents a ban and is not committed;
+- `proxy`, `web`, and `db` remain running/healthy with no restart loop;
+- 8000, 5432, and 5434 remain externally closed/filtered;
+- only Caddy publishes host 80/443 and the `backend` network remains internal;
+- the access log stays within the documented 10 MiB/three-file/72-hour bounds;
+- CPU/RAM remain acceptable on 1 OCPU/4 GB;
+- OCI inventory and VM shape are unchanged, and Actual/Forecast Spend remain
+  zero.
+
+Also execute the break-glass procedure: unban the controlled address, stop only
+the jail, confirm SSH remains available, restart/validate the jail, and retain
+the current SSH session until web recovery is proven. Do not run a test that
+can lock out SSH and HTTPS simultaneously.
+
+Update this block only with observed results:
+
+```text
+Host bootstrap / Fail2ban 1.0.x: PENDING
+Calibrated general/search/login values: PENDING
+Normal public and Admin navigation: PENDING
+General excess / 429 / recovery: PENDING
+Search excess / 429 / Retry-After / recovery: PENDING
+Login POST excess / 429 / Retry-After / recovery: PENDING
+Bounded and redacted JSON access log: PENDING
+Automatic temporary ban / expiry: PENDING
+Manual ban / unban: PENDING
+Operational allowlist: PENDING
+SSH usable during web ban: PENDING
+Public/private port boundary: PENDING
+Health / restart loop / 1 OCPU and 4 GB resources: PENDING
+OCI inventory / shape / zero cost: PENDING
+Break-glass exercise: PENDING
+Overall EPIC8-005 operational acceptance: PENDING
+```

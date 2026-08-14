@@ -1,0 +1,8 @@
+FROM caddy:2.11.4-builder-alpine@sha256:2b9994510fadb5dfa5257a5357cbe26a2c4a3298f8cc675796a6570218280ce7 AS builder
+
+RUN xcaddy build v2.11.4 \
+    --with github.com/mholt/caddy-ratelimit@v0.1.0
+
+FROM caddy:2.11.4-alpine@sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648
+
+COPY --from=builder /usr/bin/caddy /usr/bin/caddy

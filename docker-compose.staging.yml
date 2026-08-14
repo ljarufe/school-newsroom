@@ -10,9 +10,18 @@ x-default-logging: &default-logging
 # never embed them in this Compose file.
 services:
   proxy:
-    image: caddy:2.11.4-alpine@sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648
+    image: school-newsroom-staging-proxy:2.11.4-ratelimit-v0.1.0
+    build:
+      context: .
+      dockerfile: docker/staging/Caddy.Dockerfile
     environment:
       ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in the staging environment file}
+      CADDY_RATE_LIMIT_GENERAL_EVENTS: ${CADDY_RATE_LIMIT_GENERAL_EVENTS:?Set the calibrated general request allowance}
+      CADDY_RATE_LIMIT_GENERAL_WINDOW: ${CADDY_RATE_LIMIT_GENERAL_WINDOW:?Set the calibrated general request window}
+      CADDY_RATE_LIMIT_LOGIN_EVENTS: ${CADDY_RATE_LIMIT_LOGIN_EVENTS:?Set the calibrated login POST allowance}
+      CADDY_RATE_LIMIT_LOGIN_WINDOW: ${CADDY_RATE_LIMIT_LOGIN_WINDOW:?Set the calibrated login POST window}
+      CADDY_RATE_LIMIT_SEARCH_EVENTS: ${CADDY_RATE_LIMIT_SEARCH_EVENTS:?Set the calibrated search request allowance}
+      CADDY_RATE_LIMIT_SEARCH_WINDOW: ${CADDY_RATE_LIMIT_SEARCH_WINDOW:?Set the calibrated search request window}
       STAGING_HOSTNAME: ${STAGING_HOSTNAME:?Set STAGING_HOSTNAME in the staging environment file}
     ports:
       - "80:80"
@@ -20,6 +29,7 @@ services:
     volumes:
       - ./docker/staging/Caddyfile:/etc/caddy/Caddyfile:ro
       - /srv/school-newsroom/media:/srv/media:ro
+      - /var/log/school-newsroom/caddy:/var/log/caddy
       - caddy_data:/data
       - caddy_config:/config
     depends_on:

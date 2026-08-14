@@ -1,0 +1,13 @@
+# Render this host-local file with measured staging values before installation.
+# CALIBRATE_* tokens intentionally make an unreviewed copy fail validation.
+[school-newsroom-caddy-429]
+enabled = true
+filter = school-newsroom-caddy-429
+logpath = /var/log/school-newsroom/caddy/access.json
+backend = polling
+usedns = no
+findtime = CALIBRATE_FINDTIME
+maxretry = CALIBRATE_MAXRETRY
+bantime = CALIBRATE_BANTIME
+ignoreip = 127.0.0.1/8 ::1 CALIBRATE_OPERATIONAL_ALLOWLIST
+action = school-newsroom-docker-user-web[name=sn-caddy-429]

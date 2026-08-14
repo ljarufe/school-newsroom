@@ -22,6 +22,8 @@ REMOTE_REPOSITORY = "/opt/school-newsroom"
 COMPOSE_FILE = "docker-compose.staging.yml"
 STAGING_ENV = "/etc/school-newsroom/staging.env"
 MEDIA_DIRECTORY = "/srv/school-newsroom/media"
+CADDY_ACCESS_LOG = "/var/log/school-newsroom/caddy/access.json"
+FAIL2BAN_JAIL = "school-newsroom-caddy-429"
 DEPLOYMENTS_DIRECTORY = "/var/lib/school-newsroom/deployments"
 CURRENT_DEPLOYMENT = f"{DEPLOYMENTS_DIRECTORY}/current.json"
 DEPLOYMENT_HISTORY = f"{DEPLOYMENTS_DIRECTORY}/history.jsonl"
@@ -302,7 +304,7 @@ class StagingDeployer:
 
             self._stage("build")
             self._run_before_recreate(
-                command=self._compose("build web"),
+                command=self._compose("build web proxy"),
                 failure_code="build_failed",
                 next_action=(
                     "Inspect the bounded build output and retry after correction."
@@ -537,6 +539,20 @@ class StagingDeployer:
             (
                 "media_directory_missing",
                 f"test -d {shlex.quote(MEDIA_DIRECTORY)}",
+            ),
+            ("iptables_unavailable", "command -v iptables >/dev/null"),
+            (
+                "docker_user_chain_missing",
+                "sudo -n iptables -w -n -L DOCKER-USER >/dev/null",
+            ),
+            ("fail2ban_unavailable", "command -v fail2ban-client >/dev/null"),
+            (
+                "fail2ban_jail_inactive",
+                "sudo -n fail2ban-client status " + shlex.quote(FAIL2BAN_JAIL),
+            ),
+            (
+                "caddy_access_log_missing",
+                f"sudo -n test -f {shlex.quote(CADDY_ACCESS_LOG)}",
             ),
             (
                 "compose_config_invalid",
@@ -1096,7 +1112,7 @@ def validate_command_contracts() -> tuple[str, ...]:
         f"--env-file {STAGING_ENV} -f {COMPOSE_FILE}"
     )
     return (
-        f"{compose_prefix} build web",
+        f"{compose_prefix} build web proxy",
         f"{compose_prefix} run --rm web python manage.py migrate --noinput",
         (
             f"{compose_prefix} run --rm web python manage.py "

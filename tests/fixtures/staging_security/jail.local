@@ -1,0 +1,11 @@
+[school-newsroom-caddy-429]
+enabled = true
+filter = school-newsroom-caddy-429
+logpath = /tmp/school-newsroom-caddy-access.json
+backend = polling
+usedns = no
+findtime = 10s
+maxretry = 2
+bantime = 10s
+ignoreip = 127.0.0.1/8 ::1
+action = school-newsroom-docker-user-web[name=sn-caddy-429]

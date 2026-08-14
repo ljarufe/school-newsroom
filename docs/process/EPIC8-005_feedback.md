@@ -30,7 +30,7 @@ cloud infrastructure, paid services, or a new public port.
 - `tests/fixtures/staging_security/Caddyfile`
 - `tests/fixtures/staging_security/caddy-access.json`
 - `tests/fixtures/staging_security/jail.local`
-- `tests/fixtures/staging_security/staging-compose-test.env`
+- `tests/fixtures/staging_security/staging-compose-test.env.example`
 - `tests/ops/test_staging_deploy.py`
 - `tests/ops/test_staging_security.py`
 - `THIRD_PARTY_NOTICES.md`
@@ -87,7 +87,7 @@ The six Caddy allowance/window values are required Compose environment inputs.
 `docker/staging/staging.env.example` documents each one but intentionally
 leaves it empty, so an operator must supply measured, approved staging values
 before a secured deploy. Synthetic executable values exist only in
-`tests/fixtures/staging_security/staging-compose-test.env`; they are not
+`tests/fixtures/staging_security/staging-compose-test.env.example`; they are not
 calibrated staging values.
 
 Fail2ban `findtime`, repeated-429 `maxretry`, `bantime`, and the operational
@@ -103,8 +103,8 @@ controlled real UAT. No threshold is represented as production-ready.
 Caddy writes `/var/log/school-newsroom/caddy/access.json` through an explicit
 host mount. Rotation is 10 MiB, at most three rolled files, and no more than 72
 hours for rolled files. Request bodies are not logged. `buscar` values are
-replaced by `REDACTED`, while Authorization, Cookie, and Proxy-Authorization
-headers are explicitly deleted. Remote IP, timestamp, request identity, and
+replaced by `REDACTED`, while Authorization, Cookie, Proxy-Authorization, and
+Referer headers are explicitly deleted. Remote IP, timestamp, request identity, and
 status remain available to the Fail2ban filter.
 
 Fail2ban's host database is operational ban state, is not added to product
@@ -133,7 +133,7 @@ published port, the backend network remains internal, Docker log bounds and
 
 Passed:
 
-- `docker compose --env-file tests/fixtures/staging_security/staging-compose-test.env -f docker-compose.staging.yml config --quiet`
+- `docker compose --env-file tests/fixtures/staging_security/staging-compose-test.env.example -f docker-compose.staging.yml config --quiet`
   — Compose configuration valid with isolated test/config values.
 - `docker compose run --rm web pytest -q tests/ops/test_staging_security.py tests/ops/test_staging_deploy.py -o cache_dir=/tmp/school-newsroom-pytest-cache`
   — 37 passed.
@@ -154,7 +154,7 @@ Passed:
   passed; manual ban inserted only the TCP 80/443 `DOCKER-USER` jump and source
   DROP; no port-22 jump existed; manual unban and jail stop removed the ban and
   dedicated chain.
-- `docker compose --env-file tests/fixtures/staging_security/staging-compose-test.env -f docker-compose.staging.yml build proxy`
+- `docker compose --env-file tests/fixtures/staging_security/staging-compose-test.env.example -f docker-compose.staging.yml build proxy`
   — Compose built the custom proxy image successfully.
 - `make check` — passed: Ruff, migration check (`No changes detected`), 458
   tests, and 90.42% total coverage.
@@ -168,11 +168,11 @@ Passed:
 variable names with empty values and an explicit requirement for measured,
 approved operator values before a secured deploy. The previous strict
 synthetic values now live only in
-`tests/fixtures/staging_security/staging-compose-test.env`.
+`tests/fixtures/staging_security/staging-compose-test.env.example`.
 
 Passed delta validation:
 
-- `docker compose --env-file tests/fixtures/staging_security/staging-compose-test.env -f docker-compose.staging.yml config --quiet`
+- `docker compose --env-file tests/fixtures/staging_security/staging-compose-test.env.example -f docker-compose.staging.yml config --quiet`
   — Compose configuration valid with the dedicated synthetic fixture.
 - `docker compose run --rm web pytest -q tests/ops/test_staging_security.py -o cache_dir=/tmp/school-newsroom-pytest-cache`
   — 8 passed, including the operator-template versus synthetic-fixture
@@ -183,6 +183,37 @@ Passed delta validation:
 
 `make check` was not rerun for this correction: no application or runtime
 implementation changed, and the existing 458-test evidence remains applicable.
+
+### PR follow-up corrections
+
+The access-log filter now deletes the request `Referer` header in addition to
+Authorization, Cookie, and Proxy-Authorization. This is logging sanitization
+only: Caddy's request forwarding and the application's Referrer-Policy behavior
+are unchanged. The executable Caddy harness submits a Referer containing the
+fictional search value `fictional-referer-search-term` and fails if that value
+or the Referer header appears in the resulting access log.
+
+The original synthetic Compose fixture used the ignored `.env` filename. The
+repository-wide `*.env` ignore rule therefore excluded it from the commit,
+which caused a clean-checkout CI `FileNotFoundError`. It has been replaced with
+the tracked `tests/fixtures/staging_security/staging-compose-test.env.example`;
+the operator-facing `docker/staging/staging.env.example` remains uncalibrated
+with its six required values empty.
+
+Passed delta validation:
+
+- `git check-ignore -v tests/fixtures/staging_security/staging-compose-test.env.example`
+  — no matching ignore rule (exit status 1); `git add -n` confirms the fixture
+  is stageable.
+- `docker compose --env-file tests/fixtures/staging_security/staging-compose-test.env.example -f docker-compose.staging.yml config --quiet`
+  — passed.
+- `docker compose run --rm web pytest -q tests/ops/test_staging_security.py -o cache_dir=/tmp/school-newsroom-pytest-cache`
+  — 8 passed.
+- focused Ruff check and format check for `tests/ops/test_staging_security.py`
+  — passed.
+- `ops/validate_staging_abuse_protection.sh` — passed, including the submitted
+  fictional Referer redaction check.
+- `git diff --check` — passed.
 
 The first expanded Caddy harness run failed because its test-only access log
 was created `0640 root:root`, so the unprivileged host assertion could not read

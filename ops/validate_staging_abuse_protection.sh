@@ -70,6 +70,8 @@ curl --fail --silent --show-error 'http://127.0.0.1:18081/noticias/?buscar=norma
 curl --silent --show-error \
     --header 'Authorization: Bearer must-not-appear' \
     --header 'Cookie: sessionid=must-not-appear' \
+    --header 'Proxy-Authorization: Bearer must-not-appear' \
+    --referer 'http://staging.example.invalid/noticias/?buscar=fictional-referer-search-term' \
     --dump-header "$search_headers" --output /dev/null \
     'http://127.0.0.1:18081/noticias/?buscar=exceso'
 grep -Eq '^HTTP/[0-9.]+ 429' "$search_headers"
@@ -83,7 +85,7 @@ until grep -q 'buscar=REDACTED' "$access_log" 2>/dev/null; do
     fi
     sleep 0.25
 done
-if grep -Eq 'must-not-appear|Authorization|Cookie|Proxy-Authorization' "$access_log"; then
+if grep -Eq 'must-not-appear|fictional-referer-search-term|Authorization|Cookie|Proxy-Authorization|Referer' "$access_log"; then
     echo "Sensitive request data reached the access log." >&2
     exit 1
 fi
@@ -112,5 +114,5 @@ grep -Eiq '^Retry-After: [1-9][0-9]*' "$general_headers"
 sleep 2
 curl --fail --silent --show-error http://127.0.0.1:18081/ >/dev/null
 
-echo "Caddy module, valid/invalid configuration, three rate limits, Retry-After, recovery, media, and redacted-log checks passed."
+echo "Caddy module, valid/invalid configuration, three rate limits, Retry-After, recovery, media, and URI/Referer redacted-log checks passed."
 echo "Run ops/validate_staging_fail2ban.sh for isolated host-action validation."

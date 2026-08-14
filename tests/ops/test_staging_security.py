@@ -5,7 +5,9 @@ COMPOSE = ROOT / "docker-compose.staging.yml"
 CADDYFILE = ROOT / "docker/staging/Caddyfile"
 PROXY_DOCKERFILE = ROOT / "docker/staging/Caddy.Dockerfile"
 STAGING_ENV_EXAMPLE = ROOT / "docker/staging/staging.env.example"
-STAGING_TEST_ENV = ROOT / "tests/fixtures/staging_security/staging-compose-test.env"
+STAGING_TEST_ENV = (
+    ROOT / "tests/fixtures/staging_security/staging-compose-test.env.example"
+)
 FILTER = ROOT / "ops/staging_security/fail2ban/filter.d/school-newsroom-caddy-429.conf"
 ACTION = (
     ROOT / "ops/staging_security/fail2ban/action.d/school-newsroom-docker-user-web.conf"
@@ -99,6 +101,7 @@ def test_access_log_is_bounded_and_redacts_sensitive_values():
     assert "request>headers>Authorization delete" in caddyfile
     assert "request>headers>Cookie delete" in caddyfile
     assert "request>headers>Proxy-Authorization delete" in caddyfile
+    assert "request>headers>Referer delete" in caddyfile
 
 
 def test_fail2ban_contract_matches_429_and_never_targets_ssh_or_input():

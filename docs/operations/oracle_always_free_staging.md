@@ -1031,7 +1031,7 @@ it is an operator template, not a calibrated or executable staging policy.
 Measure ordinary Home, archive, article, media, login, and authenticated Admin
 navigation, including shared-NAT and asset behavior, before selecting the real
 staging values. Synthetic executable values exist only in
-`tests/fixtures/staging_security/staging-compose-test.env`; never copy them
+`tests/fixtures/staging_security/staging-compose-test.env.example`; never copy them
 into `/etc/school-newsroom/staging.env`. Record the approved values and evidence
 in the ticket handoff without recording secrets or personal IP addresses.
 
@@ -1133,9 +1133,9 @@ sudo iptables -w -n -L f2b-sn-web --line-numbers
 Caddy writes JSON to `/var/log/school-newsroom/caddy/access.json`, rolls at
 10 MiB, retains at most three rolled files, and drops rolled files older than
 72 hours. It logs request metadata, status, and timestamp, but not bodies.
-`buscar` values are replaced with `REDACTED`; Authorization, Cookie, and
-Proxy-Authorization are explicitly deleted. Fail2ban uses `request.remote_ip`
-and status 429 from this bounded file. Its database is host operational state,
+`buscar` values are replaced with `REDACTED`; Authorization, Cookie,
+Proxy-Authorization, and Referer are explicitly deleted. Fail2ban uses
+`request.remote_ip` and status 429 from this bounded file. Its database is host operational state,
 is not a product backup input, and restores active temporary bans according to
 the packaged service's database behavior after restart.
 

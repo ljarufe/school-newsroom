@@ -50,6 +50,7 @@
 			request>headers>Authorization delete
 			request>headers>Cookie delete
 			request>headers>Proxy-Authorization delete
+			request>headers>Referer delete
 		}
 	}
 }

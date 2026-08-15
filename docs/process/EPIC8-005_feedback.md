@@ -1,5 +1,13 @@
 # EPIC8-005 Feedback
 
+## Final status
+
+**EPIC8-005 is complete.**
+
+The implementation was merged, deployed to the real Oracle staging environment, calibrated, and accepted through Stage B operational UAT. The post-merge bootstrap defects discovered during that execution have focused durable source fixes and regression coverage in this follow-up.
+
+No product, infrastructure, deployment, calibration, or staging UAT work remains pending for EPIC8-005. A later pull-request review correction limited to this follow-up delta does not require another documentation-only status update unless it materially changes the scope, implementation, validation evidence, or operational conclusions recorded here.
+
 ## Implementation summary
 
 EPIC8-005 implements a two-layer, zero-cloud-cost staging control:
@@ -85,18 +93,35 @@ general policy; static serving was not redesigned.
 
 The six Caddy allowance/window values are required Compose environment inputs.
 `docker/staging/staging.env.example` documents each one but intentionally
-leaves it empty, so an operator must supply measured, approved staging values
-before a secured deploy. Synthetic executable values exist only in
-`tests/fixtures/staging_security/staging-compose-test.env.example`; they are not
-calibrated staging values.
+leaves it empty so a new operator or environment cannot inherit synthetic or
+unreviewed values accidentally. Synthetic executable values exist only in
+`tests/fixtures/staging_security/staging-compose-test.env.example`; they must
+not be used as staging policy.
 
-Fail2ban `findtime`, repeated-429 `maxretry`, `bantime`, and the operational
-`ignoreip` list are host-local. The versioned jail template contains deliberate
-`CALIBRATE_*` tokens, so it cannot be activated accidentally. No personal
-maintainer IP/CIDR is committed.
+Real staging calibration is complete. The approved EPIC8-005 staging Caddy
+policy is:
 
-Final staging values remain pending measured normal-navigation calibration and
-controlled real UAT. No threshold is represented as production-ready.
+```text
+general_dynamic: 60 events / 10s
+news_search: 30 events / 60s
+wagtail_login_post: 8 events / 60s
+```
+
+These values were selected from observed normal staging traffic and accepted
+through controlled real-environment UAT. They are staging-specific and must not
+be represented as production-ready policy.
+
+The accepted host-local Fail2ban escalation policy used during Stage B was:
+
+```text
+findtime = 300
+maxretry = 30
+bantime = 900
+```
+
+Operational `ignoreip` remains host-local. The versioned jail template contains
+deliberate `CALIBRATE_*` tokens, so it cannot be activated accidentally. No
+personal maintainer IP/CIDR is committed.
 
 ## Logging and privacy
 
@@ -225,27 +250,72 @@ passed, and the custom action contains the Fail2ban family-specific
 `ip6tables` binding. Real IPv6 host behavior remains part of staging UAT when
 IPv6 is publicly enabled.
 
-## Manual validation
+## Stage B real staging validation
 
-No manual staging, browser, host firewall, ban/unban, resource, or OCI cost
-validation was performed during this implementation pass.
+The real staging UAT passed at deployed SHA
+`cceddcb6b35e17ddcd62bd5e983ad91036f9a21a`. Caddy reported `v2.11.4` with
+`http.handlers.rate_limit`, and `proxy`, `web`, and `db` were healthy/running.
+The calibrated policy was general `60/10s`, search `30/60s`, and login POST
+`8/60s`.
+
+Home and `/noticias/` returned 200, `/admin/` returned 302, and normal public
+and Admin navigation caused no false positive or ban. Controlled excess and
+recovery passed for all zones: general `60x200` then `10x429`; search `30x200`
+then `5x429`, `Retry-After: 42`, then 200; login POST `8x403` then `2x429`,
+`Retry-After: 49`, then 403 after recovery.
+
+The access-log check observed `buscar=REDACTED` and confirmed that direct
+`buscar`, Authorization, Cookie, Proxy-Authorization, and Referer search
+markers were absent. Fail2ban `1.0.2-3ubuntu0.1` was installed, configuration
+testing passed, and the service was active/running. The controlled automatic
+ban test reached `Total failed: 49`, `Currently banned: 1`, and `Total banned:
+1`; the TCP 80/443 `DOCKER-USER` jump to `f2b-sn-web`, controlled-source DROP,
+and RETURN were present. SSH remained usable while HTTP/HTTPS timed out;
+automatic expiry restored HTTP 200, current bans returned to zero, and total
+bans remained one.
+
+The maintainer reported PASS for manual ban/unban, the operational allowlist,
+break-glass stop/restart, service/resource checks, public/private port and
+Docker network boundary, IPv6 applicability, unchanged OCI inventory/shape,
+and zero Actual/Forecast cost. No unsupplied numeric resource readings, IP
+addresses, secrets, or private operational evidence are recorded.
+
+## Stage B bootstrap follow-up
+
+The deployed run found that the bootstrap's broad `grep 'CALIBRATE_'` matched
+the explanatory template comment after all active values had been rendered,
+creating a false rejection. The bootstrap now uses a POSIX `awk` check that
+examines only active `findtime`, `maxretry`, `bantime`, and `ignoreip`
+assignments, while the manual pre-check uses the same semantics.
+
+The same run also exposed a Fail2ban socket race: `fail2ban-client -t` and
+`systemctl restart` succeeded, but the immediate named-jail status call ran
+before the client socket was ready. The bootstrap now retries readiness at
+0.5-second intervals for fewer than ten seconds, fails closed with a clear
+error on timeout, and still displays the named-jail status after readiness.
+These are durable source fixes; this follow-up branch is not represented as
+deployed.
+
+### Stage B follow-up delta validation
+
+- `docker compose run --rm web pytest -q tests/ops/test_staging_security.py -o cache_dir=/tmp/school-newsroom-pytest-cache`
+  — 15 passed. The added bootstrap tests execute the actual script with stubbed
+  host commands and cover the untouched template, each active unresolved
+  placeholder, a rendered comment, retry readiness, and timeout failure.
+- focused Ruff check and format check for `tests/ops/test_staging_security.py`
+  — passed.
+- `sh -n ops/staging_security/bootstrap_fail2ban.sh` — passed.
+- `git diff --check` — passed.
+
+`make check` was intentionally not rerun: this is a focused bootstrap,
+regression-test, and documentation delta. Real staging UAT was not rerun and
+no deployment was made by this follow-up branch.
 
 ## Deferred executable validation and UAT
 
-Real staging work remains explicitly deferred to the maintainer:
-
-- select calibrated general/search/login and Fail2ban values;
-- run the one-time Fail2ban host bootstrap;
-- deploy an approved SHA;
-- execute the complete EPIC8-005 section in `oracle_staging_uat.md`;
-- prove normal navigation has no false positives;
-- prove controlled 429, `Retry-After`, recovery, automatic/manual ban/unban,
-  allowlist, and SSH continuity;
-- inspect bounded logs and VM CPU/RAM on 1 OCPU/4 GB;
-- confirm public/private ports, health, no restart loop, unchanged OCI
-  inventory/shape, and zero Actual/Forecast cost.
-
-No CPU/RAM observation or real Oracle result is claimed here.
+No EPIC8-005 staging UAT remains deferred. The repository-only regression
+checks cannot replace future staging verification after a materially changed
+host, firewall, Caddy, or Fail2ban environment.
 
 ## Rollback and restart behavior
 
@@ -256,29 +326,53 @@ touches SSH rules, product volumes, media, or database migrations.
 
 Caddy limiter state survives configuration reloads according to the selected
 module and resets on process/container restart. Fail2ban temporary ban state is
-managed by its host service/database; real restart behavior remains a staging
-UAT item.
+managed by its host service/database.
+
+The Stage B break-glass stop/restart/validation flow passed and SSH remained
+available. EPIC8-005 does not claim that an already-active temporary ban was
+explicitly tested across a complete VM reboot; that scenario is not required to
+keep this ticket open, and no EPIC8-005 acceptance UAT remains pending.
 
 ## Warnings and known issues
 
 - Values supplied for local executable tests are intentionally strict and must
   never be copied to staging as if calibrated.
+- The accepted `60/10s`, `30/60s`, and `8/60s` values are staging-specific and
+  are not production policy.
 - EPIC8-005 is not complete DDoS protection, a WAF, or production perimeter
   security.
-- Real host behavior across Docker, iptables-nft, UFW, and Fail2ban cannot be
-  accepted from repository tests alone.
+- Future material changes to Docker, iptables-nft, UFW, Fail2ban, Caddy, public
+  IPv6 exposure, or the host image require targeted operational revalidation.
 
 ## New Work Discovered
 
-No new product or infrastructure work was discovered during implementation.
-EPIC8-006 remains the owner for production perimeter protection, provider-edge
-decisions, production calibration, and any future WAF/CDN/bot-management work.
+No new work is required to complete EPIC8-005. EPIC8-006 remains the owner for
+production perimeter protection, provider-edge decisions, production
+calibration, and any future WAF/CDN/bot-management work.
 
 The EPIC6-002 evidence-preservation workflow did not require a new F009 artifact
-in this pass. No reason was found to revise F004 or F006. Reconsider F009 only
-if executable security validation exposes recurring teardown/evidence loss.
+in this pass. No reason was found to revise F004 or F006.
 
-## Side effects
+## Side effects and operational changes
 
-No commit, push, pull request, merge, staging deployment, host package install,
-OCI mutation, or Planka change was performed.
+The complete EPIC8-005 lifecycle intentionally produced these staging changes:
+
+- deployed SHA `cceddcb6b35e17ddcd62bd5e983ad91036f9a21a`;
+- installed the approved Ubuntu Noble Fail2ban package and its package
+  dependencies on the existing staging VM;
+- created the host-local Fail2ban configuration and access-log path;
+- activated the EPIC8-005 named jail;
+- deployed the custom Caddy image with `caddy-ratelimit`;
+- retained the existing Oracle VM, shape, public exposure, Docker topology, and
+  zero-cost footprint.
+
+It did not create a new OCI resource, paid service, VM, load balancer, WAF,
+database service, Redis service, public application port, Django migration, or
+product persistence.
+
+The final bootstrap-followup branch itself performs no staging deployment,
+package installation, OCI mutation, or Planka operation. At the point
+represented by this feedback, implementation and Stage B acceptance are
+complete. Normal Git commit, push, pull-request review, merge, local `main`
+synchronization, branch cleanup, and tracker closure are repository lifecycle
+actions rather than additional EPIC8-005 implementation or UAT work.

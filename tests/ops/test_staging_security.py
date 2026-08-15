@@ -1,4 +1,9 @@
+import os
+import subprocess
+import tempfile
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 COMPOSE = ROOT / "docker-compose.staging.yml"
@@ -15,6 +20,99 @@ ACTION = (
 JAIL_EXAMPLE = (
     ROOT / "ops/staging_security/fail2ban/jail.d/school-newsroom.local.example"
 )
+BOOTSTRAP = ROOT / "ops/staging_security/bootstrap_fail2ban.sh"
+
+
+def _rendered_jail():
+    return (
+        JAIL_EXAMPLE.read_text()
+        .replace("CALIBRATE_FINDTIME", "10m")
+        .replace("CALIBRATE_MAXRETRY", "5")
+        .replace("CALIBRATE_BANTIME", "1h")
+        .replace("CALIBRATE_OPERATIONAL_ALLOWLIST", "198.51.100.0/24")
+    )
+
+
+def _write_stub(command_directory, name, content):
+    path = command_directory / name
+    path.write_text(content)
+    path.chmod(0o755)
+
+
+def _run_bootstrap(jail_content, status_failures=0):
+    with tempfile.TemporaryDirectory() as temporary_directory:
+        temporary_path = Path(temporary_directory)
+        command_directory = temporary_path / "bin"
+        command_directory.mkdir()
+        jail_path = temporary_path / "rendered.local"
+        status_count_path = temporary_path / "status-count"
+        sleep_log_path = temporary_path / "sleeps"
+        jail_path.write_text(jail_content)
+
+        _write_stub(command_directory, "id", "#!/bin/sh\necho 0\n")
+        for name in (
+            "apt-get",
+            "iptables",
+            "install",
+            "touch",
+            "chown",
+            "chmod",
+            "systemctl",
+        ):
+            _write_stub(command_directory, name, "#!/bin/sh\nexit 0\n")
+        _write_stub(
+            command_directory,
+            "fail2ban-client",
+            """#!/bin/sh
+case "$1" in
+    --version)
+        echo "Fail2Ban v1.0.2"
+        ;;
+    -t)
+        exit 0
+        ;;
+    status)
+        status_count=0
+        if [ -f "$FAKE_STATUS_COUNT" ]; then
+            status_count=$(cat "$FAKE_STATUS_COUNT")
+        fi
+        status_count=$((status_count + 1))
+        printf '%s\\n' "$status_count" > "$FAKE_STATUS_COUNT"
+        if [ "$status_count" -le "$FAKE_STATUS_FAILURES" ]; then
+            exit 1
+        fi
+        echo "Status for the jail: $2"
+        ;;
+esac
+""",
+        )
+        _write_stub(
+            command_directory,
+            "sleep",
+            '#!/bin/sh\nprintf \'sleep %s\\n\' "$1" >> "$FAKE_SLEEP_LOG"\n',
+        )
+
+        environment = {
+            **os.environ,
+            "PATH": f"{command_directory}:{os.environ['PATH']}",
+            "FAKE_STATUS_COUNT": str(status_count_path),
+            "FAKE_STATUS_FAILURES": str(status_failures),
+            "FAKE_SLEEP_LOG": str(sleep_log_path),
+        }
+        result = subprocess.run(
+            ["sh", str(BOOTSTRAP), str(jail_path)],
+            check=False,
+            capture_output=True,
+            env=environment,
+            text=True,
+        )
+        status_calls = (
+            int(status_count_path.read_text()) if status_count_path.exists() else 0
+        )
+        sleep_calls = (
+            sleep_log_path.read_text().splitlines() if sleep_log_path.exists() else []
+        )
+        return result, status_calls, sleep_calls
 
 
 def test_custom_proxy_pins_caddy_and_rate_limit_module():
@@ -133,7 +231,7 @@ def test_versioned_allowlist_has_no_personal_address():
 
 
 def test_host_bootstrap_is_explicit_and_outside_application_startup():
-    bootstrap = (ROOT / "ops/staging_security/bootstrap_fail2ban.sh").read_text()
+    bootstrap = BOOTSTRAP.read_text()
     compose = COMPOSE.read_text()
     web_start = (ROOT / "docker/staging/start-web.sh").read_text()
 
@@ -143,3 +241,78 @@ def test_host_bootstrap_is_explicit_and_outside_application_startup():
     assert "status school-newsroom-caddy-429" in bootstrap
     assert "apt-get" not in compose
     assert "fail2ban" not in web_start.lower()
+
+
+def test_bootstrap_rejects_untouched_jail_template():
+    result, status_calls, sleep_calls = _run_bootstrap(JAIL_EXAMPLE.read_text())
+
+    assert result.returncode == 1
+    assert "Replace every active CALIBRATE_* value" in result.stderr
+    assert status_calls == 0
+    assert sleep_calls == []
+
+
+def test_bootstrap_accepts_rendered_jail_with_calibration_comment():
+    rendered_jail = _rendered_jail().replace(
+        "ignoreip = 127.0.0.1/8 ::1 198.51.100.0/24",
+        "ignoreip = 127.0.0.1/8 ::1\n    198.51.100.0/24",
+    )
+    result, status_calls, sleep_calls = _run_bootstrap(rendered_jail, status_failures=2)
+
+    assert "# CALIBRATE_* tokens intentionally" in rendered_jail
+    assert "\n    198.51.100.0/24" in rendered_jail
+    assert result.returncode == 0
+    assert "Status for the jail: school-newsroom-caddy-429" in result.stdout
+    assert status_calls == 4
+    assert sleep_calls == ["sleep 0.5", "sleep 0.5"]
+
+
+@pytest.mark.parametrize(
+    "placeholder",
+    (
+        "CALIBRATE_FINDTIME",
+        "CALIBRATE_MAXRETRY",
+        "CALIBRATE_BANTIME",
+        "CALIBRATE_OPERATIONAL_ALLOWLIST",
+    ),
+)
+def test_bootstrap_rejects_each_unresolved_active_calibration_placeholder(placeholder):
+    rendered_jail = _rendered_jail().replace(
+        {
+            "CALIBRATE_FINDTIME": "10m",
+            "CALIBRATE_MAXRETRY": "5",
+            "CALIBRATE_BANTIME": "1h",
+            "CALIBRATE_OPERATIONAL_ALLOWLIST": "198.51.100.0/24",
+        }[placeholder],
+        placeholder,
+    )
+    result, status_calls, sleep_calls = _run_bootstrap(rendered_jail)
+
+    assert result.returncode == 1
+    assert "Replace every active CALIBRATE_* value" in result.stderr
+    assert status_calls == 0
+    assert sleep_calls == []
+
+
+def test_bootstrap_rejects_unresolved_ignoreip_continuation():
+    rendered_jail = _rendered_jail().replace(
+        "ignoreip = 127.0.0.1/8 ::1 198.51.100.0/24",
+        "ignoreip = 127.0.0.1/8 ::1\n    CALIBRATE_OPERATIONAL_ALLOWLIST",
+    )
+    result, status_calls, sleep_calls = _run_bootstrap(rendered_jail)
+
+    assert result.returncode == 1
+    assert "Replace every active CALIBRATE_* value" in result.stderr
+    assert status_calls == 0
+    assert sleep_calls == []
+
+
+def test_bootstrap_readiness_timeout_fails_closed():
+    result, status_calls, sleep_calls = _run_bootstrap(
+        _rendered_jail(), status_failures=20
+    )
+
+    assert result.returncode == 1
+    assert "Fail2ban did not become ready within 10 seconds." in result.stderr
+    assert status_calls == 20
+    assert sleep_calls == ["sleep 0.5"] * 19

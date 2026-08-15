@@ -1073,7 +1073,11 @@ sudo install -o root -g root -m 0600 \
   /tmp/school-newsroom-security-bootstrap/ops/staging_security/fail2ban/jail.d/school-newsroom.local.example \
   /etc/school-newsroom/fail2ban-school-newsroom.local
 sudoedit /etc/school-newsroom/fail2ban-school-newsroom.local
-sudo grep -q 'CALIBRATE_' /etc/school-newsroom/fail2ban-school-newsroom.local \
+sudo awk '
+  /^[[:space:]]*([#;]|$)/ { next }
+  /CALIBRATE_/ { unresolved = 1 }
+  END { exit !unresolved }
+' /etc/school-newsroom/fail2ban-school-newsroom.local \
   && { echo 'STOP: uncalibrated Fail2ban values remain.' >&2; exit 1; }
 sudo /tmp/school-newsroom-security-bootstrap/ops/staging_security/bootstrap_fail2ban.sh \
   /etc/school-newsroom/fail2ban-school-newsroom.local
@@ -1086,7 +1090,9 @@ action; validates the complete Fail2ban configuration; and enables/restarts
 the service. Normal Compose startup and `make staging-deploy` never run
 `apt-get`. The deploy preflight fails closed unless the jail is active and the
 access-log file exists. The first secured deployment therefore requires this
-bootstrap before deployment.
+bootstrap before deployment. After the restart, the bootstrap waits up to ten
+seconds for the Fail2ban client socket before displaying the named jail status;
+it fails closed if the daemon never becomes ready.
 
 The action inserts a dedicated chain from `DOCKER-USER` for TCP destination
 ports 80 and 443 only. Docker evaluates this forwarding boundary for published

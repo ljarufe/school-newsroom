@@ -18,6 +18,8 @@ from wagtail.fields import StreamField
 from wagtail.models import Orderable, Page, Revision
 from wagtail.search import index
 
+from apps.geography.widgets import DependentDistrictWidget
+
 from .access import FULL_EDITOR_PERMISSION, SEO_EDITOR_PERMISSION
 from .blocks import (
     PARAGRAPH_FEATURES,
@@ -187,13 +189,28 @@ class NewsSection(models.Model):
 
 class School(models.Model):
     name = models.CharField("Nombre", max_length=160)
-    province = models.CharField("Provincia", max_length=80)
-    district = models.CharField("Distrito", max_length=80)
+    department = models.ForeignKey(
+        "geography.Department",
+        verbose_name="Departamento",
+        on_delete=models.PROTECT,
+        related_name="schools",
+    )
+    district = models.ForeignKey(
+        "geography.District",
+        verbose_name="Distrito",
+        on_delete=models.PROTECT,
+        related_name="schools",
+        null=True,
+        blank=True,
+    )
 
     panels = [
         FieldPanel("name"),
-        FieldPanel("province"),
-        FieldPanel("district"),
+        FieldPanel("department"),
+        FieldPanel(
+            "district",
+            widget=DependentDistrictWidget(department_field="department"),
+        ),
     ]
 
     class Meta:
@@ -203,6 +220,17 @@ class School(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+    def clean(self) -> None:
+        super().clean()
+        if (
+            self.district_id
+            and self.department_id
+            and self.district.province.department_id != self.department_id
+        ):
+            raise ValidationError(
+                {"district": "El distrito debe pertenecer al departamento elegido."}
+            )
 
 
 class ContributorGroup(models.Model):
@@ -330,10 +358,18 @@ class NewsPage(Page):
         blank=True,
         related_name="news_pages",
     )
-    coverage_province = models.CharField("Provincia de cobertura", max_length=80)
-    coverage_district = models.CharField(
-        "Distrito de cobertura",
-        max_length=80,
+    coverage_department = models.ForeignKey(
+        "geography.Department",
+        verbose_name="Departamento",
+        on_delete=models.PROTECT,
+        related_name="covered_news_pages",
+    )
+    coverage_district = models.ForeignKey(
+        "geography.District",
+        verbose_name="Distrito",
+        on_delete=models.PROTECT,
+        related_name="covered_news_pages",
+        null=True,
         blank=True,
     )
     featured_image = models.ForeignKey(
@@ -447,8 +483,13 @@ class NewsPage(Page):
         TaxonomyPanel("taxonomy_sections"),
         MultiFieldPanel(
             [
-                FieldPanel("coverage_province"),
-                FieldPanel("coverage_district"),
+                FieldPanel("coverage_department"),
+                FieldPanel(
+                    "coverage_district",
+                    widget=DependentDistrictWidget(
+                        department_field="coverage_department"
+                    ),
+                ),
             ],
             heading="Cobertura",
         ),
@@ -557,6 +598,22 @@ class NewsPage(Page):
         if self.live and not getattr(request, "is_preview", False):
             context["public_share"] = build_public_share_links(metadata)
         return context
+
+    def clean(self) -> None:
+        super().clean()
+        if (
+            self.coverage_district_id
+            and self.coverage_department_id
+            and self.coverage_district.province.department_id
+            != self.coverage_department_id
+        ):
+            raise ValidationError(
+                {
+                    "coverage_district": (
+                        "El distrito debe pertenecer al departamento de cobertura."
+                    )
+                }
+            )
 
     @cached_property
     def taxonomy(self):

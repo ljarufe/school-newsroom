@@ -6,7 +6,11 @@ from django.shortcuts import render
 from django.urls import reverse
 from wagtail.models import Site
 
-from apps.news.archive import NewsArchiveCriteria, NewsArchiveQueryService
+from apps.news.archive import (
+    NewsArchiveCriteria,
+    NewsArchiveFilterForm,
+    NewsArchiveQueryService,
+)
 from apps.news.seo_metadata import environment_noindex
 from apps.news.smart_paste_views import normalize_smart_paste
 
@@ -33,6 +37,8 @@ def news_list(request):
         section_slug=criteria.section_slug,
         subsection_slug=criteria.subsection_slug,
         tag_slug=criteria.tag_slug,
+        department_code=criteria.department_code,
+        district_code=criteria.district_code,
         order=next_order,
     )
     root_sections = [section for section in service.sections if not section.parent_id]
@@ -49,6 +55,7 @@ def news_list(request):
             "page_obj": page_obj,
             "criteria": criteria,
             "archive": archive,
+            "archive_filter_form": NewsArchiveFilterForm(request.GET),
             "section_hierarchy": [
                 (section, subsections_by_parent[section.pk])
                 for section in root_sections

@@ -63,7 +63,7 @@ def test_seo_assistant_keeps_served_url_separate_from_external_canonical(
         slug="canonical-preview-news",
         publication_date=dt.date(2026, 7, 12),
         body=[("paragraph", "<p>Contenido ficticio.</p>")],
-        coverage_province="Arequipa",
+        coverage_department_id="04",
         canonical_url="https://canonical.example.org/original",
     )
     home.add_child(instance=page)
@@ -290,7 +290,7 @@ def test_protected_taxonomy_delete_paths_redirect_with_spanish_error(
         slug="taxonomy-delete-protection",
         publication_date=dt.date(2026, 7, 31),
         body=[("paragraph", "<p>Contenido ficticio.</p>")],
-        coverage_province="Arequipa",
+        coverage_department_id="04",
     )
     home.add_child(instance=page)
     NewsPageSection.objects.create(page=page, section=subsection)
@@ -533,7 +533,7 @@ def test_seo_assistant_shows_visible_nlp_fallback_without_hiding_exact_checks(
         live=False,
         publication_date=dt.date(2026, 8, 3),
         body=[("paragraph", "<p>El periodismo escolar continúa.</p>")],
-        coverage_province="Arequipa",
+        coverage_department_id="04",
         focus_keyphrase="periodismo escolar",
     )
     home.add_child(instance=page)
@@ -580,7 +580,7 @@ def test_seo_assistant_renders_advanced_metrics_and_escaped_evidence(
                 "guardó el ejercicio.</p>",
             )
         ],
-        coverage_province="Arequipa",
+        coverage_department_id="04",
         focus_keyphrase="legibilidad avanzada",
     )
     home.add_child(instance=page)

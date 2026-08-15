@@ -71,8 +71,8 @@ def create_news_page(home_page, section, *, slug="form-news-existing"):
         live=False,
         publication_date=dt.date(2026, 7, 1),
         body=[("paragraph", "<p>Reported context</p>")],
-        coverage_province="Arequipa",
-        coverage_district="Cercado",
+        coverage_department_id="04",
+        coverage_district_id="040101",
     )
     home_page.add_child(instance=page)
     NewsPageSection.objects.create(page=page, section=section)
@@ -139,8 +139,8 @@ def admin_form_data(
         "body-0-id": "11111111-1111-4111-8111-111111111111",
         "taxonomy_sections": selected_taxonomy,
         "school": "",
-        "coverage_province": "Arequipa",
-        "coverage_district": "Cercado",
+        "coverage_department": "04",
+        "coverage_district": "040101",
         "featured_image": featured_image,
         "featured_image_caption": featured_image_caption,
         "featured_image_alt_text": featured_image_alt_text,
@@ -222,6 +222,26 @@ def make_admin_form(home_page, section, *, instance=None, **data_kwargs):
         instance = NewsPage()
     data = admin_form_data(section, **data_kwargs)
     return form_class(data=data, instance=instance, parent_page=home_page)
+
+
+@pytest.mark.django_db
+def test_news_admin_rejects_incompatible_coverage_district(
+    home_page,
+    section,
+) -> None:
+    data = admin_form_data(
+        section,
+        title="Incompatible coverage",
+        slug="incompatible-coverage",
+        public_credits=["Fictional school newsroom team"],
+    )
+    data["coverage_department"] = "04"
+    data["coverage_district"] = "150101"
+    form_class = NewsPage.get_edit_handler().get_form_class()
+    form = form_class(data=data, instance=NewsPage(), parent_page=home_page)
+
+    assert not form.is_valid()
+    assert "debe pertenecer al departamento" in str(form.errors["coverage_district"])
 
 
 @pytest.mark.django_db
@@ -813,8 +833,8 @@ def test_internal_contributor_does_not_require_authorization_by_itself(
 ) -> None:
     school = School.objects.create(
         name="Fictional School",
-        province="Arequipa",
-        district="Cercado",
+        department_id="04",
+        district_id="040101",
     )
     group = ContributorGroup.objects.create(
         name="Fictional Reporting Workshop",
@@ -845,8 +865,8 @@ def test_generated_page_form_rejects_duplicate_internal_contributors(
 ) -> None:
     school = School.objects.create(
         name="Fictional School",
-        province="Arequipa",
-        district="Cercado",
+        department_id="04",
+        district_id="040101",
     )
     group = ContributorGroup.objects.create(
         name="Fictional Reporting Workshop",

@@ -69,8 +69,8 @@ def create_news_page(
             ("paragraph", "<p>Structured body paragraph.</p>"),
         ],
         school=school,
-        coverage_province="Arequipa",
-        coverage_district="Cercado",
+        coverage_department_id="04",
+        coverage_district_id="040101",
         featured_image=featured_image,
     )
     home_page.add_child(instance=page)
@@ -270,13 +270,13 @@ def test_news_section_ordering_and_string_representation() -> None:
 def test_school_ordering_and_string_representation() -> None:
     School.objects.create(
         name="Second Fictional School",
-        province="Arequipa",
-        district="Cercado",
+        department_id="04",
+        district_id="040101",
     )
     School.objects.create(
         name="First Fictional School",
-        province="Arequipa",
-        district="Yanahuara",
+        department_id="04",
+        district_id="040126",
     )
 
     assert list(School.objects.values_list("name", flat=True)) == [
@@ -293,7 +293,7 @@ def test_draft_page_model_allows_no_taxonomy_assignment() -> None:
         slug="missing-section",
         publication_date=dt.date(2026, 7, 1),
         body=[("paragraph", "<p>Body.</p>")],
-        coverage_province="Arequipa",
+        coverage_department_id="04",
     )
 
     page.full_clean(exclude=["path", "depth"])
@@ -311,8 +311,8 @@ def test_used_section_is_protected(home_page, section) -> None:
 def test_school_is_set_null_when_deleted(home_page, section) -> None:
     school = School.objects.create(
         name="Fictional School",
-        province="Arequipa",
-        district="Cercado",
+        department_id="04",
+        district_id="040101",
     )
     news_page = create_news_page(home_page, section, school=school)
 
@@ -326,8 +326,8 @@ def test_school_is_set_null_when_deleted(home_page, section) -> None:
 def test_contributor_group_string_representation_and_school_protection() -> None:
     school = School.objects.create(
         name="Fictional School",
-        province="Arequipa",
-        district="Cercado",
+        department_id="04",
+        district_id="040101",
     )
     group = ContributorGroup.objects.create(
         name="Fictional Reporting Workshop",
@@ -344,8 +344,8 @@ def test_contributor_group_string_representation_and_school_protection() -> None
 def test_minor_contributor_age_band_and_derived_school() -> None:
     school = School.objects.create(
         name="Fictional School",
-        province="Arequipa",
-        district="Cercado",
+        department_id="04",
+        district_id="040101",
     )
     group = ContributorGroup.objects.create(
         name="Fictional Reporting Workshop",
@@ -366,8 +366,8 @@ def test_minor_contributor_age_band_and_derived_school() -> None:
 def test_minor_contributors_order_by_internal_name() -> None:
     school = School.objects.create(
         name="Fictional School",
-        province="Arequipa",
-        district="Cercado",
+        department_id="04",
+        district_id="040101",
     )
     group = ContributorGroup.objects.create(
         name="Fictional Reporting Workshop",
@@ -394,8 +394,8 @@ def test_minor_contributors_order_by_internal_name() -> None:
 def test_news_page_accepts_multiple_internal_contributors(home_page, section) -> None:
     school = School.objects.create(
         name="Fictional School",
-        province="Arequipa",
-        district="Cercado",
+        department_id="04",
+        district_id="040101",
     )
     group = ContributorGroup.objects.create(
         name="Fictional Reporting Workshop",
@@ -436,8 +436,8 @@ def test_news_page_accepts_multiple_internal_contributors(home_page, section) ->
 def test_news_page_rejects_duplicate_internal_contributor(home_page, section) -> None:
     school = School.objects.create(
         name="Fictional School",
-        province="Arequipa",
-        district="Cercado",
+        department_id="04",
+        district_id="040101",
     )
     group = ContributorGroup.objects.create(
         name="Fictional Reporting Workshop",

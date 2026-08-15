@@ -9,7 +9,12 @@ def public_news_pages():
     return (
         NewsPage.objects.live()
         .public()
-        .select_related("school", "featured_image")
+        .select_related(
+            "school",
+            "featured_image",
+            "coverage_department",
+            "coverage_district__province__department",
+        )
         .prefetch_related(
             "tags",
             Prefetch(

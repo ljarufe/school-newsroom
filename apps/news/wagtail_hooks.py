@@ -13,6 +13,7 @@ from wagtail.snippets.views.snippets import SnippetViewSet, SnippetViewSetGroup
 
 from . import wagtail_hook_handlers
 from .models import ContributorGroup, MinorContributor, NewsSection, School
+from .school_forms import SchoolAdminForm
 from .taxonomy_forms import NewsSubsectionAdminForm
 
 
@@ -237,9 +238,13 @@ class NewsSubsectionViewSet(ModelViewSet):
 
 class SchoolViewSet(SnippetViewSet):
     model = School
+    form_class = SchoolAdminForm
     menu_label = "Colegios"
     menu_name = "schools"
     icon = "site"
+
+    def get_form_class(self, for_update=False):
+        return self.form_class
 
 
 class ContributorGroupViewSet(SnippetViewSet):

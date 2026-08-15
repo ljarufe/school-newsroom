@@ -57,6 +57,10 @@ NEWS_0013 = ("news", "0013_migrate_editorial_taxonomy")
 NEWS_0014 = ("news", "0014_remove_singular_section")
 NEWS_0015 = ("news", "0015_newspagerelatedkeyphrase_and_more")
 NEWS_0016 = ("news", "0016_public_news_search_infrastructure")
+NEWS_0017 = ("news", "0017_add_normalized_geography_fields")
+NEWS_0018 = ("news", "0018_backfill_normalized_geography")
+NEWS_0019 = ("news", "0019_finalize_normalized_geography")
+GEOGRAPHY_0002 = ("geography", "0002_load_ubigeo_2025_12_31")
 HOME_0001 = ("home", "0001_initial")
 BEFORE_NEWS_0002 = [HOME_0001, NEWS_0001]
 
@@ -80,12 +84,14 @@ def migrate_to(targets):
     if isinstance(targets, tuple):
         targets = [targets]
     executor = MigrationExecutor(connection)
+    restore_geography_snapshot_after_transactional_flush(executor)
     executor.migrate(targets)
     return executor.loader.project_state(targets).apps
 
 
 def migrate_to_latest():
     executor = MigrationExecutor(connection)
+    restore_geography_snapshot_after_transactional_flush(executor)
     if ("news", "0002_bootstrap_editorial_data") in executor.loader.applied_migrations:
         with connection.cursor() as cursor:
             cursor.executemany(
@@ -108,6 +114,23 @@ def migrate_to_latest():
                 ],
             )
     executor.migrate(executor.loader.graph.leaf_nodes())
+
+
+def restore_geography_snapshot_after_transactional_flush(executor):
+    """Restore migration-owned data removed by pytest-django's database flush."""
+    if GEOGRAPHY_0002 not in executor.loader.applied_migrations:
+        return
+    apps = executor.loader.project_state([GEOGRAPHY_0002]).apps
+    Department = apps.get_model("geography", "Department")
+    if Department.objects.using(connection.alias).exists():
+        return
+    geography_migration_module = importlib.import_module(
+        "apps.geography.migrations.0002_load_ubigeo_2025_12_31",
+    )
+    geography_migration_module.load_snapshot(
+        apps,
+        SimpleNamespace(connection=connection),
+    )
 
 
 def bootstrap_migration_module():
@@ -1005,6 +1028,7 @@ def test_epic3_003_body_migrations_preserve_then_convert_historical_content():
                 )
             }
         assert "summary" not in columns
+        migrate_to_latest()
         assert (
             Revision.objects.get(pk=mixed_revision.pk).content["summary"]
             == "Historical revision summary kept only in revision JSON."
@@ -1245,7 +1269,10 @@ def test_epic5_001_migration_preserves_news_with_blank_safe_seo_defaults() -> No
 def test_epic5_009_migration_leaves_historical_news_without_related_phrases() -> None:
     page_id = None
     try:
-        migrate_to(NEWS_0014)
+        apps = migrate_to(NEWS_0014)
+        ContentType = apps.get_model("contenttypes", "ContentType")
+        HistoricalNewsPage = apps.get_model("news", "NewsPage")
+        HistoricalPage = apps.get_model("wagtailcore", "Page")
         home = RuntimeHomePage.objects.first()
         if home is None:
             root = RuntimePage.get_first_root_node()
@@ -1256,16 +1283,33 @@ def test_epic5_009_migration_leaves_historical_news_without_related_phrases() ->
                 )
             home = RuntimeHomePage(title="Inicio", slug="inicio-epic5-009")
             root.add_child(instance=home)
-        page = RuntimeNewsPage(
+        base_child = RuntimePage(
             title="Noticia histórica ficticia EPIC5-009",
             slug="noticia-historica-epic5-009",
             live=False,
-            publication_date=timezone.datetime(2026, 8, 3).date(),
-            body=[("paragraph", "<p>Contenido histórico ficticio.</p>")],
-            coverage_province="Arequipa",
         )
-        home.add_child(instance=page)
-        page_id = page.pk
+        home.add_child(instance=base_child)
+        page_id = base_child.pk
+        news_content_type = ContentType.objects.get(
+            app_label="news",
+            model="newspage",
+        )
+        HistoricalPage._base_manager.filter(pk=page_id).update(
+            content_type_id=news_content_type.pk,
+        )
+        HistoricalNewsPage(
+            page_ptr_id=page_id,
+            publication_date=timezone.datetime(2026, 8, 3).date(),
+            body=[
+                {
+                    "type": "paragraph",
+                    "value": "<p>Contenido histórico ficticio.</p>",
+                    "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                }
+            ],
+            coverage_province="Arequipa",
+            coverage_district="",
+        ).save_base(raw=True, force_insert=True)
 
         apps = migrate_to(NEWS_0015)
         RelatedKeyphrase = apps.get_model("news", "NewsPageRelatedKeyphrase")
@@ -1525,6 +1569,7 @@ def test_epic3_009_migrates_current_page_and_revision_relation_shape() -> None:
         ]
 
         migrate_to(NEWS_0015)
+        migrate_to_latest()
         reconstructed = Revision.objects.get(pk=revision_id).as_object()
         assert list(
             reconstructed.section_assignments.values_list("section_id", flat=True)
@@ -1532,6 +1577,11 @@ def test_epic3_009_migrates_current_page_and_revision_relation_shape() -> None:
         assert reconstructed.body[0].value.source == (
             "<p>Historical taxonomy body.</p>"
         )
+        # Pre-ticket revisions intentionally keep their legacy geography. An
+        # editor must choose normalized coverage before creating a new revision.
+        assert reconstructed.coverage_department_id is None
+        reconstructed.coverage_department_id = "04"
+        reconstructed.coverage_district_id = None
         round_trip = reconstructed.save_revision()
         round_trip_object = round_trip.as_object()
         assert list(
@@ -1609,6 +1659,7 @@ def test_epic3_009_reverse_fails_before_collapsing_multiple_assignments() -> Non
     page_id = None
     home_id = None
     try:
+        migrate_to_latest()
         RuntimeLocale.objects.get_or_create(language_code="es")
         root = RuntimePage.get_first_root_node()
         if root is None:
@@ -1627,7 +1678,8 @@ def test_epic3_009_reverse_fails_before_collapsing_multiple_assignments() -> Non
             live=False,
             publication_date=timezone.datetime(2026, 7, 31).date(),
             body=[("paragraph", "<p>Reverse taxonomy body.</p>")],
-            coverage_province="Arequipa",
+            coverage_department_id="04",
+            coverage_district_id=None,
         )
         home.add_child(instance=page)
         page_id = page.pk
@@ -1673,7 +1725,10 @@ def test_epic3_009_reverse_preserves_an_unclassified_page_as_null() -> None:
     page_id = None
     home_id = None
     try:
-        migrate_to(NEWS_0013)
+        apps = migrate_to(NEWS_0013)
+        ContentType = apps.get_model("contenttypes", "ContentType")
+        HistoricalNewsPage = apps.get_model("news", "NewsPage")
+        HistoricalPage = apps.get_model("wagtailcore", "Page")
         RuntimeLocale.objects.get_or_create(language_code="es")
         root = RuntimePage.get_first_root_node()
         if root is None:
@@ -1686,16 +1741,34 @@ def test_epic3_009_reverse_preserves_an_unclassified_page_as_null() -> None:
         )
         root.add_child(instance=home)
         home_id = home.pk
-        page = RuntimeNewsPage(
+        base_child = RuntimePage(
             title="Unclassified reverse news",
             slug="unclassified-reverse-news",
             live=False,
-            publication_date=timezone.datetime(2026, 7, 31).date(),
-            body=[("paragraph", "<p>Unclassified reverse body.</p>")],
-            coverage_province="Arequipa",
         )
-        home.add_child(instance=page)
-        page_id = page.pk
+        home.add_child(instance=base_child)
+        page_id = base_child.pk
+        news_content_type = ContentType.objects.get(
+            app_label="news",
+            model="newspage",
+        )
+        HistoricalPage._base_manager.filter(pk=page_id).update(
+            content_type_id=news_content_type.pk,
+        )
+        HistoricalNewsPage(
+            page_ptr_id=page_id,
+            publication_date=timezone.datetime(2026, 7, 31).date(),
+            body=[
+                {
+                    "type": "paragraph",
+                    "value": "<p>Unclassified reverse body.</p>",
+                    "id": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+                }
+            ],
+            coverage_province="Arequipa",
+            coverage_district="",
+            section_id=None,
+        ).save_base(raw=True, force_insert=True)
 
         apps = migrate_to(NEWS_0012)
         HistoricalNewsPage = apps.get_model("news", "NewsPage")
@@ -1766,3 +1839,91 @@ def test_public_news_search_migration_is_forward_and_reverse_reproducible():
             assert "news_archive_body_text_unaccent_trgm" not in indexes
     finally:
         migrate_to_latest()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_geography_migrations_backfill_legacy_rows_and_support_new_revisions():
+    page_id = None
+    home_id = None
+    try:
+        apps = migrate_to([NEWS_0016, GEOGRAPHY_0002])
+        HistoricalSchool = apps.get_model("news", "School")
+        HistoricalNewsPage = apps.get_model("news", "NewsPage")
+        HistoricalPage = apps.get_model("wagtailcore", "Page")
+        ContentTypeModel = apps.get_model("contenttypes", "ContentType")
+        database = connection.alias
+
+        school = HistoricalSchool.objects.using(database).create(
+            name="Legacy geography school",
+            province="Legacy province",
+            district="Legacy district",
+        )
+        RuntimeLocale.objects.get_or_create(language_code="es")
+        root = RuntimePage.get_first_root_node()
+        if root is None:
+            root = RuntimePage.add_root(instance=RuntimePage(title="Root", slug="root"))
+        home = RuntimeHomePage(
+            title="Legacy geography home", slug="legacy-geography-home"
+        )
+        root.add_child(instance=home)
+        home_id = home.pk
+        base_child = RuntimePage(
+            title="Legacy geography news",
+            slug="legacy-geography-news",
+            live=False,
+        )
+        home.add_child(instance=base_child)
+        page_id = base_child.pk
+        news_content_type = ContentTypeModel.objects.db_manager(database).get(
+            app_label="news",
+            model="newspage",
+        )
+        HistoricalPage._base_manager.using(database).filter(pk=page_id).update(
+            content_type_id=news_content_type.pk,
+        )
+        HistoricalNewsPage(
+            page_ptr_id=page_id,
+            publication_date=timezone.datetime(2026, 8, 1).date(),
+            body=[
+                {
+                    "type": "paragraph",
+                    "value": "<p>Legacy geography body.</p>",
+                    "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+                }
+            ],
+            coverage_province="Legacy province",
+            coverage_district="Legacy district",
+        ).save_base(raw=True, using=database, force_insert=True)
+
+        apps = migrate_to([NEWS_0019, GEOGRAPHY_0002])
+        MigratedSchool = apps.get_model("news", "School")
+        MigratedNewsPage = apps.get_model("news", "NewsPage")
+        migrated_school = MigratedSchool.objects.get(pk=school.pk)
+        migrated_page = MigratedNewsPage.objects.get(pk=page_id)
+
+        assert migrated_school.department_id == "04"
+        assert migrated_school.district_id is None
+        assert migrated_page.coverage_department_id == "04"
+        assert migrated_page.coverage_district_id is None
+        assert not any(
+            field.name == "province" for field in MigratedSchool._meta.fields
+        )
+        assert not any(
+            field.name == "coverage_province" for field in MigratedNewsPage._meta.fields
+        )
+
+        runtime_page = RuntimeNewsPage.objects.get(pk=page_id)
+        revision = runtime_page.save_revision()
+        reopened = revision.as_object()
+        assert reopened.coverage_department_id == "04"
+        assert reopened.coverage_district_id is None
+    finally:
+        migrate_to_latest()
+        if page_id is not None:
+            page = RuntimePage.objects.filter(pk=page_id).first()
+            if page is not None:
+                page.delete()
+        if home_id is not None:
+            home = RuntimePage.objects.filter(pk=home_id).first()
+            if home is not None:
+                home.delete()

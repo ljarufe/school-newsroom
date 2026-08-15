@@ -1,0 +1,27 @@
+<div
+  class="dependent-district"
+  data-dependent-district
+  data-department-field="#{{ widget.department_field_id }}"
+  data-lookup-url="{{ widget.lookup_url }}"
+  data-selected-department="{{ widget.selected_department }}"
+>
+  <input type="hidden" name="{{ widget.name }}" value="{{ widget.value|default_if_none:'' }}" data-district-value>
+  <div class="dependent-district__input-wrap">
+    <input
+      type="search"
+      id="{{ widget.attrs.id }}"
+      class="dependent-district__search"
+      value="{{ widget.selected_name }}"
+      autocomplete="off"
+      role="combobox"
+      aria-autocomplete="list"
+      aria-expanded="false"
+      aria-controls="{{ widget.attrs.id }}_results"
+      aria-describedby="{{ widget.attrs.id }}_hint"
+      data-district-search
+    >
+    <button type="button" class="dependent-district__clear" data-district-clear{% if not widget.value %} hidden{% endif %}>Limpiar distrito</button>
+  </div>
+  <p id="{{ widget.attrs.id }}_hint" class="help dependent-district__hint" data-district-hint>Selecciona un departamento y escribe al menos 3 caracteres.</p>
+  <ul id="{{ widget.attrs.id }}_results" class="dependent-district__results" role="listbox" data-district-results hidden></ul>
+</div>

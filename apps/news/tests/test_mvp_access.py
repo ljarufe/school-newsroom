@@ -76,7 +76,7 @@ def create_news_page(*, slug: str = "noticia-workflow") -> NewsPage:
         live=False,
         publication_date=dt.date(2026, 7, 15),
         body=[("paragraph", "<p>Contenido editorial ficticio y seguro.</p>")],
-        coverage_province="Arequipa",
+        coverage_department_id="04",
     )
     home.add_child(instance=page)
     NewsPageSection.objects.create(
@@ -406,8 +406,8 @@ def test_seo_curator_edit_surface_hides_content_properties_and_minor_data() -> N
     page.save()
     school = School.objects.create(
         name="Colegio ficticio interno",
-        province="Arequipa",
-        district="Cercado",
+        department_id="04",
+        district_id="040101",
     )
     contributor_group = ContributorGroup.objects.create(
         name="Taller interno ficticio",
@@ -469,8 +469,8 @@ def test_seo_curator_manipulated_post_cannot_change_non_seo_fields() -> None:
     page = create_news_page(slug="noticia-post-protegido")
     school = School.objects.create(
         name="Colegio ficticio",
-        province="Arequipa",
-        district="Cercado",
+        department_id="04",
+        district_id="040101",
     )
     contributor_group = ContributorGroup.objects.create(
         name="Taller ficticio",

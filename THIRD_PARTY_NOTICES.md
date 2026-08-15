@@ -40,6 +40,18 @@ release contain the applicable license and model metadata.
 Copyright and license terms are provided by the upstream Click project in its
 `LICENSE.txt` file.
 
+## openpyxl
+
+- Version: `3.1.5`
+- Purpose: direct XLSX reader for the reviewed INEI UBIGEO updater
+- Source: <https://foss.heptapod.net/openpyxl/openpyxl>
+- Documentation: <https://openpyxl.readthedocs.io/en/stable/>
+- License: MIT
+
+Version and license were inspected from the resolved installed distribution.
+The dependency reads controlled local files and the single project-owned official
+INEI resource; it is not used on request, startup, migration, or deploy paths.
+
 ## Pyphen
 
 - Version: `0.17.2`

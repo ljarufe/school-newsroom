@@ -70,6 +70,8 @@ def create_news_page(
     featured_image_credit="",
     body=None,
     tags=None,
+    coverage_department_id="04",
+    coverage_district_id="040101",
 ):
     page = NewsPage(
         title=title,
@@ -84,8 +86,8 @@ def create_news_page(
             ),
         ],
         school=school,
-        coverage_province="Arequipa",
-        coverage_district="Cercado",
+        coverage_department_id=coverage_department_id,
+        coverage_district_id=coverage_district_id,
         featured_image=featured_image,
         featured_image_caption=featured_image_caption,
         featured_image_alt_text=featured_image_alt_text,
@@ -245,8 +247,8 @@ def test_home_orders_by_publication_date_then_first_published_at(
 def test_home_renders_published_news_metadata(public_site, section) -> None:
     school = School.objects.create(
         name="Fictional School",
-        province="Arequipa",
-        district="Cercado",
+        department_id="04",
+        district_id="040101",
     )
     create_news_page(
         public_site,
@@ -273,7 +275,7 @@ def test_home_renders_published_news_metadata(public_site, section) -> None:
     assert b"Colegio" in response.content
     assert b"Cobertura" in response.content
     assert b"Arequipa" in response.content
-    assert b"Cercado" in response.content
+    assert response.content.count(b"Arequipa") >= 2
 
 
 @pytest.mark.django_db
@@ -283,8 +285,8 @@ def test_home_renders_public_credits_without_internal_contributor_data(
 ) -> None:
     school = School.objects.create(
         name="Fictional School",
-        province="Arequipa",
-        district="Cercado",
+        department_id="04",
+        district_id="040101",
     )
     group = ContributorGroup.objects.create(
         name="Fictional Reporting Workshop",
@@ -332,8 +334,8 @@ def test_home_renders_public_credits_without_internal_contributor_data(
 def test_news_detail_renders_required_content(public_site, section) -> None:
     school = School.objects.create(
         name="Fictional School",
-        province="Arequipa",
-        district="Cercado",
+        department_id="04",
+        district_id="040101",
     )
     page = create_news_page(
         public_site,
@@ -364,6 +366,9 @@ def test_news_detail_renders_required_content(public_site, section) -> None:
     assert b"student-reporting" in response.content
     assert b"local-news" in response.content
     assert b"/noticias/?etiqueta=student-reporting" in response.content
+    assert b'/noticias/?departamento=04"' in response.content
+    assert b"/noticias/?departamento=04&amp;distrito=040101" in response.content
+    assert b'/noticias/?seccion=politica"' in response.content
 
 
 @pytest.mark.django_db
@@ -394,9 +399,18 @@ def test_news_detail_renders_explicit_taxonomy_paths_without_parent_duplication(
 
     content = Client().get(page.url).content.decode()
 
-    assert '<p class="eyebrow">Cultura › Música; Entrevistas › Comunidad</p>' in content
-    assert content.count("Cultura › Música") == 1
-    assert content.count("Entrevistas › Comunidad") == 1
+    assert (
+        '<p class="eyebrow"><a href="/noticias/?seccion=cultura">Cultura</a>' in content
+    )
+    assert (
+        '› <a href="/noticias/?seccion=cultura&amp;subseccion=musica">Música</a>'
+        in content
+    )
+    assert '<a href="/noticias/?seccion=entrevistas">Entrevistas</a>' in content
+    assert (
+        '› <a href="/noticias/?seccion=entrevistas&amp;subseccion=comunidad">'
+        "Comunidad</a>" in content
+    )
     assert "<dt>Secciones y subsecciones</dt>" not in content
     assert "Cultura; Cultura › Música" not in content
     assert "Entrevistas; Entrevistas › Comunidad" not in content
@@ -450,8 +464,8 @@ def test_news_detail_renders_public_credits_without_internal_privacy_data(
 ) -> None:
     school = School.objects.create(
         name="Fictional School",
-        province="Arequipa",
-        district="Cercado",
+        department_id="04",
+        district_id="040101",
     )
     group = ContributorGroup.objects.create(
         name="Fictional Reporting Workshop",
@@ -818,6 +832,141 @@ def test_news_list_without_filter_uses_editorial_order(
     assert response.status_code == 200
     assert content.index("Newest listed story") < content.index("Older listed story")
     assert "Detailed public body text." not in content
+
+
+@pytest.mark.django_db
+def test_news_list_filters_coverage_department_and_exact_district(
+    public_site,
+    section,
+) -> None:
+    department_only = create_news_page(
+        public_site,
+        section,
+        title="Cobertura Arequipa departamental",
+        slug="cobertura-arequipa-departamental",
+        publication_date=dt.date(2026, 7, 3),
+        coverage_district_id=None,
+    )
+    district_coverage = create_news_page(
+        public_site,
+        section,
+        title="Cobertura distrito Arequipa",
+        slug="cobertura-distrito-arequipa",
+        publication_date=dt.date(2026, 7, 2),
+    )
+    lima_coverage = create_news_page(
+        public_site,
+        section,
+        title="Cobertura distrito Lima",
+        slug="cobertura-distrito-lima",
+        publication_date=dt.date(2026, 7, 1),
+        coverage_department_id="15",
+        coverage_district_id="150101",
+    )
+
+    department_content = (
+        Client().get("/noticias/", {"departamento": "04"}).content.decode()
+    )
+    district_content = (
+        Client()
+        .get("/noticias/", {"departamento": "04", "distrito": "040101"})
+        .content.decode()
+    )
+
+    assert department_only.title in department_content
+    assert district_coverage.title in department_content
+    assert lima_coverage.title not in department_content
+    assert district_coverage.title in district_content
+    assert department_only.title not in district_content
+    assert lima_coverage.title not in district_content
+
+
+@pytest.mark.django_db
+def test_news_list_rejects_invalid_or_incompatible_geography(
+    public_site,
+    section,
+) -> None:
+    create_news_page(
+        public_site,
+        section,
+        title="Geography validation story",
+        slug="geography-validation-story",
+        publication_date=dt.date(2026, 7, 1),
+    )
+
+    invalid_department = (
+        Client().get("/noticias/", {"departamento": "99"}).content.decode()
+    )
+    invalid_district = (
+        Client()
+        .get("/noticias/", {"departamento": "04", "distrito": "999999"})
+        .content.decode()
+    )
+    incompatible = (
+        Client()
+        .get("/noticias/", {"departamento": "04", "distrito": "150101"})
+        .content.decode()
+    )
+
+    assert "El departamento solicitado no existe." in invalid_department
+    assert "El distrito solicitado no existe." in invalid_district
+    assert "Los filtros solicitados no son compatibles." in incompatible
+
+
+@pytest.mark.django_db
+def test_geography_combines_with_taxonomy_tag_order_and_pagination(
+    public_site,
+) -> None:
+    music = NewsSection.objects.get(slug="musica")
+    for index in range(11):
+        create_news_page(
+            public_site,
+            music,
+            title=f"Archivo territorial {index}",
+            slug=f"archivo-territorial-{index}",
+            publication_date=dt.date(2026, 7, index + 1),
+            tags=["territorio"],
+        )
+    create_news_page(
+        public_site,
+        music,
+        title="Archivo territorial fuera de cobertura",
+        slug="archivo-territorial-fuera-de-cobertura",
+        publication_date=dt.date(2026, 6, 1),
+        tags=["territorio"],
+        coverage_department_id="15",
+        coverage_district_id="150101",
+    )
+
+    response = Client().get(
+        "/noticias/",
+        {
+            "buscar": "territorial",
+            "seccion": "cultura",
+            "subseccion": "musica",
+            "etiqueta": "territorio",
+            "departamento": "04",
+            "distrito": "040101",
+            "orden": "asc",
+        },
+    )
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert content.count('class="card news-card') == 10
+    assert "fuera de cobertura" not in content
+    assert "departamento=04" in content
+    assert "distrito=040101" in content
+    assert "pagina=2" in content
+
+
+@pytest.mark.django_db
+def test_archive_initial_html_does_not_enumerate_all_districts(public_site) -> None:
+    content = Client().get("/noticias/").content.decode()
+
+    assert "data-dependent-district" in content
+    assert 'data-lookup-url="/geografia/distritos/"' in content
+    assert "Chachapoyas" not in content
 
 
 @pytest.mark.django_db
@@ -1194,8 +1343,8 @@ def test_news_list_does_not_expose_internal_minor_or_privacy_data(
 ) -> None:
     school = School.objects.create(
         name="Fictional privacy school",
-        province="Arequipa",
-        district="Cercado",
+        department_id="04",
+        district_id="040101",
     )
     group = ContributorGroup.objects.create(
         name="Fictional privacy group",

@@ -13,6 +13,7 @@ urlpatterns = [
     path("django-admin/", admin.site.urls),
     path("admin/", include(wagtailadmin_urls)),
     path("documents/", include(wagtaildocs_urls)),
+    path("geografia/", include("apps.geography.urls")),
     path("robots.txt", robots_txt, name="robots_txt"),
     path("sitemap.xml", sitemap, name="sitemap"),
     path("noticias/", news_list, name="news_list"),

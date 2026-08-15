@@ -290,67 +290,71 @@ External preview observations: PENDING
 Overall EPIC8-002 operational acceptance: PENDING
 ```
 
-## EPIC8-005 staging abuse-protection UAT — Pending secured deployment
+## EPIC8-005 staging abuse-protection UAT — Passed
 
-Status: **Pending — execute only after calibrated Caddy/Fail2ban values are
-approved, the host bootstrap is complete, and the approved SHA is deployed**.
+Status: **Completed — Stage B/UAT passed on the real Oracle staging
+environment at deployed SHA `cceddcb6b35e17ddcd62bd5e983ad91036f9a21a`.**
 
-Use fictional search terms and a controlled fictional login identity. Keep an
-existing SSH session open. Do not print a password, request body, Cookie,
-Authorization value, personal allowlist address, or unrestricted log/config
-output into evidence. Use only small controlled bursts; this is not a load
-test.
+The deployed proxy reported Caddy `v2.11.4` with
+`http.handlers.rate_limit`; `proxy`, `web`, and `db` were healthy/running.
+The approved calibrated policy was general `60 events / 10s`, search
+`30 events / 60s`, and login POST `8 events / 60s`.
 
-Record pass/fail evidence for:
+Observed controlled results:
 
-- HTTPS Home, `/noticias/`, filters, ordering, pagination, public search,
-  several article details, and media;
-- Wagtail login plus an authenticated Admin edit/save flow;
-- normal desktop/mobile navigation, refresh, assets, and a shared-NAT scenario
-  remain below all calibrated limits;
-- a controlled general excess returns 429 and later recovers;
-- repeated `/noticias/?buscar=<fictional>` requests reach the stricter search
-  zone, return 429 with `Retry-After`, and later recover;
-- repeated credential-free or fictional `POST /admin/login/` requests reach
-  the stricter login zone without limiting ordinary authenticated Admin pages;
-- the bounded JSON log contains remote IP, timestamp, path identity, and 429,
-  while the `buscar` value is `REDACTED` and credentials/bodies are absent;
-- repeated 429 responses produce a temporary automatic Fail2ban ban;
-- `fail2ban-client status school-newsroom-caddy-429` shows that ban;
-- the ban blocks only HTTP/HTTPS, while the existing SSH session remains usable;
-- automatic expiry restores web access;
-- manual `banip` and `unbanip` both work;
-- a controlled operational allowlist prevents a ban and is not committed;
-- `proxy`, `web`, and `db` remain running/healthy with no restart loop;
-- 8000, 5432, and 5434 remain externally closed/filtered;
-- only Caddy publishes host 80/443 and the `backend` network remains internal;
-- the access log stays within the documented 10 MiB/three-file/72-hour bounds;
-- CPU/RAM remain acceptable on 1 OCPU/4 GB;
-- OCI inventory and VM shape are unchanged, and Actual/Forecast Spend remain
-  zero.
+- Home returned 200, `/noticias/` returned 200, and `/admin/` returned 302.
+  Normal public and Admin navigation produced no ban or false positive.
+- The general run produced 60 responses with 200, then 10 with 429; recovery
+  passed.
+- The search run produced 30 responses with 200, then five with 429;
+  `Retry-After: 42` was observed and recovery returned 200.
+- The credential-free login POST run produced eight 403 responses before
+  limiting, then two 429 responses; `Retry-After: 49` was observed. After
+  recovery, the credential-free POST again returned 403 rather than 429.
+- The bounded JSON access log contained `buscar=REDACTED`; direct `buscar`,
+  Authorization, Cookie, Proxy-Authorization, and Referer search markers were
+  absent.
+- Ubuntu Fail2ban `1.0.2-3ubuntu0.1` was installed, configuration testing
+  passed, and the service was active/running. The controlled automatic-ban
+  test reported `Total failed: 49`, `Currently banned: 1`, and `Total banned:
+  1`. `DOCKER-USER` contained the TCP 80/443 jump to `f2b-sn-web`; that chain
+  contained the controlled-source DROP and RETURN. SSH remained usable while
+  HTTP/HTTPS timed out. Automatic expiry restored HTTP 200, `Currently banned`
+  returned to 0, and `Total banned` remained 1.
 
-Also execute the break-glass procedure: unban the controlled address, stop only
-the jail, confirm SSH remains available, restart/validate the jail, and retain
-the current SSH session until web recovery is proven. Do not run a test that
-can lock out SSH and HTTPS simultaneously.
+The maintainer also reported PASS for manual ban/unban, the operational
+allowlist, break-glass stop/restart, service/resource checks, the public/private
+port and Docker-network boundary, IPv6 applicability, OCI inventory/shape, and
+zero Actual/Forecast cost. No numeric resource readings, IP addresses, secrets,
+or private operational evidence are recorded here.
 
-Update this block only with observed results:
+### Stage B bootstrap findings
+
+The real bootstrap exposed two defects. Its broad `grep 'CALIBRATE_'` rejected
+a fully rendered jail because the versioned explanatory comment retained that
+text. Also, the immediate post-restart jail-status call could race the
+Fail2ban socket even though systemd subsequently reported the daemon ready.
+
+The follow-up source change limits placeholder detection to active `findtime`,
+`maxretry`, `bantime`, and `ignoreip` assignments, and retries client readiness
+for at most ten seconds before failing closed. This records the durable fix; it
+does not claim that the follow-up branch itself has been deployed.
 
 ```text
-Host bootstrap / Fail2ban 1.0.x: PENDING
-Calibrated general/search/login values: PENDING
-Normal public and Admin navigation: PENDING
-General excess / 429 / recovery: PENDING
-Search excess / 429 / Retry-After / recovery: PENDING
-Login POST excess / 429 / Retry-After / recovery: PENDING
-Bounded and redacted JSON access log: PENDING
-Automatic temporary ban / expiry: PENDING
-Manual ban / unban: PENDING
-Operational allowlist: PENDING
-SSH usable during web ban: PENDING
-Public/private port boundary: PENDING
-Health / restart loop / 1 OCPU and 4 GB resources: PENDING
-OCI inventory / shape / zero cost: PENDING
-Break-glass exercise: PENDING
-Overall EPIC8-005 operational acceptance: PENDING
+Host bootstrap / Fail2ban 1.0.x: PASS
+Calibrated general/search/login values: PASS — 60/10s, 30/60s, 8/60s
+Normal public and Admin navigation: PASS
+General excess / 429 / recovery: PASS — 60x200, 10x429, recovery passed
+Search excess / 429 / Retry-After / recovery: PASS — 30x200, 5x429, 42, 200
+Login POST excess / 429 / Retry-After / recovery: PASS — 8x403, 2x429, 49, 403
+Bounded and redacted JSON access log: PASS
+Automatic temporary ban / expiry: PASS
+Manual ban / unban: PASS
+Operational allowlist: PASS
+SSH usable during web ban: PASS
+Public/private port boundary: PASS
+Health / restart loop / resource checks: PASS
+OCI inventory / shape / zero cost: PASS
+Break-glass exercise: PASS
+Overall EPIC8-005 operational acceptance: PASS
 ```

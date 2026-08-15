@@ -16,8 +16,12 @@ if [ ! -f "$rendered_jail" ]; then
     echo "The rendered jail configuration does not exist." >&2
     exit 1
 fi
-if grep -q 'CALIBRATE_' "$rendered_jail"; then
-    echo "Replace every CALIBRATE_* token before bootstrap." >&2
+if awk '
+    /^[[:space:]]*([#;]|$)/ { next }
+    /CALIBRATE_/ { unresolved = 1 }
+    END { exit !unresolved }
+' "$rendered_jail"; then
+    echo "Replace every active CALIBRATE_* value before bootstrap." >&2
     exit 1
 fi
 
@@ -57,4 +61,13 @@ install -o root -g root -m 0640 "$rendered_jail" \
 fail2ban-client -t
 systemctl enable --now fail2ban
 systemctl restart fail2ban
+readiness_attempt=0
+until fail2ban-client status school-newsroom-caddy-429 >/dev/null 2>&1; do
+    readiness_attempt=$((readiness_attempt + 1))
+    if [ "$readiness_attempt" -ge 20 ]; then
+        echo "Fail2ban did not become ready within 10 seconds." >&2
+        exit 1
+    fi
+    sleep 0.5
+done
 fail2ban-client status school-newsroom-caddy-429

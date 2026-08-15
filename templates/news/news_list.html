@@ -39,6 +39,14 @@
           {% endfor %}
         </select>
       </div>
+      <div class="col-md-4">
+        <label class="form-label" for="id_departamento">Departamento</label>
+        {{ archive_filter_form.departamento }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="id_distrito">Distrito</label>
+        {{ archive_filter_form.distrito }}
+      </div>
       <div class="col-md-4 d-flex align-items-end">
         {% if criteria.tag_slug %}<input type="hidden" name="etiqueta" value="{{ criteria.tag_slug }}">{% endif %}
         {% if criteria.order %}<input type="hidden" name="orden" value="{{ criteria.order }}">{% endif %}
@@ -46,18 +54,20 @@
       </div>
     </form>
 
-    {% if criteria.section_slug or criteria.subsection_slug or criteria.tag_slug %}
+    {% if criteria.section_slug or criteria.subsection_slug or criteria.tag_slug or criteria.department_code or criteria.district_code %}
       <div class="mb-3" aria-label="Filtros activos">
         <span class="visually-hidden">Filtros activos:</span>
         {% if archive.selected_section %}<span class="badge text-bg-light">{{ archive.selected_section.name }}</span>{% endif %}
         {% if archive.selected_subsection %}<span class="badge text-bg-light">{{ archive.selected_subsection.name }}</span>{% endif %}
         {% if archive.selected_tag %}<span class="badge text-bg-light">#{{ archive.selected_tag.name }}</span>{% endif %}
+        {% if archive.selected_department %}<span class="badge text-bg-light">{{ archive.selected_department.name }}</span>{% endif %}
+        {% if archive.selected_district %}<span class="badge text-bg-light">{{ archive.selected_district.name }}</span>{% endif %}
       </div>
     {% endif %}
 
     {% if archive.invalid_criterion %}
       <div class="empty-state" role="status">
-        <h2>{% if archive.invalid_criterion == "section" %}La sección solicitada no existe.{% elif archive.invalid_criterion == "subsection" %}La subsección solicitada no existe.{% elif archive.invalid_criterion == "tag" %}La etiqueta solicitada no existe.{% else %}Los filtros solicitados no son compatibles.{% endif %}</h2>
+        <h2>{% if archive.invalid_criterion == "section" %}La sección solicitada no existe.{% elif archive.invalid_criterion == "subsection" %}La subsección solicitada no existe.{% elif archive.invalid_criterion == "tag" %}La etiqueta solicitada no existe.{% elif archive.invalid_criterion == "department" %}El departamento solicitado no existe.{% elif archive.invalid_criterion == "district" %}El distrito solicitado no existe.{% else %}Los filtros solicitados no son compatibles.{% endif %}</h2>
         <p>Revisa la dirección o vuelve al listado completo de noticias.</p>
         <a class="btn btn-primary" href="{% url 'news_list' %}">Ver todas las noticias</a>
       </div>
@@ -106,5 +116,6 @@
 {% endblock content %}
 
 {% block extra_js %}
+  {{ archive_filter_form.media }}
   <script src="{% static 'public/js/news_archive.js' %}" defer></script>
 {% endblock extra_js %}

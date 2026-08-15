@@ -17,6 +17,7 @@ from apps.news.models import (
     NewsPagePublicCredit,
     NewsPageSection,
     NewsSection,
+    School,
 )
 
 
@@ -67,6 +68,18 @@ class Command(BaseCommand):
         if len(home_pages) != 1:
             raise CommandError("The browser fixture requires exactly one HomePage.")
         home = home_pages[0]
+        school_department_only, _ = School.objects.update_or_create(
+            name="Colegio browser departamental ficticio",
+            defaults={"department_id": "04", "district_id": None},
+        )
+        school_with_district, _ = School.objects.update_or_create(
+            name="Colegio browser distrital ficticio",
+            defaults={"department_id": "04", "district_id": "040103"},
+        )
+        School.objects.update_or_create(
+            name="Colegio browser Lima ficticio",
+            defaults={"department_id": "15", "district_id": "150101"},
+        )
         page = NewsPage.objects.filter(slug="nota-browser-epic3-006").first()
         if page is None:
             page = NewsPage(
@@ -74,28 +87,30 @@ class Command(BaseCommand):
                 slug="nota-browser-epic3-006",
                 live=False,
                 publication_date=dt.date(2026, 7, 28),
-                coverage_province="Arequipa",
-                coverage_district="Cercado",
+                coverage_department_id="04",
+                coverage_district_id="040101",
                 body=[
                     ("paragraph", "<p>Bloque anterior.</p>"),
                     ("paragraph", "<p>Bloque seleccionado.</p>"),
                     ("paragraph", ""),
                     ("paragraph", "<p>Bloque posterior.</p>"),
                 ],
+                school=school_with_district,
             )
             home.add_child(instance=page)
 
         page.title = "Nota browser EPIC3-006"
         page.live = False
         page.publication_date = dt.date(2026, 7, 28)
-        page.coverage_province = "Arequipa"
-        page.coverage_district = "Cercado"
+        page.coverage_department_id = "04"
+        page.coverage_district_id = "040101"
         page.body = [
             ("paragraph", "<p>Bloque anterior.</p>"),
             ("paragraph", "<p>Bloque seleccionado.</p>"),
             ("paragraph", ""),
             ("paragraph", "<p>Bloque posterior.</p>"),
         ]
+        page.school = school_with_district
         page.save()
         page.section_assignments.all().delete()
         NewsPagePublicCredit.objects.update_or_create(
@@ -117,8 +132,8 @@ class Command(BaseCommand):
             slug="nota-browser-epic5-009",
             live=False,
             publication_date=dt.date(2026, 8, 3),
-            coverage_province="Arequipa",
-            coverage_district="Cercado",
+            coverage_department_id="04",
+            coverage_district_id="040101",
             body=[
                 (
                     "paragraph",
@@ -158,8 +173,6 @@ class Command(BaseCommand):
             slug="nota-publica-browser-epic6-003",
             live=True,
             publication_date=dt.date(2026, 8, 4),
-            coverage_province="Arequipa",
-            coverage_district="Cercado",
             body=[
                 (
                     "paragraph",
@@ -178,10 +191,23 @@ class Command(BaseCommand):
                 "?origen=school-newsroom&grupo=A%20%26%20B"
             ),
             seo_noindex=True,
+            school=school_department_only,
+            coverage_department_id="15",
+            coverage_district_id="150101",
         )
         home.add_child(instance=public_share_page)
         public_share_page.tags.add("browser-share")
         public_share_page.save()
+        public_politics = NewsSection.objects.get(slug="politica")
+        public_local_politics = NewsSection.objects.get(slug="politica-local")
+        NewsPageSection.objects.update_or_create(
+            page=public_share_page,
+            section=public_politics,
+        )
+        NewsPageSection.objects.update_or_create(
+            page=public_share_page,
+            section=public_local_politics,
+        )
         NewsPagePublicCredit.objects.create(
             page=public_share_page,
             sort_order=0,
@@ -210,16 +236,20 @@ class Command(BaseCommand):
                     slug=slug,
                     live=True,
                     publication_date=dt.date(2026, 8, index + 1),
-                    coverage_province="Arequipa",
-                    coverage_district="Cercado",
+                    coverage_department_id=("15" if index == 1 else "04"),
+                    coverage_district_id=(
+                        None if index == 0 else "150101" if index == 1 else "040101"
+                    ),
                     body=[("paragraph", "<p>Archivo browser para búsqueda.</p>")],
                 )
                 home.add_child(instance=archive_page)
             archive_page.title = f"Archivo browser {index}"
             archive_page.live = True
             archive_page.publication_date = dt.date(2026, 8, index + 1)
-            archive_page.coverage_province = "Arequipa"
-            archive_page.coverage_district = "Cercado"
+            archive_page.coverage_department_id = "15" if index == 1 else "04"
+            archive_page.coverage_district_id = (
+                None if index == 0 else "150101" if index == 1 else "040101"
+            )
             archive_page.body = [("paragraph", "<p>Archivo browser para búsqueda.</p>")]
             archive_page.save()
             NewsPageSection.objects.update_or_create(

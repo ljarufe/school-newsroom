@@ -1,0 +1,1893 @@
+department_code,department_name,province_code,province_name,district_code,district_name
+01,Amazonas,0101,Chachapoyas,010101,Chachapoyas
+01,Amazonas,0101,Chachapoyas,010102,Asuncion
+01,Amazonas,0101,Chachapoyas,010103,Balsas
+01,Amazonas,0101,Chachapoyas,010104,Cheto
+01,Amazonas,0101,Chachapoyas,010105,Chiliquin
+01,Amazonas,0101,Chachapoyas,010106,Chuquibamba
+01,Amazonas,0101,Chachapoyas,010107,Granada
+01,Amazonas,0101,Chachapoyas,010108,Huancas
+01,Amazonas,0101,Chachapoyas,010109,La Jalca
+01,Amazonas,0101,Chachapoyas,010110,Leimebamba
+01,Amazonas,0101,Chachapoyas,010111,Levanto
+01,Amazonas,0101,Chachapoyas,010112,Magdalena
+01,Amazonas,0101,Chachapoyas,010113,Mariscal Castilla
+01,Amazonas,0101,Chachapoyas,010114,Molinopampa
+01,Amazonas,0101,Chachapoyas,010115,Montevideo
+01,Amazonas,0101,Chachapoyas,010116,Olleros
+01,Amazonas,0101,Chachapoyas,010117,Quinjalca
+01,Amazonas,0101,Chachapoyas,010118,San Francisco de Daguas
+01,Amazonas,0101,Chachapoyas,010119,San Isidro de Maino
+01,Amazonas,0101,Chachapoyas,010120,Soloco
+01,Amazonas,0101,Chachapoyas,010121,Sonche
+01,Amazonas,0102,Bagua,010201,Bagua
+01,Amazonas,0102,Bagua,010202,Aramango
+01,Amazonas,0102,Bagua,010203,Copallin
+01,Amazonas,0102,Bagua,010204,El Parco
+01,Amazonas,0102,Bagua,010205,Imaza
+01,Amazonas,0102,Bagua,010206,La Peca
+01,Amazonas,0103,Bongara,010301,Jumbilla
+01,Amazonas,0103,Bongara,010302,Chisquilla
+01,Amazonas,0103,Bongara,010303,Churuja
+01,Amazonas,0103,Bongara,010304,Corosha
+01,Amazonas,0103,Bongara,010305,Cuispes
+01,Amazonas,0103,Bongara,010306,Florida
+01,Amazonas,0103,Bongara,010307,Jazan
+01,Amazonas,0103,Bongara,010308,Recta
+01,Amazonas,0103,Bongara,010309,San Carlos
+01,Amazonas,0103,Bongara,010310,Shipasbamba
+01,Amazonas,0103,Bongara,010311,Valera
+01,Amazonas,0103,Bongara,010312,Yambrasbamba
+01,Amazonas,0104,Condorcanqui,010401,Nieva
+01,Amazonas,0104,Condorcanqui,010402,El Cenepa
+01,Amazonas,0104,Condorcanqui,010403,Rio Santiago
+01,Amazonas,0105,Luya,010501,Lamud
+01,Amazonas,0105,Luya,010502,Camporredondo
+01,Amazonas,0105,Luya,010503,Cocabamba
+01,Amazonas,0105,Luya,010504,Colcamar
+01,Amazonas,0105,Luya,010505,Conila
+01,Amazonas,0105,Luya,010506,Inguilpata
+01,Amazonas,0105,Luya,010507,Longuita
+01,Amazonas,0105,Luya,010508,Lonya Chico
+01,Amazonas,0105,Luya,010509,Luya
+01,Amazonas,0105,Luya,010510,Luya Viejo
+01,Amazonas,0105,Luya,010511,Maria
+01,Amazonas,0105,Luya,010512,Ocalli
+01,Amazonas,0105,Luya,010513,Ocumal
+01,Amazonas,0105,Luya,010514,Pisuquia
+01,Amazonas,0105,Luya,010515,Providencia
+01,Amazonas,0105,Luya,010516,San Cristobal
+01,Amazonas,0105,Luya,010517,San Francisco del Yeso
+01,Amazonas,0105,Luya,010518,San Jeronimo
+01,Amazonas,0105,Luya,010519,San Juan de Lopecancha
+01,Amazonas,0105,Luya,010520,Santa Catalina
+01,Amazonas,0105,Luya,010521,Santo Tomas
+01,Amazonas,0105,Luya,010522,Tingo
+01,Amazonas,0105,Luya,010523,Trita
+01,Amazonas,0106,Rodriguez de Mendoza,010601,San Nicolas
+01,Amazonas,0106,Rodriguez de Mendoza,010602,Chirimoto
+01,Amazonas,0106,Rodriguez de Mendoza,010603,Cochamal
+01,Amazonas,0106,Rodriguez de Mendoza,010604,Huambo
+01,Amazonas,0106,Rodriguez de Mendoza,010605,Limabamba
+01,Amazonas,0106,Rodriguez de Mendoza,010606,Longar
+01,Amazonas,0106,Rodriguez de Mendoza,010607,Mariscal Benavides
+01,Amazonas,0106,Rodriguez de Mendoza,010608,Milpuc
+01,Amazonas,0106,Rodriguez de Mendoza,010609,Omia
+01,Amazonas,0106,Rodriguez de Mendoza,010610,Santa Rosa
+01,Amazonas,0106,Rodriguez de Mendoza,010611,Totora
+01,Amazonas,0106,Rodriguez de Mendoza,010612,Vista Alegre
+01,Amazonas,0107,Utcubamba,010701,Bagua Grande
+01,Amazonas,0107,Utcubamba,010702,Cajaruro
+01,Amazonas,0107,Utcubamba,010703,Cumba
+01,Amazonas,0107,Utcubamba,010704,El Milagro
+01,Amazonas,0107,Utcubamba,010705,Jamalca
+01,Amazonas,0107,Utcubamba,010706,Lonya Grande
+01,Amazonas,0107,Utcubamba,010707,Yamon
+02,Áncash,0201,Huaraz,020101,Huaraz
+02,Áncash,0201,Huaraz,020102,Cochabamba
+02,Áncash,0201,Huaraz,020103,Colcabamba
+02,Áncash,0201,Huaraz,020104,Huanchay
+02,Áncash,0201,Huaraz,020105,Independencia
+02,Áncash,0201,Huaraz,020106,Jangas
+02,Áncash,0201,Huaraz,020107,La Libertad
+02,Áncash,0201,Huaraz,020108,Olleros
+02,Áncash,0201,Huaraz,020109,Pampas Grande
+02,Áncash,0201,Huaraz,020110,Pariacoto
+02,Áncash,0201,Huaraz,020111,Pira
+02,Áncash,0201,Huaraz,020112,Tarica
+02,Áncash,0202,Aija,020201,Aija
+02,Áncash,0202,Aija,020202,Coris
+02,Áncash,0202,Aija,020203,Huacllan
+02,Áncash,0202,Aija,020204,La Merced
+02,Áncash,0202,Aija,020205,Succha
+02,Áncash,0203,Antonio Raymondi,020301,Llamellin
+02,Áncash,0203,Antonio Raymondi,020302,Aczo
+02,Áncash,0203,Antonio Raymondi,020303,Chaccho
+02,Áncash,0203,Antonio Raymondi,020304,Chingas
+02,Áncash,0203,Antonio Raymondi,020305,Mirgas
+02,Áncash,0203,Antonio Raymondi,020306,San Juan de Rontoy
+02,Áncash,0204,Asunción,020401,Chacas
+02,Áncash,0204,Asunción,020402,Acochaca
+02,Áncash,0205,Bolognesi,020501,Chiquian
+02,Áncash,0205,Bolognesi,020502,Abelardo Pardo Lezameta
+02,Áncash,0205,Bolognesi,020503,Antonio Raymondi
+02,Áncash,0205,Bolognesi,020504,Aquia
+02,Áncash,0205,Bolognesi,020505,Cajacay
+02,Áncash,0205,Bolognesi,020506,Canis
+02,Áncash,0205,Bolognesi,020507,Colquioc
+02,Áncash,0205,Bolognesi,020508,Huallanca
+02,Áncash,0205,Bolognesi,020509,Huasta
+02,Áncash,0205,Bolognesi,020510,Huayllacayan
+02,Áncash,0205,Bolognesi,020511,La Primavera
+02,Áncash,0205,Bolognesi,020512,Mangas
+02,Áncash,0205,Bolognesi,020513,Pacllon
+02,Áncash,0205,Bolognesi,020514,San Miguel de Corpanqui
+02,Áncash,0205,Bolognesi,020515,Ticllos
+02,Áncash,0206,Carhuaz,020601,Carhuaz
+02,Áncash,0206,Carhuaz,020602,Acopampa
+02,Áncash,0206,Carhuaz,020603,Amashca
+02,Áncash,0206,Carhuaz,020604,Anta
+02,Áncash,0206,Carhuaz,020605,Ataquero
+02,Áncash,0206,Carhuaz,020606,Marcara
+02,Áncash,0206,Carhuaz,020607,Pariahuanca
+02,Áncash,0206,Carhuaz,020608,San Miguel de Aco
+02,Áncash,0206,Carhuaz,020609,Shilla
+02,Áncash,0206,Carhuaz,020610,Tinco
+02,Áncash,0206,Carhuaz,020611,Yungar
+02,Áncash,0207,Carlos F. Fitzcarrald,020701,San Luis
+02,Áncash,0207,Carlos F. Fitzcarrald,020702,San Nicolas
+02,Áncash,0207,Carlos F. Fitzcarrald,020703,Yauya
+02,Áncash,0208,Casma,020801,Casma
+02,Áncash,0208,Casma,020802,Buena Vista Alta
+02,Áncash,0208,Casma,020803,Comandante Noel
+02,Áncash,0208,Casma,020804,Yautan
+02,Áncash,0209,Corongo,020901,Corongo
+02,Áncash,0209,Corongo,020902,Aco
+02,Áncash,0209,Corongo,020903,Bambas
+02,Áncash,0209,Corongo,020904,Cusca
+02,Áncash,0209,Corongo,020905,La Pampa
+02,Áncash,0209,Corongo,020906,Yanac
+02,Áncash,0209,Corongo,020907,Yupan
+02,Áncash,0210,Huari,021001,Huari
+02,Áncash,0210,Huari,021002,Anra
+02,Áncash,0210,Huari,021003,Cajay
+02,Áncash,0210,Huari,021004,Chavin de Huantar
+02,Áncash,0210,Huari,021005,Huacachi
+02,Áncash,0210,Huari,021006,Huacchis
+02,Áncash,0210,Huari,021007,Huachis
+02,Áncash,0210,Huari,021008,Huantar
+02,Áncash,0210,Huari,021009,Masin
+02,Áncash,0210,Huari,021010,Paucas
+02,Áncash,0210,Huari,021011,Ponto
+02,Áncash,0210,Huari,021012,Rahuapampa
+02,Áncash,0210,Huari,021013,Rapayan
+02,Áncash,0210,Huari,021014,San Marcos
+02,Áncash,0210,Huari,021015,San Pedro de Chana
+02,Áncash,0210,Huari,021016,Uco
+02,Áncash,0211,Huarmey,021101,Huarmey
+02,Áncash,0211,Huarmey,021102,Cochapeti
+02,Áncash,0211,Huarmey,021103,Culebras
+02,Áncash,0211,Huarmey,021104,Huayan
+02,Áncash,0211,Huarmey,021105,Malvas
+02,Áncash,0212,Huaylas,021201,Caraz
+02,Áncash,0212,Huaylas,021202,Huallanca
+02,Áncash,0212,Huaylas,021203,Huata
+02,Áncash,0212,Huaylas,021204,Huaylas
+02,Áncash,0212,Huaylas,021205,Mato
+02,Áncash,0212,Huaylas,021206,Pamparomas
+02,Áncash,0212,Huaylas,021207,Pueblo Libre
+02,Áncash,0212,Huaylas,021208,Santa Cruz
+02,Áncash,0212,Huaylas,021209,Santo Toribio
+02,Áncash,0212,Huaylas,021210,Yuracmarca
+02,Áncash,0213,Mariscal Luzuriaga,021301,Piscobamba
+02,Áncash,0213,Mariscal Luzuriaga,021302,Casca
+02,Áncash,0213,Mariscal Luzuriaga,021303,Eleazar Guzman Barron
+02,Áncash,0213,Mariscal Luzuriaga,021304,Fidel Olivas Escudero
+02,Áncash,0213,Mariscal Luzuriaga,021305,Llama
+02,Áncash,0213,Mariscal Luzuriaga,021306,Llumpa
+02,Áncash,0213,Mariscal Luzuriaga,021307,Lucma
+02,Áncash,0213,Mariscal Luzuriaga,021308,Musga
+02,Áncash,0214,Ocros,021401,Ocros
+02,Áncash,0214,Ocros,021402,Acas
+02,Áncash,0214,Ocros,021403,Cajamarquilla
+02,Áncash,0214,Ocros,021404,Carhuapampa
+02,Áncash,0214,Ocros,021405,Cochas
+02,Áncash,0214,Ocros,021406,Congas
+02,Áncash,0214,Ocros,021407,Llipa
+02,Áncash,0214,Ocros,021408,San Cristobal de Rajan
+02,Áncash,0214,Ocros,021409,San Pedro
+02,Áncash,0214,Ocros,021410,Santiago de Chilcas
+02,Áncash,0215,Pallasca,021501,Cabana
+02,Áncash,0215,Pallasca,021502,Bolognesi
+02,Áncash,0215,Pallasca,021503,Conchucos
+02,Áncash,0215,Pallasca,021504,Huacaschuque
+02,Áncash,0215,Pallasca,021505,Huandoval
+02,Áncash,0215,Pallasca,021506,Lacabamba
+02,Áncash,0215,Pallasca,021507,Llapo
+02,Áncash,0215,Pallasca,021508,Pallasca
+02,Áncash,0215,Pallasca,021509,Pampas
+02,Áncash,0215,Pallasca,021510,Santa Rosa
+02,Áncash,0215,Pallasca,021511,Tauca
+02,Áncash,0216,Pomabamba,021601,Pomabamba
+02,Áncash,0216,Pomabamba,021602,Huayllan
+02,Áncash,0216,Pomabamba,021603,Parobamba
+02,Áncash,0216,Pomabamba,021604,Quinuabamba
+02,Áncash,0217,Recuay,021701,Recuay
+02,Áncash,0217,Recuay,021702,Catac
+02,Áncash,0217,Recuay,021703,Cotaparaco
+02,Áncash,0217,Recuay,021704,Huayllapampa
+02,Áncash,0217,Recuay,021705,Llacllin
+02,Áncash,0217,Recuay,021706,Marca
+02,Áncash,0217,Recuay,021707,Pampas Chico
+02,Áncash,0217,Recuay,021708,Pararin
+02,Áncash,0217,Recuay,021709,Tapacocha
+02,Áncash,0217,Recuay,021710,Ticapampa
+02,Áncash,0218,Santa,021801,Chimbote
+02,Áncash,0218,Santa,021802,Caceres del Peru
+02,Áncash,0218,Santa,021803,Coishco
+02,Áncash,0218,Santa,021804,Macate
+02,Áncash,0218,Santa,021805,Moro
+02,Áncash,0218,Santa,021806,Nepeña
+02,Áncash,0218,Santa,021807,Samanco
+02,Áncash,0218,Santa,021808,Santa
+02,Áncash,0218,Santa,021809,Nuevo Chimbote
+02,Áncash,0219,Sihuas,021901,Sihuas
+02,Áncash,0219,Sihuas,021902,Acobamba
+02,Áncash,0219,Sihuas,021903,Alfonso Ugarte
+02,Áncash,0219,Sihuas,021904,Cashapampa
+02,Áncash,0219,Sihuas,021905,Chingalpo
+02,Áncash,0219,Sihuas,021906,Huayllabamba
+02,Áncash,0219,Sihuas,021907,Quiches
+02,Áncash,0219,Sihuas,021908,Ragash
+02,Áncash,0219,Sihuas,021909,San Juan
+02,Áncash,0219,Sihuas,021910,Sicsibamba
+02,Áncash,0220,Yungay,022001,Yungay
+02,Áncash,0220,Yungay,022002,Cascapara
+02,Áncash,0220,Yungay,022003,Mancos
+02,Áncash,0220,Yungay,022004,Matacoto
+02,Áncash,0220,Yungay,022005,Quillo
+02,Áncash,0220,Yungay,022006,Ranrahirca
+02,Áncash,0220,Yungay,022007,Shupluy
+02,Áncash,0220,Yungay,022008,Yanama
+03,Apurímac,0301,Abancay,030101,Abancay
+03,Apurímac,0301,Abancay,030102,Chacoche
+03,Apurímac,0301,Abancay,030103,Circa
+03,Apurímac,0301,Abancay,030104,Curahuasi
+03,Apurímac,0301,Abancay,030105,Huanipaca
+03,Apurímac,0301,Abancay,030106,Lambrama
+03,Apurímac,0301,Abancay,030107,Pichirhua
+03,Apurímac,0301,Abancay,030108,San Pedro de Cachora
+03,Apurímac,0301,Abancay,030109,Tamburco
+03,Apurímac,0302,Andahuaylas,030201,Andahuaylas
+03,Apurímac,0302,Andahuaylas,030202,Andarapa
+03,Apurímac,0302,Andahuaylas,030203,Chiara
+03,Apurímac,0302,Andahuaylas,030204,Huancarama
+03,Apurímac,0302,Andahuaylas,030205,Huancaray
+03,Apurímac,0302,Andahuaylas,030206,Huayana
+03,Apurímac,0302,Andahuaylas,030207,Kishuara
+03,Apurímac,0302,Andahuaylas,030208,Pacobamba
+03,Apurímac,0302,Andahuaylas,030209,Pacucha
+03,Apurímac,0302,Andahuaylas,030210,Pampachiri
+03,Apurímac,0302,Andahuaylas,030211,Pomacocha
+03,Apurímac,0302,Andahuaylas,030212,San Antonio de Cachi
+03,Apurímac,0302,Andahuaylas,030213,San Jeronimo
+03,Apurímac,0302,Andahuaylas,030214,San Miguel de Chaccrampa
+03,Apurímac,0302,Andahuaylas,030215,Santa Maria de Chicmo
+03,Apurímac,0302,Andahuaylas,030216,Talavera
+03,Apurímac,0302,Andahuaylas,030217,Tumay Huaraca
+03,Apurímac,0302,Andahuaylas,030218,Turpo
+03,Apurímac,0302,Andahuaylas,030219,Kaquiabamba
+03,Apurímac,0302,Andahuaylas,030220,José María Arguedas
+03,Apurímac,0303,Antabamba,030301,Antabamba
+03,Apurímac,0303,Antabamba,030302,El Oro
+03,Apurímac,0303,Antabamba,030303,Huaquirca
+03,Apurímac,0303,Antabamba,030304,Juan Espinoza Medrano
+03,Apurímac,0303,Antabamba,030305,Oropesa
+03,Apurímac,0303,Antabamba,030306,Pachaconas
+03,Apurímac,0303,Antabamba,030307,Sabaino
+03,Apurímac,0304,Aymaraes,030401,Chalhuanca
+03,Apurímac,0304,Aymaraes,030402,Capaya
+03,Apurímac,0304,Aymaraes,030403,Caraybamba
+03,Apurímac,0304,Aymaraes,030404,Chapimarca
+03,Apurímac,0304,Aymaraes,030405,Colcabamba
+03,Apurímac,0304,Aymaraes,030406,Cotaruse
+03,Apurímac,0304,Aymaraes,030407,Ihuayllo
+03,Apurímac,0304,Aymaraes,030408,Justo Apu Sahuaraura
+03,Apurímac,0304,Aymaraes,030409,Lucre
+03,Apurímac,0304,Aymaraes,030410,Pocohuanca
+03,Apurímac,0304,Aymaraes,030411,San Juan de Chacña
+03,Apurímac,0304,Aymaraes,030412,Sañayca
+03,Apurímac,0304,Aymaraes,030413,Soraya
+03,Apurímac,0304,Aymaraes,030414,Tapairihua
+03,Apurímac,0304,Aymaraes,030415,Tintay
+03,Apurímac,0304,Aymaraes,030416,Toraya
+03,Apurímac,0304,Aymaraes,030417,Yanaca
+03,Apurímac,0305,Cotabambas,030501,Tambobamba
+03,Apurímac,0305,Cotabambas,030502,Cotabambas
+03,Apurímac,0305,Cotabambas,030503,Coyllurqui
+03,Apurímac,0305,Cotabambas,030504,Haquira
+03,Apurímac,0305,Cotabambas,030505,Mara
+03,Apurímac,0305,Cotabambas,030506,Challhuahuacho
+03,Apurímac,0306,Chincheros,030601,Chincheros
+03,Apurímac,0306,Chincheros,030602,Anco-Huallo
+03,Apurímac,0306,Chincheros,030603,Cocharcas
+03,Apurímac,0306,Chincheros,030604,Huaccana
+03,Apurímac,0306,Chincheros,030605,Ocobamba
+03,Apurímac,0306,Chincheros,030606,Ongoy
+03,Apurímac,0306,Chincheros,030607,Uranmarca
+03,Apurímac,0306,Chincheros,030608,Ranracancha
+03,Apurímac,0306,Chincheros,030609,Rocchacc
+03,Apurímac,0306,Chincheros,030610,El Porvenir
+03,Apurímac,0306,Chincheros,030611,Los Chankas
+03,Apurímac,0306,Chincheros,030612,Ahuayro
+03,Apurímac,0307,Grau,030701,Chuquibambilla
+03,Apurímac,0307,Grau,030702,Curpahuasi
+03,Apurímac,0307,Grau,030703,Gamarra
+03,Apurímac,0307,Grau,030704,Huayllati
+03,Apurímac,0307,Grau,030705,Mamara
+03,Apurímac,0307,Grau,030706,Micaela Bastidas
+03,Apurímac,0307,Grau,030707,Pataypampa
+03,Apurímac,0307,Grau,030708,Progreso
+03,Apurímac,0307,Grau,030709,San Antonio
+03,Apurímac,0307,Grau,030710,Santa Rosa
+03,Apurímac,0307,Grau,030711,Turpay
+03,Apurímac,0307,Grau,030712,Vilcabamba
+03,Apurímac,0307,Grau,030713,Virundo
+03,Apurímac,0307,Grau,030714,Curasco
+04,Arequipa,0401,Arequipa,040101,Arequipa
+04,Arequipa,0401,Arequipa,040102,Alto Selva Alegre
+04,Arequipa,0401,Arequipa,040103,Cayma
+04,Arequipa,0401,Arequipa,040104,Cerro Colorado
+04,Arequipa,0401,Arequipa,040105,Characato
+04,Arequipa,0401,Arequipa,040106,Chiguata
+04,Arequipa,0401,Arequipa,040107,Jacobo Hunter
+04,Arequipa,0401,Arequipa,040108,La Joya
+04,Arequipa,0401,Arequipa,040109,Mariano Melgar
+04,Arequipa,0401,Arequipa,040110,Miraflores
+04,Arequipa,0401,Arequipa,040111,Mollebaya
+04,Arequipa,0401,Arequipa,040112,Paucarpata
+04,Arequipa,0401,Arequipa,040113,Pocsi
+04,Arequipa,0401,Arequipa,040114,Polobaya
+04,Arequipa,0401,Arequipa,040115,Quequeña
+04,Arequipa,0401,Arequipa,040116,Sabandia
+04,Arequipa,0401,Arequipa,040117,Sachaca
+04,Arequipa,0401,Arequipa,040118,San Juan de Siguas
+04,Arequipa,0401,Arequipa,040119,San Juan de Tarucani
+04,Arequipa,0401,Arequipa,040120,Santa Isabel de Siguas
+04,Arequipa,0401,Arequipa,040121,Santa Rita de Siguas
+04,Arequipa,0401,Arequipa,040122,Socabaya
+04,Arequipa,0401,Arequipa,040123,Tiabaya
+04,Arequipa,0401,Arequipa,040124,Uchumayo
+04,Arequipa,0401,Arequipa,040125,Vitor
+04,Arequipa,0401,Arequipa,040126,Yanahuara
+04,Arequipa,0401,Arequipa,040127,Yarabamba
+04,Arequipa,0401,Arequipa,040128,Yura
+04,Arequipa,0401,Arequipa,040129,Jose Luis Bustamante y Rivero
+04,Arequipa,0402,Camana,040201,Camana
+04,Arequipa,0402,Camana,040202,Jose Maria Quimper
+04,Arequipa,0402,Camana,040203,Mariano Nicolas Valcarcel
+04,Arequipa,0402,Camana,040204,Mariscal Caceres
+04,Arequipa,0402,Camana,040205,Nicolas de Pierola
+04,Arequipa,0402,Camana,040206,Ocoña
+04,Arequipa,0402,Camana,040207,Quilca
+04,Arequipa,0402,Camana,040208,Samuel Pastor
+04,Arequipa,0403,Caraveli,040301,Caraveli
+04,Arequipa,0403,Caraveli,040302,Acari
+04,Arequipa,0403,Caraveli,040303,Atico
+04,Arequipa,0403,Caraveli,040304,Atiquipa
+04,Arequipa,0403,Caraveli,040305,Bella Union
+04,Arequipa,0403,Caraveli,040306,Cahuacho
+04,Arequipa,0403,Caraveli,040307,Chala
+04,Arequipa,0403,Caraveli,040308,Chaparra
+04,Arequipa,0403,Caraveli,040309,Huanuhuanu
+04,Arequipa,0403,Caraveli,040310,Jaqui
+04,Arequipa,0403,Caraveli,040311,Lomas
+04,Arequipa,0403,Caraveli,040312,Quicacha
+04,Arequipa,0403,Caraveli,040313,Yauca
+04,Arequipa,0404,Castilla,040401,Aplao
+04,Arequipa,0404,Castilla,040402,Andagua
+04,Arequipa,0404,Castilla,040403,Ayo
+04,Arequipa,0404,Castilla,040404,Chachas
+04,Arequipa,0404,Castilla,040405,Chilcaymarca
+04,Arequipa,0404,Castilla,040406,Choco
+04,Arequipa,0404,Castilla,040407,Huancarqui
+04,Arequipa,0404,Castilla,040408,Machaguay
+04,Arequipa,0404,Castilla,040409,Orcopampa
+04,Arequipa,0404,Castilla,040410,Pampacolca
+04,Arequipa,0404,Castilla,040411,Tipan
+04,Arequipa,0404,Castilla,040412,Uñon
+04,Arequipa,0404,Castilla,040413,Uraca
+04,Arequipa,0404,Castilla,040414,Viraco
+04,Arequipa,0405,Caylloma,040501,Chivay
+04,Arequipa,0405,Caylloma,040502,Achoma
+04,Arequipa,0405,Caylloma,040503,Cabanaconde
+04,Arequipa,0405,Caylloma,040504,Callalli
+04,Arequipa,0405,Caylloma,040505,Caylloma
+04,Arequipa,0405,Caylloma,040506,Coporaque
+04,Arequipa,0405,Caylloma,040507,Huambo
+04,Arequipa,0405,Caylloma,040508,Huanca
+04,Arequipa,0405,Caylloma,040509,Ichupampa
+04,Arequipa,0405,Caylloma,040510,Lari
+04,Arequipa,0405,Caylloma,040511,Lluta
+04,Arequipa,0405,Caylloma,040512,Maca
+04,Arequipa,0405,Caylloma,040513,Madrigal
+04,Arequipa,0405,Caylloma,040514,San Antonio de Chuca
+04,Arequipa,0405,Caylloma,040515,Sibayo
+04,Arequipa,0405,Caylloma,040516,Tapay
+04,Arequipa,0405,Caylloma,040517,Tisco
+04,Arequipa,0405,Caylloma,040518,Tuti
+04,Arequipa,0405,Caylloma,040519,Yanque
+04,Arequipa,0405,Caylloma,040520,Majes
+04,Arequipa,0406,Condesuyos,040601,Chuquibamba
+04,Arequipa,0406,Condesuyos,040602,Andaray
+04,Arequipa,0406,Condesuyos,040603,Cayarani
+04,Arequipa,0406,Condesuyos,040604,Chichas
+04,Arequipa,0406,Condesuyos,040605,Iray
+04,Arequipa,0406,Condesuyos,040606,Rio Grande
+04,Arequipa,0406,Condesuyos,040607,Salamanca
+04,Arequipa,0406,Condesuyos,040608,Yanaquihua
+04,Arequipa,0407,Islay,040701,Mollendo
+04,Arequipa,0407,Islay,040702,Cocachacra
+04,Arequipa,0407,Islay,040703,Dean Valdivia
+04,Arequipa,0407,Islay,040704,Islay
+04,Arequipa,0407,Islay,040705,Mejia
+04,Arequipa,0407,Islay,040706,Punta de Bombon
+04,Arequipa,0408,La Unión,040801,Cotahuasi
+04,Arequipa,0408,La Unión,040802,Alca
+04,Arequipa,0408,La Unión,040803,Charcana
+04,Arequipa,0408,La Unión,040804,Huaynacotas
+04,Arequipa,0408,La Unión,040805,Pampamarca
+04,Arequipa,0408,La Unión,040806,Puyca
+04,Arequipa,0408,La Unión,040807,Quechualla
+04,Arequipa,0408,La Unión,040808,Sayla
+04,Arequipa,0408,La Unión,040809,Tauria
+04,Arequipa,0408,La Unión,040810,Tomepampa
+04,Arequipa,0408,La Unión,040811,Toro
+05,Ayacucho,0501,Huamanga,050101,Ayacucho
+05,Ayacucho,0501,Huamanga,050102,Acocro
+05,Ayacucho,0501,Huamanga,050103,Acos Vinchos
+05,Ayacucho,0501,Huamanga,050104,Carmen Alto
+05,Ayacucho,0501,Huamanga,050105,Chiara
+05,Ayacucho,0501,Huamanga,050106,Ocros
+05,Ayacucho,0501,Huamanga,050107,Pacaycasa
+05,Ayacucho,0501,Huamanga,050108,Quinua
+05,Ayacucho,0501,Huamanga,050109,San Jose de Ticllas
+05,Ayacucho,0501,Huamanga,050110,San Juan Bautista
+05,Ayacucho,0501,Huamanga,050111,Santiago de Pischa
+05,Ayacucho,0501,Huamanga,050112,Socos
+05,Ayacucho,0501,Huamanga,050113,Tambillo
+05,Ayacucho,0501,Huamanga,050114,Vinchos
+05,Ayacucho,0501,Huamanga,050115,Jesus Nazareno
+05,Ayacucho,0501,Huamanga,050116,Andrés Avelino Cáceres Dorregaray
+05,Ayacucho,0502,Cangallo,050201,Cangallo
+05,Ayacucho,0502,Cangallo,050202,Chuschi
+05,Ayacucho,0502,Cangallo,050203,Los Morochucos
+05,Ayacucho,0502,Cangallo,050204,Maria Parado de Bellido
+05,Ayacucho,0502,Cangallo,050205,Paras
+05,Ayacucho,0502,Cangallo,050206,Totos
+05,Ayacucho,0503,Huanca Sancos,050301,Sancos
+05,Ayacucho,0503,Huanca Sancos,050302,Carapo
+05,Ayacucho,0503,Huanca Sancos,050303,Sacsamarca
+05,Ayacucho,0503,Huanca Sancos,050304,Santiago de Lucanamarca
+05,Ayacucho,0504,Huanta,050401,Huanta
+05,Ayacucho,0504,Huanta,050402,Ayahuanco
+05,Ayacucho,0504,Huanta,050403,Huamanguilla
+05,Ayacucho,0504,Huanta,050404,Iguain
+05,Ayacucho,0504,Huanta,050405,Luricocha
+05,Ayacucho,0504,Huanta,050406,Santillana
+05,Ayacucho,0504,Huanta,050407,Sivia
+05,Ayacucho,0504,Huanta,050408,Llochegua
+05,Ayacucho,0504,Huanta,050409,Canayre
+05,Ayacucho,0504,Huanta,050410,Uchuraccay
+05,Ayacucho,0504,Huanta,050411,Pucacolpa
+05,Ayacucho,0504,Huanta,050412,Chaca
+05,Ayacucho,0504,Huanta,050413,Putis
+05,Ayacucho,0505,La Mar,050501,San Miguel
+05,Ayacucho,0505,La Mar,050502,Anco
+05,Ayacucho,0505,La Mar,050503,Ayna
+05,Ayacucho,0505,La Mar,050504,Chilcas
+05,Ayacucho,0505,La Mar,050505,Chungui
+05,Ayacucho,0505,La Mar,050506,Luis Carranza
+05,Ayacucho,0505,La Mar,050507,Santa Rosa
+05,Ayacucho,0505,La Mar,050508,Tambo
+05,Ayacucho,0505,La Mar,050509,Samugari
+05,Ayacucho,0505,La Mar,050510,Anchihuay
+05,Ayacucho,0505,La Mar,050511,Oronccoy
+05,Ayacucho,0505,La Mar,050512,Unión Progreso
+05,Ayacucho,0505,La Mar,050513,Rio Magdalena
+05,Ayacucho,0505,La Mar,050514,Ninabamba
+05,Ayacucho,0505,La Mar,050515,Patibamba
+05,Ayacucho,0506,Lucanas,050601,Puquio
+05,Ayacucho,0506,Lucanas,050602,Aucara
+05,Ayacucho,0506,Lucanas,050603,Cabana
+05,Ayacucho,0506,Lucanas,050604,Carmen Salcedo
+05,Ayacucho,0506,Lucanas,050605,Chaviña
+05,Ayacucho,0506,Lucanas,050606,Chipao
+05,Ayacucho,0506,Lucanas,050607,Huac-Huas
+05,Ayacucho,0506,Lucanas,050608,Laramate
+05,Ayacucho,0506,Lucanas,050609,Leoncio Prado
+05,Ayacucho,0506,Lucanas,050610,Llauta
+05,Ayacucho,0506,Lucanas,050611,Lucanas
+05,Ayacucho,0506,Lucanas,050612,Ocaña
+05,Ayacucho,0506,Lucanas,050613,Otoca
+05,Ayacucho,0506,Lucanas,050614,Saisa
+05,Ayacucho,0506,Lucanas,050615,San Cristobal
+05,Ayacucho,0506,Lucanas,050616,San Juan
+05,Ayacucho,0506,Lucanas,050617,San Pedro
+05,Ayacucho,0506,Lucanas,050618,San Pedro de Palco
+05,Ayacucho,0506,Lucanas,050619,Sancos
+05,Ayacucho,0506,Lucanas,050620,Santa Ana de Huaycahuacho
+05,Ayacucho,0506,Lucanas,050621,Santa Lucia
+05,Ayacucho,0507,Parinacochas,050701,Coracora
+05,Ayacucho,0507,Parinacochas,050702,Chumpi
+05,Ayacucho,0507,Parinacochas,050703,Coronel Castañeda
+05,Ayacucho,0507,Parinacochas,050704,Pacapausa
+05,Ayacucho,0507,Parinacochas,050705,Pullo
+05,Ayacucho,0507,Parinacochas,050706,Puyusca
+05,Ayacucho,0507,Parinacochas,050707,San Francisco de Ravacayco
+05,Ayacucho,0507,Parinacochas,050708,Upahuacho
+05,Ayacucho,0508,Paucar del Sara Sara,050801,Pausa
+05,Ayacucho,0508,Paucar del Sara Sara,050802,Colta
+05,Ayacucho,0508,Paucar del Sara Sara,050803,Corculla
+05,Ayacucho,0508,Paucar del Sara Sara,050804,Lampa
+05,Ayacucho,0508,Paucar del Sara Sara,050805,Marcabamba
+05,Ayacucho,0508,Paucar del Sara Sara,050806,Oyolo
+05,Ayacucho,0508,Paucar del Sara Sara,050807,Pararca
+05,Ayacucho,0508,Paucar del Sara Sara,050808,San Javier de Alpabamba
+05,Ayacucho,0508,Paucar del Sara Sara,050809,San Jose de Ushua
+05,Ayacucho,0508,Paucar del Sara Sara,050810,Sara Sara
+05,Ayacucho,0509,Sucre,050901,Querobamba
+05,Ayacucho,0509,Sucre,050902,Belen
+05,Ayacucho,0509,Sucre,050903,Chalcos
+05,Ayacucho,0509,Sucre,050904,Chilcayoc
+05,Ayacucho,0509,Sucre,050905,Huacaña
+05,Ayacucho,0509,Sucre,050906,Morcolla
+05,Ayacucho,0509,Sucre,050907,Paico
+05,Ayacucho,0509,Sucre,050908,San Pedro de Larcay
+05,Ayacucho,0509,Sucre,050909,San Salvador de Quije
+05,Ayacucho,0509,Sucre,050910,Santiago de Paucaray
+05,Ayacucho,0509,Sucre,050911,Soras
+05,Ayacucho,0510,Victor Fajardo,051001,Huancapi
+05,Ayacucho,0510,Victor Fajardo,051002,Alcamenca
+05,Ayacucho,0510,Victor Fajardo,051003,Apongo
+05,Ayacucho,0510,Victor Fajardo,051004,Asquipata
+05,Ayacucho,0510,Victor Fajardo,051005,Canaria
+05,Ayacucho,0510,Victor Fajardo,051006,Cayara
+05,Ayacucho,0510,Victor Fajardo,051007,Colca
+05,Ayacucho,0510,Victor Fajardo,051008,Huamanquiquia
+05,Ayacucho,0510,Victor Fajardo,051009,Huancaraylla
+05,Ayacucho,0510,Victor Fajardo,051010,Hualla
+05,Ayacucho,0510,Victor Fajardo,051011,Sarhua
+05,Ayacucho,0510,Victor Fajardo,051012,Vilcanchos
+05,Ayacucho,0511,Vilcas Huaman,051101,Vilcas Huaman
+05,Ayacucho,0511,Vilcas Huaman,051102,Accomarca
+05,Ayacucho,0511,Vilcas Huaman,051103,Carhuanca
+05,Ayacucho,0511,Vilcas Huaman,051104,Concepcion
+05,Ayacucho,0511,Vilcas Huaman,051105,Huambalpa
+05,Ayacucho,0511,Vilcas Huaman,051106,Independencia
+05,Ayacucho,0511,Vilcas Huaman,051107,Saurama
+05,Ayacucho,0511,Vilcas Huaman,051108,Vischongo
+06,Cajamarca,0601,Cajamarca,060101,Cajamarca
+06,Cajamarca,0601,Cajamarca,060102,Asuncion
+06,Cajamarca,0601,Cajamarca,060103,Chetilla
+06,Cajamarca,0601,Cajamarca,060104,Cospan
+06,Cajamarca,0601,Cajamarca,060105,Encañada
+06,Cajamarca,0601,Cajamarca,060106,Jesus
+06,Cajamarca,0601,Cajamarca,060107,Llacanora
+06,Cajamarca,0601,Cajamarca,060108,Los Baños del Inca
+06,Cajamarca,0601,Cajamarca,060109,Magdalena
+06,Cajamarca,0601,Cajamarca,060110,Matara
+06,Cajamarca,0601,Cajamarca,060111,Namora
+06,Cajamarca,0601,Cajamarca,060112,San Juan
+06,Cajamarca,0602,Cajabamba,060201,Cajabamba
+06,Cajamarca,0602,Cajabamba,060202,Cachachi
+06,Cajamarca,0602,Cajabamba,060203,Condebamba
+06,Cajamarca,0602,Cajabamba,060204,Sitacocha
+06,Cajamarca,0603,Celendin,060301,Celendin
+06,Cajamarca,0603,Celendin,060302,Chumuch
+06,Cajamarca,0603,Celendin,060303,Cortegana
+06,Cajamarca,0603,Celendin,060304,Huasmin
+06,Cajamarca,0603,Celendin,060305,Jorge Chavez
+06,Cajamarca,0603,Celendin,060306,Jose Galvez
+06,Cajamarca,0603,Celendin,060307,Miguel Iglesias
+06,Cajamarca,0603,Celendin,060308,Oxamarca
+06,Cajamarca,0603,Celendin,060309,Sorochuco
+06,Cajamarca,0603,Celendin,060310,Sucre
+06,Cajamarca,0603,Celendin,060311,Utco
+06,Cajamarca,0603,Celendin,060312,La Libertad de Pallan
+06,Cajamarca,0604,Chota,060401,Chota
+06,Cajamarca,0604,Chota,060402,Anguia
+06,Cajamarca,0604,Chota,060403,Chadin
+06,Cajamarca,0604,Chota,060404,Chiguirip
+06,Cajamarca,0604,Chota,060405,Chimban
+06,Cajamarca,0604,Chota,060406,Choropampa
+06,Cajamarca,0604,Chota,060407,Cochabamba
+06,Cajamarca,0604,Chota,060408,Conchan
+06,Cajamarca,0604,Chota,060409,Huambos
+06,Cajamarca,0604,Chota,060410,Lajas
+06,Cajamarca,0604,Chota,060411,Llama
+06,Cajamarca,0604,Chota,060412,Miracosta
+06,Cajamarca,0604,Chota,060413,Paccha
+06,Cajamarca,0604,Chota,060414,Pion
+06,Cajamarca,0604,Chota,060415,Querocoto
+06,Cajamarca,0604,Chota,060416,San Juan de Licupis
+06,Cajamarca,0604,Chota,060417,Tacabamba
+06,Cajamarca,0604,Chota,060418,Tocmoche
+06,Cajamarca,0604,Chota,060419,Chalamarca
+06,Cajamarca,0605,Contumaza,060501,Contumaza
+06,Cajamarca,0605,Contumaza,060502,Chilete
+06,Cajamarca,0605,Contumaza,060503,Cupisnique
+06,Cajamarca,0605,Contumaza,060504,Guzmango
+06,Cajamarca,0605,Contumaza,060505,San Benito
+06,Cajamarca,0605,Contumaza,060506,Santa Cruz de Toledo
+06,Cajamarca,0605,Contumaza,060507,Tantarica
+06,Cajamarca,0605,Contumaza,060508,Yonan
+06,Cajamarca,0606,Cutervo,060601,Cutervo
+06,Cajamarca,0606,Cutervo,060602,Callayuc
+06,Cajamarca,0606,Cutervo,060603,Choros
+06,Cajamarca,0606,Cutervo,060604,Cujillo
+06,Cajamarca,0606,Cutervo,060605,La Ramada
+06,Cajamarca,0606,Cutervo,060606,Pimpingos
+06,Cajamarca,0606,Cutervo,060607,Querocotillo
+06,Cajamarca,0606,Cutervo,060608,San Andres de Cutervo
+06,Cajamarca,0606,Cutervo,060609,San Juan de Cutervo
+06,Cajamarca,0606,Cutervo,060610,San Luis de Lucma
+06,Cajamarca,0606,Cutervo,060611,Santa Cruz
+06,Cajamarca,0606,Cutervo,060612,Santo Domingo de La Capilla
+06,Cajamarca,0606,Cutervo,060613,Santo Tomas
+06,Cajamarca,0606,Cutervo,060614,Socota
+06,Cajamarca,0606,Cutervo,060615,Toribio Casanova
+06,Cajamarca,0607,Hualgayoc,060701,Bambamarca
+06,Cajamarca,0607,Hualgayoc,060702,Chugur
+06,Cajamarca,0607,Hualgayoc,060703,Hualgayoc
+06,Cajamarca,0608,Jaen,060801,Jaen
+06,Cajamarca,0608,Jaen,060802,Bellavista
+06,Cajamarca,0608,Jaen,060803,Chontali
+06,Cajamarca,0608,Jaen,060804,Colasay
+06,Cajamarca,0608,Jaen,060805,Huabal
+06,Cajamarca,0608,Jaen,060806,Las Pirias
+06,Cajamarca,0608,Jaen,060807,Pomahuaca
+06,Cajamarca,0608,Jaen,060808,Pucara
+06,Cajamarca,0608,Jaen,060809,Sallique
+06,Cajamarca,0608,Jaen,060810,San Felipe
+06,Cajamarca,0608,Jaen,060811,San Jose del Alto
+06,Cajamarca,0608,Jaen,060812,Santa Rosa
+06,Cajamarca,0609,San Ignacio,060901,San Ignacio
+06,Cajamarca,0609,San Ignacio,060902,Chirinos
+06,Cajamarca,0609,San Ignacio,060903,Huarango
+06,Cajamarca,0609,San Ignacio,060904,La Coipa
+06,Cajamarca,0609,San Ignacio,060905,Namballe
+06,Cajamarca,0609,San Ignacio,060906,San Jose de Lourdes
+06,Cajamarca,0609,San Ignacio,060907,Tabaconas
+06,Cajamarca,0610,San Marcos,061001,Pedro Galvez
+06,Cajamarca,0610,San Marcos,061002,Chancay
+06,Cajamarca,0610,San Marcos,061003,Eduardo Villanueva
+06,Cajamarca,0610,San Marcos,061004,Gregorio Pita
+06,Cajamarca,0610,San Marcos,061005,Ichocan
+06,Cajamarca,0610,San Marcos,061006,Jose Manuel Quiroz
+06,Cajamarca,0610,San Marcos,061007,Jose Sabogal
+06,Cajamarca,0611,San Miguel,061101,San Miguel
+06,Cajamarca,0611,San Miguel,061102,Bolivar
+06,Cajamarca,0611,San Miguel,061103,Calquis
+06,Cajamarca,0611,San Miguel,061104,Catilluc
+06,Cajamarca,0611,San Miguel,061105,El Prado
+06,Cajamarca,0611,San Miguel,061106,La Florida
+06,Cajamarca,0611,San Miguel,061107,Llapa
+06,Cajamarca,0611,San Miguel,061108,Nanchoc
+06,Cajamarca,0611,San Miguel,061109,Niepos
+06,Cajamarca,0611,San Miguel,061110,San Gregorio
+06,Cajamarca,0611,San Miguel,061111,San Silvestre de Cochan
+06,Cajamarca,0611,San Miguel,061112,Tongod
+06,Cajamarca,0611,San Miguel,061113,Union Agua Blanca
+06,Cajamarca,0612,San Pablo,061201,San Pablo
+06,Cajamarca,0612,San Pablo,061202,San Bernardino
+06,Cajamarca,0612,San Pablo,061203,San Luis
+06,Cajamarca,0612,San Pablo,061204,Tumbaden
+06,Cajamarca,0613,Santa Cruz,061301,Santa Cruz
+06,Cajamarca,0613,Santa Cruz,061302,Andabamba
+06,Cajamarca,0613,Santa Cruz,061303,Catache
+06,Cajamarca,0613,Santa Cruz,061304,Chancaybaños
+06,Cajamarca,0613,Santa Cruz,061305,La Esperanza
+06,Cajamarca,0613,Santa Cruz,061306,Ninabamba
+06,Cajamarca,0613,Santa Cruz,061307,Pulan
+06,Cajamarca,0613,Santa Cruz,061308,Saucepampa
+06,Cajamarca,0613,Santa Cruz,061309,Sexi
+06,Cajamarca,0613,Santa Cruz,061310,Uticyacu
+06,Cajamarca,0613,Santa Cruz,061311,Yauyucan
+07,Callao,0701,Callao,070101,Callao
+07,Callao,0701,Callao,070102,Bellavista
+07,Callao,0701,Callao,070103,Carmen de La Legua Reynoso
+07,Callao,0701,Callao,070104,La Perla
+07,Callao,0701,Callao,070105,La Punta
+07,Callao,0701,Callao,070106,Ventanilla
+07,Callao,0701,Callao,070107,Mi Peru
+08,Cusco,0801,Cusco,080101,Cusco
+08,Cusco,0801,Cusco,080102,Ccorca
+08,Cusco,0801,Cusco,080103,Poroy
+08,Cusco,0801,Cusco,080104,San Jeronimo
+08,Cusco,0801,Cusco,080105,San Sebastian
+08,Cusco,0801,Cusco,080106,Santiago
+08,Cusco,0801,Cusco,080107,Saylla
+08,Cusco,0801,Cusco,080108,Wanchaq
+08,Cusco,0802,Acomayo,080201,Acomayo
+08,Cusco,0802,Acomayo,080202,Acopia
+08,Cusco,0802,Acomayo,080203,Acos
+08,Cusco,0802,Acomayo,080204,Mosoc Llacta
+08,Cusco,0802,Acomayo,080205,Pomacanchi
+08,Cusco,0802,Acomayo,080206,Rondocan
+08,Cusco,0802,Acomayo,080207,Sangarara
+08,Cusco,0803,Anta,080301,Anta
+08,Cusco,0803,Anta,080302,Ancahuasi
+08,Cusco,0803,Anta,080303,Cachimayo
+08,Cusco,0803,Anta,080304,Chinchaypujio
+08,Cusco,0803,Anta,080305,Huarocondo
+08,Cusco,0803,Anta,080306,Limatambo
+08,Cusco,0803,Anta,080307,Mollepata
+08,Cusco,0803,Anta,080308,Pucyura
+08,Cusco,0803,Anta,080309,Zurite
+08,Cusco,0804,Calca,080401,Calca
+08,Cusco,0804,Calca,080402,Coya
+08,Cusco,0804,Calca,080403,Lamay
+08,Cusco,0804,Calca,080404,Lares
+08,Cusco,0804,Calca,080405,Pisac
+08,Cusco,0804,Calca,080406,San Salvador
+08,Cusco,0804,Calca,080407,Taray
+08,Cusco,0804,Calca,080408,Yanatile
+08,Cusco,0805,Canas,080501,Yanaoca
+08,Cusco,0805,Canas,080502,Checca
+08,Cusco,0805,Canas,080503,Kunturkanki
+08,Cusco,0805,Canas,080504,Langui
+08,Cusco,0805,Canas,080505,Layo
+08,Cusco,0805,Canas,080506,Pampamarca
+08,Cusco,0805,Canas,080507,Quehue
+08,Cusco,0805,Canas,080508,Tupac Amaru
+08,Cusco,0806,Canchis,080601,Sicuani
+08,Cusco,0806,Canchis,080602,Checacupe
+08,Cusco,0806,Canchis,080603,Combapata
+08,Cusco,0806,Canchis,080604,Marangani
+08,Cusco,0806,Canchis,080605,Pitumarca
+08,Cusco,0806,Canchis,080606,San Pablo
+08,Cusco,0806,Canchis,080607,San Pedro
+08,Cusco,0806,Canchis,080608,Tinta
+08,Cusco,0807,Chumbivilcas,080701,Santo Tomas
+08,Cusco,0807,Chumbivilcas,080702,Capacmarca
+08,Cusco,0807,Chumbivilcas,080703,Chamaca
+08,Cusco,0807,Chumbivilcas,080704,Colquemarca
+08,Cusco,0807,Chumbivilcas,080705,Livitaca
+08,Cusco,0807,Chumbivilcas,080706,Llusco
+08,Cusco,0807,Chumbivilcas,080707,Quiñota
+08,Cusco,0807,Chumbivilcas,080708,Velille
+08,Cusco,0808,Espinar,080801,Espinar
+08,Cusco,0808,Espinar,080802,Condoroma
+08,Cusco,0808,Espinar,080803,Coporaque
+08,Cusco,0808,Espinar,080804,Ocoruro
+08,Cusco,0808,Espinar,080805,Pallpata
+08,Cusco,0808,Espinar,080806,Pichigua
+08,Cusco,0808,Espinar,080807,Suyckutambo
+08,Cusco,0808,Espinar,080808,Alto Pichigua
+08,Cusco,0809,La Convención,080901,Santa Ana
+08,Cusco,0809,La Convención,080902,Echarate
+08,Cusco,0809,La Convención,080903,Huayopata
+08,Cusco,0809,La Convención,080904,Maranura
+08,Cusco,0809,La Convención,080905,Ocobamba
+08,Cusco,0809,La Convención,080906,Quellouno
+08,Cusco,0809,La Convención,080907,Kimbiri
+08,Cusco,0809,La Convención,080908,Santa Teresa
+08,Cusco,0809,La Convención,080909,Vilcabamba
+08,Cusco,0809,La Convención,080910,Pichari
+08,Cusco,0809,La Convención,080911,Inkawasi
+08,Cusco,0809,La Convención,080912,Villa Virgen
+08,Cusco,0809,La Convención,080913,Villa Kintiarina
+08,Cusco,0809,La Convención,080914,Megantoni
+08,Cusco,0809,La Convención,080915,Kumpirushiato
+08,Cusco,0809,La Convención,080916,Cielo Punco
+08,Cusco,0809,La Convención,080917,Manitea
+08,Cusco,0809,La Convención,080918,Unión Asháninka
+08,Cusco,0810,Paruro,081001,Paruro
+08,Cusco,0810,Paruro,081002,Accha
+08,Cusco,0810,Paruro,081003,Ccapi
+08,Cusco,0810,Paruro,081004,Colcha
+08,Cusco,0810,Paruro,081005,Huanoquite
+08,Cusco,0810,Paruro,081006,Omacha
+08,Cusco,0810,Paruro,081007,Paccaritambo
+08,Cusco,0810,Paruro,081008,Pillpinto
+08,Cusco,0810,Paruro,081009,Yaurisque
+08,Cusco,0811,Paucartambo,081101,Paucartambo
+08,Cusco,0811,Paucartambo,081102,Caicay
+08,Cusco,0811,Paucartambo,081103,Challabamba
+08,Cusco,0811,Paucartambo,081104,Colquepata
+08,Cusco,0811,Paucartambo,081105,Huancarani
+08,Cusco,0811,Paucartambo,081106,Kosñipata
+08,Cusco,0812,Quispicanchi,081201,Urcos
+08,Cusco,0812,Quispicanchi,081202,Andahuaylillas
+08,Cusco,0812,Quispicanchi,081203,Camanti
+08,Cusco,0812,Quispicanchi,081204,Ccarhuayo
+08,Cusco,0812,Quispicanchi,081205,Ccatca
+08,Cusco,0812,Quispicanchi,081206,Cusipata
+08,Cusco,0812,Quispicanchi,081207,Huaro
+08,Cusco,0812,Quispicanchi,081208,Lucre
+08,Cusco,0812,Quispicanchi,081209,Marcapata
+08,Cusco,0812,Quispicanchi,081210,Ocongate
+08,Cusco,0812,Quispicanchi,081211,Oropesa
+08,Cusco,0812,Quispicanchi,081212,Quiquijana
+08,Cusco,0813,Urubamba,081301,Urubamba
+08,Cusco,0813,Urubamba,081302,Chinchero
+08,Cusco,0813,Urubamba,081303,Huayllabamba
+08,Cusco,0813,Urubamba,081304,Machupicchu
+08,Cusco,0813,Urubamba,081305,Maras
+08,Cusco,0813,Urubamba,081306,Ollantaytambo
+08,Cusco,0813,Urubamba,081307,Yucay
+09,Huancavelica,0901,Huancavelica,090101,Huancavelica
+09,Huancavelica,0901,Huancavelica,090102,Acobambilla
+09,Huancavelica,0901,Huancavelica,090103,Acoria
+09,Huancavelica,0901,Huancavelica,090104,Conayca
+09,Huancavelica,0901,Huancavelica,090105,Cuenca
+09,Huancavelica,0901,Huancavelica,090106,Huachocolpa
+09,Huancavelica,0901,Huancavelica,090107,Huayllahuara
+09,Huancavelica,0901,Huancavelica,090108,Izcuchaca
+09,Huancavelica,0901,Huancavelica,090109,Laria
+09,Huancavelica,0901,Huancavelica,090110,Manta
+09,Huancavelica,0901,Huancavelica,090111,Mariscal Caceres
+09,Huancavelica,0901,Huancavelica,090112,Moya
+09,Huancavelica,0901,Huancavelica,090113,Nuevo Occoro
+09,Huancavelica,0901,Huancavelica,090114,Palca
+09,Huancavelica,0901,Huancavelica,090115,Pilchaca
+09,Huancavelica,0901,Huancavelica,090116,Vilca
+09,Huancavelica,0901,Huancavelica,090117,Yauli
+09,Huancavelica,0901,Huancavelica,090118,Ascension
+09,Huancavelica,0901,Huancavelica,090119,Huando
+09,Huancavelica,0902,Acobamba,090201,Acobamba
+09,Huancavelica,0902,Acobamba,090202,Andabamba
+09,Huancavelica,0902,Acobamba,090203,Anta
+09,Huancavelica,0902,Acobamba,090204,Caja
+09,Huancavelica,0902,Acobamba,090205,Marcas
+09,Huancavelica,0902,Acobamba,090206,Paucara
+09,Huancavelica,0902,Acobamba,090207,Pomacocha
+09,Huancavelica,0902,Acobamba,090208,Rosario
+09,Huancavelica,0903,Angaraes,090301,Lircay
+09,Huancavelica,0903,Angaraes,090302,Anchonga
+09,Huancavelica,0903,Angaraes,090303,Callanmarca
+09,Huancavelica,0903,Angaraes,090304,Ccochaccasa
+09,Huancavelica,0903,Angaraes,090305,Chincho
+09,Huancavelica,0903,Angaraes,090306,Congalla
+09,Huancavelica,0903,Angaraes,090307,Huanca-Huanca
+09,Huancavelica,0903,Angaraes,090308,Huayllay Grande
+09,Huancavelica,0903,Angaraes,090309,Julcamarca
+09,Huancavelica,0903,Angaraes,090310,San Antonio de Antaparco
+09,Huancavelica,0903,Angaraes,090311,Santo Tomas de Pata
+09,Huancavelica,0903,Angaraes,090312,Secclla
+09,Huancavelica,0904,Castrovirreyna,090401,Castrovirreyna
+09,Huancavelica,0904,Castrovirreyna,090402,Arma
+09,Huancavelica,0904,Castrovirreyna,090403,Aurahua
+09,Huancavelica,0904,Castrovirreyna,090404,Capillas
+09,Huancavelica,0904,Castrovirreyna,090405,Chupamarca
+09,Huancavelica,0904,Castrovirreyna,090406,Cocas
+09,Huancavelica,0904,Castrovirreyna,090407,Huachos
+09,Huancavelica,0904,Castrovirreyna,090408,Huamatambo
+09,Huancavelica,0904,Castrovirreyna,090409,Mollepampa
+09,Huancavelica,0904,Castrovirreyna,090410,San Juan
+09,Huancavelica,0904,Castrovirreyna,090411,Santa Ana
+09,Huancavelica,0904,Castrovirreyna,090412,Tantara
+09,Huancavelica,0904,Castrovirreyna,090413,Ticrapo
+09,Huancavelica,0905,Churcampa,090501,Churcampa
+09,Huancavelica,0905,Churcampa,090502,Anco
+09,Huancavelica,0905,Churcampa,090503,Chinchihuasi
+09,Huancavelica,0905,Churcampa,090504,El Carmen
+09,Huancavelica,0905,Churcampa,090505,La Merced
+09,Huancavelica,0905,Churcampa,090506,Locroja
+09,Huancavelica,0905,Churcampa,090507,Paucarbamba
+09,Huancavelica,0905,Churcampa,090508,San Miguel de Mayocc
+09,Huancavelica,0905,Churcampa,090509,San Pedro de Coris
+09,Huancavelica,0905,Churcampa,090510,Pachamarca
+09,Huancavelica,0905,Churcampa,090511,Cosme
+09,Huancavelica,0906,Huaytara,090601,Huaytara
+09,Huancavelica,0906,Huaytara,090602,Ayavi
+09,Huancavelica,0906,Huaytara,090603,Cordova
+09,Huancavelica,0906,Huaytara,090604,Huayacundo Arma
+09,Huancavelica,0906,Huaytara,090605,Laramarca
+09,Huancavelica,0906,Huaytara,090606,Ocoyo
+09,Huancavelica,0906,Huaytara,090607,Pilpichaca
+09,Huancavelica,0906,Huaytara,090608,Querco
+09,Huancavelica,0906,Huaytara,090609,Quito-Arma
+09,Huancavelica,0906,Huaytara,090610,San Antonio de Cusicancha
+09,Huancavelica,0906,Huaytara,090611,San Francisco de Sangayaico
+09,Huancavelica,0906,Huaytara,090612,San Isidro
+09,Huancavelica,0906,Huaytara,090613,Santiago de Chocorvos
+09,Huancavelica,0906,Huaytara,090614,Santiago de Quirahuara
+09,Huancavelica,0906,Huaytara,090615,Santo Domingo de Capillas
+09,Huancavelica,0906,Huaytara,090616,Tambo
+09,Huancavelica,0907,Tayacaja,090701,Pampas
+09,Huancavelica,0907,Tayacaja,090702,Acostambo
+09,Huancavelica,0907,Tayacaja,090703,Acraquia
+09,Huancavelica,0907,Tayacaja,090704,Ahuaycha
+09,Huancavelica,0907,Tayacaja,090705,Colcabamba
+09,Huancavelica,0907,Tayacaja,090706,Daniel Hernandez
+09,Huancavelica,0907,Tayacaja,090707,Huachocolpa
+09,Huancavelica,0907,Tayacaja,090709,Huaribamba
+09,Huancavelica,0907,Tayacaja,090710,Ñahuimpuquio
+09,Huancavelica,0907,Tayacaja,090711,Pazos
+09,Huancavelica,0907,Tayacaja,090713,Quishuar
+09,Huancavelica,0907,Tayacaja,090714,Salcabamba
+09,Huancavelica,0907,Tayacaja,090715,Salcahuasi
+09,Huancavelica,0907,Tayacaja,090716,San Marcos de Rocchac
+09,Huancavelica,0907,Tayacaja,090717,Surcubamba
+09,Huancavelica,0907,Tayacaja,090718,Tintay Puncu
+09,Huancavelica,0907,Tayacaja,090719,Quichuas
+09,Huancavelica,0907,Tayacaja,090720,Andaymarca
+09,Huancavelica,0907,Tayacaja,090721,Roble
+09,Huancavelica,0907,Tayacaja,090722,Pichos
+09,Huancavelica,0907,Tayacaja,090723,Santiago de Tucuma
+09,Huancavelica,0907,Tayacaja,090724,Lambras
+09,Huancavelica,0907,Tayacaja,090725,Cochabamba
+10,Huánuco,1001,Huánuco,100101,Huánuco
+10,Huánuco,1001,Huánuco,100102,Amarilis
+10,Huánuco,1001,Huánuco,100103,Chinchao
+10,Huánuco,1001,Huánuco,100104,Churubamba
+10,Huánuco,1001,Huánuco,100105,Margos
+10,Huánuco,1001,Huánuco,100106,Quisqui
+10,Huánuco,1001,Huánuco,100107,San Francisco de Cayran
+10,Huánuco,1001,Huánuco,100108,San Pedro de Chaulan
+10,Huánuco,1001,Huánuco,100109,Santa Maria del Valle
+10,Huánuco,1001,Huánuco,100110,Yarumayo
+10,Huánuco,1001,Huánuco,100111,Pillco Marca
+10,Huánuco,1001,Huánuco,100112,Yacus
+10,Huánuco,1001,Huánuco,100113,San Pablo de Pillao
+10,Huánuco,1002,Ambo,100201,Ambo
+10,Huánuco,1002,Ambo,100202,Cayna
+10,Huánuco,1002,Ambo,100203,Colpas
+10,Huánuco,1002,Ambo,100204,Conchamarca
+10,Huánuco,1002,Ambo,100205,Huacar
+10,Huánuco,1002,Ambo,100206,San Francisco
+10,Huánuco,1002,Ambo,100207,San Rafael
+10,Huánuco,1002,Ambo,100208,Tomay Kichwa
+10,Huánuco,1003,Dos de Mayo,100301,La Union
+10,Huánuco,1003,Dos de Mayo,100307,Chuquis
+10,Huánuco,1003,Dos de Mayo,100311,Marias
+10,Huánuco,1003,Dos de Mayo,100313,Pachas
+10,Huánuco,1003,Dos de Mayo,100316,Quivilla
+10,Huánuco,1003,Dos de Mayo,100317,Ripan
+10,Huánuco,1003,Dos de Mayo,100321,Shunqui
+10,Huánuco,1003,Dos de Mayo,100322,Sillapata
+10,Huánuco,1003,Dos de Mayo,100323,Yanas
+10,Huánuco,1004,Huacaybamba,100401,Huacaybamba
+10,Huánuco,1004,Huacaybamba,100402,Canchabamba
+10,Huánuco,1004,Huacaybamba,100403,Cochabamba
+10,Huánuco,1004,Huacaybamba,100404,Pinra
+10,Huánuco,1005,Huamalies,100501,Llata
+10,Huánuco,1005,Huamalies,100502,Arancay
+10,Huánuco,1005,Huamalies,100503,Chavin de Pariarca
+10,Huánuco,1005,Huamalies,100504,Jacas Grande
+10,Huánuco,1005,Huamalies,100505,Jircan
+10,Huánuco,1005,Huamalies,100506,Miraflores
+10,Huánuco,1005,Huamalies,100507,Monzon
+10,Huánuco,1005,Huamalies,100508,Punchao
+10,Huánuco,1005,Huamalies,100509,Puños
+10,Huánuco,1005,Huamalies,100510,Singa
+10,Huánuco,1005,Huamalies,100511,Tantamayo
+10,Huánuco,1006,Leoncio Prado,100601,Rupa-Rupa
+10,Huánuco,1006,Leoncio Prado,100602,Daniel Alomia Robles
+10,Huánuco,1006,Leoncio Prado,100603,Hermilio Valdizan
+10,Huánuco,1006,Leoncio Prado,100604,Jose Crespo y Castillo
+10,Huánuco,1006,Leoncio Prado,100605,Luyando
+10,Huánuco,1006,Leoncio Prado,100606,Mariano Damaso Beraun
+10,Huánuco,1006,Leoncio Prado,100607,Pucayacu
+10,Huánuco,1006,Leoncio Prado,100608,Castillo Grande
+10,Huánuco,1006,Leoncio Prado,100609,Pueblo Nuevo
+10,Huánuco,1006,Leoncio Prado,100610,Santo Domingo de Anda
+10,Huánuco,1007,Marañón,100701,Huacrachuco
+10,Huánuco,1007,Marañón,100702,Cholon
+10,Huánuco,1007,Marañón,100703,San Buenaventura
+10,Huánuco,1007,Marañón,100704,La Morada
+10,Huánuco,1007,Marañón,100705,Santa Rosa de Alto Yanajanca
+10,Huánuco,1008,Pachitea,100801,Panao
+10,Huánuco,1008,Pachitea,100802,Chaglla
+10,Huánuco,1008,Pachitea,100803,Molino
+10,Huánuco,1008,Pachitea,100804,Umari
+10,Huánuco,1009,Puerto Inca,100901,Puerto Inca
+10,Huánuco,1009,Puerto Inca,100902,Codo del Pozuzo
+10,Huánuco,1009,Puerto Inca,100903,Honoria
+10,Huánuco,1009,Puerto Inca,100904,Tournavista
+10,Huánuco,1009,Puerto Inca,100905,Yuyapichis
+10,Huánuco,1010,Lauricocha,101001,Jesus
+10,Huánuco,1010,Lauricocha,101002,Baños
+10,Huánuco,1010,Lauricocha,101003,Jivia
+10,Huánuco,1010,Lauricocha,101004,Queropalca
+10,Huánuco,1010,Lauricocha,101005,Rondos
+10,Huánuco,1010,Lauricocha,101006,San Francisco de Asis
+10,Huánuco,1010,Lauricocha,101007,San Miguel de Cauri
+10,Huánuco,1011,Yarowilca,101101,Chavinillo
+10,Huánuco,1011,Yarowilca,101102,Cahuac
+10,Huánuco,1011,Yarowilca,101103,Chacabamba
+10,Huánuco,1011,Yarowilca,101104,Aparicio Pomares
+10,Huánuco,1011,Yarowilca,101105,Jacas Chico
+10,Huánuco,1011,Yarowilca,101106,Obas
+10,Huánuco,1011,Yarowilca,101107,Pampamarca
+10,Huánuco,1011,Yarowilca,101108,Choras
+11,Ica,1101,Ica,110101,Ica
+11,Ica,1101,Ica,110102,La Tinguiña
+11,Ica,1101,Ica,110103,Los Aquijes
+11,Ica,1101,Ica,110104,Ocucaje
+11,Ica,1101,Ica,110105,Pachacutec
+11,Ica,1101,Ica,110106,Parcona
+11,Ica,1101,Ica,110107,Pueblo Nuevo
+11,Ica,1101,Ica,110108,Salas
+11,Ica,1101,Ica,110109,San Jose de Los Molinos
+11,Ica,1101,Ica,110110,San Juan Bautista
+11,Ica,1101,Ica,110111,Santiago
+11,Ica,1101,Ica,110112,Subtanjalla
+11,Ica,1101,Ica,110113,Tate
+11,Ica,1101,Ica,110114,Yauca del Rosario
+11,Ica,1102,Chincha,110201,Chincha Alta
+11,Ica,1102,Chincha,110202,Alto Laran
+11,Ica,1102,Chincha,110203,Chavin
+11,Ica,1102,Chincha,110204,Chincha Baja
+11,Ica,1102,Chincha,110205,El Carmen
+11,Ica,1102,Chincha,110206,Grocio Prado
+11,Ica,1102,Chincha,110207,Pueblo Nuevo
+11,Ica,1102,Chincha,110208,San Juan de Yanac
+11,Ica,1102,Chincha,110209,San Pedro de Huacarpana
+11,Ica,1102,Chincha,110210,Sunampe
+11,Ica,1102,Chincha,110211,Tambo de Mora
+11,Ica,1103,Nasca,110301,Nasca
+11,Ica,1103,Nasca,110302,Changuillo
+11,Ica,1103,Nasca,110303,El Ingenio
+11,Ica,1103,Nasca,110304,Marcona
+11,Ica,1103,Nasca,110305,Vista Alegre
+11,Ica,1104,Palpa,110401,Palpa
+11,Ica,1104,Palpa,110402,Llipata
+11,Ica,1104,Palpa,110403,Rio Grande
+11,Ica,1104,Palpa,110404,Santa Cruz
+11,Ica,1104,Palpa,110405,Tibillo
+11,Ica,1105,Pisco,110501,Pisco
+11,Ica,1105,Pisco,110502,Huancano
+11,Ica,1105,Pisco,110503,Humay
+11,Ica,1105,Pisco,110504,Independencia
+11,Ica,1105,Pisco,110505,Paracas
+11,Ica,1105,Pisco,110506,San Andres
+11,Ica,1105,Pisco,110507,San Clemente
+11,Ica,1105,Pisco,110508,Tupac Amaru Inca
+12,Junín,1201,Huancayo,120101,Huancayo
+12,Junín,1201,Huancayo,120104,Carhuacallanga
+12,Junín,1201,Huancayo,120105,Chacapampa
+12,Junín,1201,Huancayo,120106,Chicche
+12,Junín,1201,Huancayo,120107,Chilca
+12,Junín,1201,Huancayo,120108,Chongos Alto
+12,Junín,1201,Huancayo,120111,Chupuro
+12,Junín,1201,Huancayo,120112,Colca
+12,Junín,1201,Huancayo,120113,Cullhuas
+12,Junín,1201,Huancayo,120114,El Tambo
+12,Junín,1201,Huancayo,120116,Huacrapuquio
+12,Junín,1201,Huancayo,120117,Hualhuas
+12,Junín,1201,Huancayo,120119,Huancan
+12,Junín,1201,Huancayo,120120,Huasicancha
+12,Junín,1201,Huancayo,120121,Huayucachi
+12,Junín,1201,Huancayo,120122,Ingenio
+12,Junín,1201,Huancayo,120124,Pariahuanca
+12,Junín,1201,Huancayo,120125,Pilcomayo
+12,Junín,1201,Huancayo,120126,Pucara
+12,Junín,1201,Huancayo,120127,Quichuay
+12,Junín,1201,Huancayo,120128,Quilcas
+12,Junín,1201,Huancayo,120129,San Agustin
+12,Junín,1201,Huancayo,120130,San Jeronimo de Tunan
+12,Junín,1201,Huancayo,120132,Saño
+12,Junín,1201,Huancayo,120133,Sapallanga
+12,Junín,1201,Huancayo,120134,Sicaya
+12,Junín,1201,Huancayo,120135,Santo Domingo de Acobamba
+12,Junín,1201,Huancayo,120136,Viques
+12,Junín,1202,Concepción,120201,Concepcion
+12,Junín,1202,Concepción,120202,Aco
+12,Junín,1202,Concepción,120203,Andamarca
+12,Junín,1202,Concepción,120204,Chambara
+12,Junín,1202,Concepción,120205,Cochas
+12,Junín,1202,Concepción,120206,Comas
+12,Junín,1202,Concepción,120207,Heroinas Toledo
+12,Junín,1202,Concepción,120208,Manzanares
+12,Junín,1202,Concepción,120209,Mariscal Castilla
+12,Junín,1202,Concepción,120210,Matahuasi
+12,Junín,1202,Concepción,120211,Mito
+12,Junín,1202,Concepción,120212,Nueve de Julio
+12,Junín,1202,Concepción,120213,Orcotuna
+12,Junín,1202,Concepción,120214,San Jose de Quero
+12,Junín,1202,Concepción,120215,Santa Rosa de Ocopa
+12,Junín,1203,Chanchamayo,120301,Chanchamayo
+12,Junín,1203,Chanchamayo,120302,Perene
+12,Junín,1203,Chanchamayo,120303,Pichanaqui
+12,Junín,1203,Chanchamayo,120304,San Luis de Shuaro
+12,Junín,1203,Chanchamayo,120305,San Ramon
+12,Junín,1203,Chanchamayo,120306,Vitoc
+12,Junín,1204,Jauja,120401,Jauja
+12,Junín,1204,Jauja,120402,Acolla
+12,Junín,1204,Jauja,120403,Apata
+12,Junín,1204,Jauja,120404,Ataura
+12,Junín,1204,Jauja,120405,Canchayllo
+12,Junín,1204,Jauja,120406,Curicaca
+12,Junín,1204,Jauja,120407,El Mantaro
+12,Junín,1204,Jauja,120408,Huamali
+12,Junín,1204,Jauja,120409,Huaripampa
+12,Junín,1204,Jauja,120410,Huertas
+12,Junín,1204,Jauja,120411,Janjaillo
+12,Junín,1204,Jauja,120412,Julcan
+12,Junín,1204,Jauja,120413,Leonor Ordoñez
+12,Junín,1204,Jauja,120414,Llocllapampa
+12,Junín,1204,Jauja,120415,Marco
+12,Junín,1204,Jauja,120416,Masma
+12,Junín,1204,Jauja,120417,Masma Chicche
+12,Junín,1204,Jauja,120418,Molinos
+12,Junín,1204,Jauja,120419,Monobamba
+12,Junín,1204,Jauja,120420,Muqui
+12,Junín,1204,Jauja,120421,Muquiyauyo
+12,Junín,1204,Jauja,120422,Paca
+12,Junín,1204,Jauja,120423,Paccha
+12,Junín,1204,Jauja,120424,Pancan
+12,Junín,1204,Jauja,120425,Parco
+12,Junín,1204,Jauja,120426,Pomacancha
+12,Junín,1204,Jauja,120427,Ricran
+12,Junín,1204,Jauja,120428,San Lorenzo
+12,Junín,1204,Jauja,120429,San Pedro de Chunan
+12,Junín,1204,Jauja,120430,Sausa
+12,Junín,1204,Jauja,120431,Sincos
+12,Junín,1204,Jauja,120432,Tunan Marca
+12,Junín,1204,Jauja,120433,Yauli
+12,Junín,1204,Jauja,120434,Yauyos
+12,Junín,1205,Junín,120501,Junín
+12,Junín,1205,Junín,120502,Carhuamayo
+12,Junín,1205,Junín,120503,Ondores
+12,Junín,1205,Junín,120504,Ulcumayo
+12,Junín,1206,Satipo,120601,Satipo
+12,Junín,1206,Satipo,120602,Coviriali
+12,Junín,1206,Satipo,120603,Llaylla
+12,Junín,1206,Satipo,120604,Mazamari
+12,Junín,1206,Satipo,120605,Pampa Hermosa
+12,Junín,1206,Satipo,120606,Pangoa
+12,Junín,1206,Satipo,120607,Rio Negro
+12,Junín,1206,Satipo,120608,Rio Tambo
+12,Junín,1206,Satipo,120609,Vizcatán del Ene
+12,Junín,1207,Tarma,120701,Tarma
+12,Junín,1207,Tarma,120702,Acobamba
+12,Junín,1207,Tarma,120703,Huaricolca
+12,Junín,1207,Tarma,120704,Huasahuasi
+12,Junín,1207,Tarma,120705,La Union
+12,Junín,1207,Tarma,120706,Palca
+12,Junín,1207,Tarma,120707,Palcamayo
+12,Junín,1207,Tarma,120708,San Pedro de Cajas
+12,Junín,1207,Tarma,120709,Tapo
+12,Junín,1208,Yauli,120801,La Oroya
+12,Junín,1208,Yauli,120802,Chacapalpa
+12,Junín,1208,Yauli,120803,Huay-Huay
+12,Junín,1208,Yauli,120804,Marcapomacocha
+12,Junín,1208,Yauli,120805,Morococha
+12,Junín,1208,Yauli,120806,Paccha
+12,Junín,1208,Yauli,120807,Santa Barbara de Carhuacayan
+12,Junín,1208,Yauli,120808,Santa Rosa de Sacco
+12,Junín,1208,Yauli,120809,Suitucancha
+12,Junín,1208,Yauli,120810,Yauli
+12,Junín,1209,Chupaca,120901,Chupaca
+12,Junín,1209,Chupaca,120902,Ahuac
+12,Junín,1209,Chupaca,120903,Chongos Bajo
+12,Junín,1209,Chupaca,120904,Huachac
+12,Junín,1209,Chupaca,120905,Huamancaca Chico
+12,Junín,1209,Chupaca,120906,San Juan de Iscos
+12,Junín,1209,Chupaca,120907,San Juan de Jarpa
+12,Junín,1209,Chupaca,120908,Tres de Diciembre
+12,Junín,1209,Chupaca,120909,Yanacancha
+13,La Libertad,1301,Trujillo,130101,Trujillo
+13,La Libertad,1301,Trujillo,130102,El Porvenir
+13,La Libertad,1301,Trujillo,130103,Florencia de Mora
+13,La Libertad,1301,Trujillo,130104,Huanchaco
+13,La Libertad,1301,Trujillo,130105,La Esperanza
+13,La Libertad,1301,Trujillo,130106,Laredo
+13,La Libertad,1301,Trujillo,130107,Moche
+13,La Libertad,1301,Trujillo,130108,Poroto
+13,La Libertad,1301,Trujillo,130109,Salaverry
+13,La Libertad,1301,Trujillo,130110,Simbal
+13,La Libertad,1301,Trujillo,130111,Victor Larco Herrera
+13,La Libertad,1301,Trujillo,130112,Alto Trujillo
+13,La Libertad,1302,Ascope,130201,Ascope
+13,La Libertad,1302,Ascope,130202,Chicama
+13,La Libertad,1302,Ascope,130203,Chocope
+13,La Libertad,1302,Ascope,130204,Magdalena de Cao
+13,La Libertad,1302,Ascope,130205,Paijan
+13,La Libertad,1302,Ascope,130206,Razuri
+13,La Libertad,1302,Ascope,130207,Santiago de Cao
+13,La Libertad,1302,Ascope,130208,Casa Grande
+13,La Libertad,1303,Bolivar,130301,Bolivar
+13,La Libertad,1303,Bolivar,130302,Bambamarca
+13,La Libertad,1303,Bolivar,130303,Condormarca
+13,La Libertad,1303,Bolivar,130304,Longotea
+13,La Libertad,1303,Bolivar,130305,Uchumarca
+13,La Libertad,1303,Bolivar,130306,Ucuncha
+13,La Libertad,1304,Chepen,130401,Chepen
+13,La Libertad,1304,Chepen,130402,Pacanga
+13,La Libertad,1304,Chepen,130403,Pueblo Nuevo
+13,La Libertad,1305,Julcan,130501,Julcan
+13,La Libertad,1305,Julcan,130502,Calamarca
+13,La Libertad,1305,Julcan,130503,Carabamba
+13,La Libertad,1305,Julcan,130504,Huaso
+13,La Libertad,1306,Otuzco,130601,Otuzco
+13,La Libertad,1306,Otuzco,130602,Agallpampa
+13,La Libertad,1306,Otuzco,130604,Charat
+13,La Libertad,1306,Otuzco,130605,Huaranchal
+13,La Libertad,1306,Otuzco,130606,La Cuesta
+13,La Libertad,1306,Otuzco,130608,Mache
+13,La Libertad,1306,Otuzco,130610,Paranday
+13,La Libertad,1306,Otuzco,130611,Salpo
+13,La Libertad,1306,Otuzco,130613,Sinsicap
+13,La Libertad,1306,Otuzco,130614,Usquil
+13,La Libertad,1307,Pacasmayo,130701,San Pedro de Lloc
+13,La Libertad,1307,Pacasmayo,130702,Guadalupe
+13,La Libertad,1307,Pacasmayo,130703,Jequetepeque
+13,La Libertad,1307,Pacasmayo,130704,Pacasmayo
+13,La Libertad,1307,Pacasmayo,130705,San Jose
+13,La Libertad,1308,Pataz,130801,Tayabamba
+13,La Libertad,1308,Pataz,130802,Buldibuyo
+13,La Libertad,1308,Pataz,130803,Chillia
+13,La Libertad,1308,Pataz,130804,Huancaspata
+13,La Libertad,1308,Pataz,130805,Huaylillas
+13,La Libertad,1308,Pataz,130806,Huayo
+13,La Libertad,1308,Pataz,130807,Ongon
+13,La Libertad,1308,Pataz,130808,Parcoy
+13,La Libertad,1308,Pataz,130809,Pataz
+13,La Libertad,1308,Pataz,130810,Pias
+13,La Libertad,1308,Pataz,130811,Santiago de Challas
+13,La Libertad,1308,Pataz,130812,Taurija
+13,La Libertad,1308,Pataz,130813,Urpay
+13,La Libertad,1309,Sanchez Carrion,130901,Huamachuco
+13,La Libertad,1309,Sanchez Carrion,130902,Chugay
+13,La Libertad,1309,Sanchez Carrion,130903,Cochorco
+13,La Libertad,1309,Sanchez Carrion,130904,Curgos
+13,La Libertad,1309,Sanchez Carrion,130905,Marcabal
+13,La Libertad,1309,Sanchez Carrion,130906,Sanagoran
+13,La Libertad,1309,Sanchez Carrion,130907,Sarin
+13,La Libertad,1309,Sanchez Carrion,130908,Sartimbamba
+13,La Libertad,1310,Santiago de Chuco,131001,Santiago de Chuco
+13,La Libertad,1310,Santiago de Chuco,131002,Angasmarca
+13,La Libertad,1310,Santiago de Chuco,131003,Cachicadan
+13,La Libertad,1310,Santiago de Chuco,131004,Mollebamba
+13,La Libertad,1310,Santiago de Chuco,131005,Mollepata
+13,La Libertad,1310,Santiago de Chuco,131006,Quiruvilca
+13,La Libertad,1310,Santiago de Chuco,131007,Santa Cruz de Chuca
+13,La Libertad,1310,Santiago de Chuco,131008,Sitabamba
+13,La Libertad,1311,Gran Chimu,131101,Cascas
+13,La Libertad,1311,Gran Chimu,131102,Lucma
+13,La Libertad,1311,Gran Chimu,131103,Marmot
+13,La Libertad,1311,Gran Chimu,131104,Sayapullo
+13,La Libertad,1312,Viru,131201,Viru
+13,La Libertad,1312,Viru,131202,Chao
+13,La Libertad,1312,Viru,131203,Guadalupito
+14,Lambayeque,1401,Chiclayo,140101,Chiclayo
+14,Lambayeque,1401,Chiclayo,140102,Chongoyape
+14,Lambayeque,1401,Chiclayo,140103,Eten
+14,Lambayeque,1401,Chiclayo,140104,Eten Puerto
+14,Lambayeque,1401,Chiclayo,140105,Jose Leonardo Ortiz
+14,Lambayeque,1401,Chiclayo,140106,La Victoria
+14,Lambayeque,1401,Chiclayo,140107,Lagunas
+14,Lambayeque,1401,Chiclayo,140108,Monsefu
+14,Lambayeque,1401,Chiclayo,140109,Nueva Arica
+14,Lambayeque,1401,Chiclayo,140110,Oyotun
+14,Lambayeque,1401,Chiclayo,140111,Picsi
+14,Lambayeque,1401,Chiclayo,140112,Pimentel
+14,Lambayeque,1401,Chiclayo,140113,Reque
+14,Lambayeque,1401,Chiclayo,140114,Santa Rosa
+14,Lambayeque,1401,Chiclayo,140115,Saña
+14,Lambayeque,1401,Chiclayo,140116,Cayalti
+14,Lambayeque,1401,Chiclayo,140117,Patapo
+14,Lambayeque,1401,Chiclayo,140118,Pomalca
+14,Lambayeque,1401,Chiclayo,140119,Pucala
+14,Lambayeque,1401,Chiclayo,140120,Tuman
+14,Lambayeque,1402,Ferreñafe,140201,Ferreñafe
+14,Lambayeque,1402,Ferreñafe,140202,Cañaris
+14,Lambayeque,1402,Ferreñafe,140203,Incahuasi
+14,Lambayeque,1402,Ferreñafe,140204,Manuel Antonio Mesones Muro
+14,Lambayeque,1402,Ferreñafe,140205,Pitipo
+14,Lambayeque,1402,Ferreñafe,140206,Pueblo Nuevo
+14,Lambayeque,1403,Lambayeque,140301,Lambayeque
+14,Lambayeque,1403,Lambayeque,140302,Chochope
+14,Lambayeque,1403,Lambayeque,140303,Illimo
+14,Lambayeque,1403,Lambayeque,140304,Jayanca
+14,Lambayeque,1403,Lambayeque,140305,Mochumi
+14,Lambayeque,1403,Lambayeque,140306,Morrope
+14,Lambayeque,1403,Lambayeque,140307,Motupe
+14,Lambayeque,1403,Lambayeque,140308,Olmos
+14,Lambayeque,1403,Lambayeque,140309,Pacora
+14,Lambayeque,1403,Lambayeque,140310,Salas
+14,Lambayeque,1403,Lambayeque,140311,San Jose
+14,Lambayeque,1403,Lambayeque,140312,Tucume
+15,Lima,1501,Lima Metropolitana,150101,Lima
+15,Lima,1501,Lima Metropolitana,150102,Ancon
+15,Lima,1501,Lima Metropolitana,150103,Ate
+15,Lima,1501,Lima Metropolitana,150104,Barranco
+15,Lima,1501,Lima Metropolitana,150105,Breña
+15,Lima,1501,Lima Metropolitana,150106,Carabayllo
+15,Lima,1501,Lima Metropolitana,150107,Chaclacayo
+15,Lima,1501,Lima Metropolitana,150108,Chorrillos
+15,Lima,1501,Lima Metropolitana,150109,Cieneguilla
+15,Lima,1501,Lima Metropolitana,150110,Comas
+15,Lima,1501,Lima Metropolitana,150111,El Agustino
+15,Lima,1501,Lima Metropolitana,150112,Independencia
+15,Lima,1501,Lima Metropolitana,150113,Jesus Maria
+15,Lima,1501,Lima Metropolitana,150114,La Molina
+15,Lima,1501,Lima Metropolitana,150115,La Victoria
+15,Lima,1501,Lima Metropolitana,150116,Lince
+15,Lima,1501,Lima Metropolitana,150117,Los Olivos
+15,Lima,1501,Lima Metropolitana,150118,Lurigancho
+15,Lima,1501,Lima Metropolitana,150119,Lurin
+15,Lima,1501,Lima Metropolitana,150120,Magdalena del Mar
+15,Lima,1501,Lima Metropolitana,150121,Pueblo Libre
+15,Lima,1501,Lima Metropolitana,150122,Miraflores
+15,Lima,1501,Lima Metropolitana,150123,Pachacamac
+15,Lima,1501,Lima Metropolitana,150124,Pucusana
+15,Lima,1501,Lima Metropolitana,150125,Puente Piedra
+15,Lima,1501,Lima Metropolitana,150126,Punta Hermosa
+15,Lima,1501,Lima Metropolitana,150127,Punta Negra
+15,Lima,1501,Lima Metropolitana,150128,Rimac
+15,Lima,1501,Lima Metropolitana,150129,San Bartolo
+15,Lima,1501,Lima Metropolitana,150130,San Borja
+15,Lima,1501,Lima Metropolitana,150131,San Isidro
+15,Lima,1501,Lima Metropolitana,150132,San Juan de Lurigancho
+15,Lima,1501,Lima Metropolitana,150133,San Juan de Miraflores
+15,Lima,1501,Lima Metropolitana,150134,San Luis
+15,Lima,1501,Lima Metropolitana,150135,San Martin de Porres
+15,Lima,1501,Lima Metropolitana,150136,San Miguel
+15,Lima,1501,Lima Metropolitana,150137,Santa Anita
+15,Lima,1501,Lima Metropolitana,150138,Santa Maria del Mar
+15,Lima,1501,Lima Metropolitana,150139,Santa Rosa
+15,Lima,1501,Lima Metropolitana,150140,Santiago de Surco
+15,Lima,1501,Lima Metropolitana,150141,Surquillo
+15,Lima,1501,Lima Metropolitana,150142,Villa El Salvador
+15,Lima,1501,Lima Metropolitana,150143,Villa Maria del Triunfo
+15,Lima,1502,Barranca,150201,Barranca
+15,Lima,1502,Barranca,150202,Paramonga
+15,Lima,1502,Barranca,150203,Pativilca
+15,Lima,1502,Barranca,150204,Supe
+15,Lima,1502,Barranca,150205,Supe Puerto
+15,Lima,1503,Cajatambo,150301,Cajatambo
+15,Lima,1503,Cajatambo,150302,Copa
+15,Lima,1503,Cajatambo,150303,Gorgor
+15,Lima,1503,Cajatambo,150304,Huancapon
+15,Lima,1503,Cajatambo,150305,Manas
+15,Lima,1504,Canta,150401,Canta
+15,Lima,1504,Canta,150402,Arahuay
+15,Lima,1504,Canta,150403,Huamantanga
+15,Lima,1504,Canta,150404,Huaros
+15,Lima,1504,Canta,150405,Lachaqui
+15,Lima,1504,Canta,150406,San Buenaventura
+15,Lima,1504,Canta,150407,Santa Rosa de Quives
+15,Lima,1505,Cañete,150501,San Vicente de Cañete
+15,Lima,1505,Cañete,150502,Asia
+15,Lima,1505,Cañete,150503,Calango
+15,Lima,1505,Cañete,150504,Cerro Azul
+15,Lima,1505,Cañete,150505,Chilca
+15,Lima,1505,Cañete,150506,Coayllo
+15,Lima,1505,Cañete,150507,Imperial
+15,Lima,1505,Cañete,150508,Lunahuana
+15,Lima,1505,Cañete,150509,Mala
+15,Lima,1505,Cañete,150510,Nuevo Imperial
+15,Lima,1505,Cañete,150511,Pacaran
+15,Lima,1505,Cañete,150512,Quilmana
+15,Lima,1505,Cañete,150513,San Antonio
+15,Lima,1505,Cañete,150514,San Luis
+15,Lima,1505,Cañete,150515,Santa Cruz de Flores
+15,Lima,1505,Cañete,150516,Zuñiga
+15,Lima,1506,Huaral,150601,Huaral
+15,Lima,1506,Huaral,150602,Atavillos Alto
+15,Lima,1506,Huaral,150603,Atavillos Bajo
+15,Lima,1506,Huaral,150604,Aucallama
+15,Lima,1506,Huaral,150605,Chancay
+15,Lima,1506,Huaral,150606,Ihuari
+15,Lima,1506,Huaral,150607,Lampian
+15,Lima,1506,Huaral,150608,Pacaraos
+15,Lima,1506,Huaral,150609,San Miguel de Acos
+15,Lima,1506,Huaral,150610,Santa Cruz de Andamarca
+15,Lima,1506,Huaral,150611,Sumbilca
+15,Lima,1506,Huaral,150612,Veintisiete de Noviembre
+15,Lima,1507,Huarochiri,150701,Matucana
+15,Lima,1507,Huarochiri,150702,Antioquia
+15,Lima,1507,Huarochiri,150703,Callahuanca
+15,Lima,1507,Huarochiri,150704,Carampoma
+15,Lima,1507,Huarochiri,150705,Chicla
+15,Lima,1507,Huarochiri,150706,Cuenca
+15,Lima,1507,Huarochiri,150707,Huachupampa
+15,Lima,1507,Huarochiri,150708,Huanza
+15,Lima,1507,Huarochiri,150709,Huarochiri
+15,Lima,1507,Huarochiri,150710,Lahuaytambo
+15,Lima,1507,Huarochiri,150711,Langa
+15,Lima,1507,Huarochiri,150712,San Pedro de Laraos
+15,Lima,1507,Huarochiri,150713,Mariatana
+15,Lima,1507,Huarochiri,150714,Ricardo Palma
+15,Lima,1507,Huarochiri,150715,San Andres de Tupicocha
+15,Lima,1507,Huarochiri,150716,San Antonio
+15,Lima,1507,Huarochiri,150717,San Bartolome
+15,Lima,1507,Huarochiri,150718,San Damian
+15,Lima,1507,Huarochiri,150719,San Juan de Iris
+15,Lima,1507,Huarochiri,150720,San Juan de Tantaranche
+15,Lima,1507,Huarochiri,150721,San Lorenzo de Quinti
+15,Lima,1507,Huarochiri,150722,San Mateo
+15,Lima,1507,Huarochiri,150723,San Mateo de Otao
+15,Lima,1507,Huarochiri,150724,San Pedro de Casta
+15,Lima,1507,Huarochiri,150725,San Pedro de Huancayre
+15,Lima,1507,Huarochiri,150726,Sangallaya
+15,Lima,1507,Huarochiri,150727,Santa Cruz de Cocachacra
+15,Lima,1507,Huarochiri,150728,Santa Eulalia
+15,Lima,1507,Huarochiri,150729,Santiago de Anchucaya
+15,Lima,1507,Huarochiri,150730,Santiago de Tuna
+15,Lima,1507,Huarochiri,150731,Santo Domingo de Los Olleros
+15,Lima,1507,Huarochiri,150732,Surco
+15,Lima,1508,Huaura,150801,Huacho
+15,Lima,1508,Huaura,150802,Ambar
+15,Lima,1508,Huaura,150803,Caleta de Carquin
+15,Lima,1508,Huaura,150804,Checras
+15,Lima,1508,Huaura,150805,Hualmay
+15,Lima,1508,Huaura,150806,Huaura
+15,Lima,1508,Huaura,150807,Leoncio Prado
+15,Lima,1508,Huaura,150808,Paccho
+15,Lima,1508,Huaura,150809,Santa Leonor
+15,Lima,1508,Huaura,150810,Santa Maria
+15,Lima,1508,Huaura,150811,Sayan
+15,Lima,1508,Huaura,150812,Vegueta
+15,Lima,1509,Oyon,150901,Oyon
+15,Lima,1509,Oyon,150902,Andajes
+15,Lima,1509,Oyon,150903,Caujul
+15,Lima,1509,Oyon,150904,Cochamarca
+15,Lima,1509,Oyon,150905,Navan
+15,Lima,1509,Oyon,150906,Pachangara
+15,Lima,1510,Yauyos,151001,Yauyos
+15,Lima,1510,Yauyos,151002,Alis
+15,Lima,1510,Yauyos,151003,Allauca
+15,Lima,1510,Yauyos,151004,Ayaviri
+15,Lima,1510,Yauyos,151005,Azangaro
+15,Lima,1510,Yauyos,151006,Cacra
+15,Lima,1510,Yauyos,151007,Carania
+15,Lima,1510,Yauyos,151008,Catahuasi
+15,Lima,1510,Yauyos,151009,Chocos
+15,Lima,1510,Yauyos,151010,Cochas
+15,Lima,1510,Yauyos,151011,Colonia
+15,Lima,1510,Yauyos,151012,Hongos
+15,Lima,1510,Yauyos,151013,Huampara
+15,Lima,1510,Yauyos,151014,Huancaya
+15,Lima,1510,Yauyos,151015,Huangascar
+15,Lima,1510,Yauyos,151016,Huantan
+15,Lima,1510,Yauyos,151017,Huañec
+15,Lima,1510,Yauyos,151018,Laraos
+15,Lima,1510,Yauyos,151019,Lincha
+15,Lima,1510,Yauyos,151020,Madean
+15,Lima,1510,Yauyos,151021,Miraflores
+15,Lima,1510,Yauyos,151022,Omas
+15,Lima,1510,Yauyos,151023,Putinza
+15,Lima,1510,Yauyos,151024,Quinches
+15,Lima,1510,Yauyos,151025,Quinocay
+15,Lima,1510,Yauyos,151026,San Joaquin
+15,Lima,1510,Yauyos,151027,San Pedro de Pilas
+15,Lima,1510,Yauyos,151028,Tanta
+15,Lima,1510,Yauyos,151029,Tauripampa
+15,Lima,1510,Yauyos,151030,Tomas
+15,Lima,1510,Yauyos,151031,Tupe
+15,Lima,1510,Yauyos,151032,Viñac
+15,Lima,1510,Yauyos,151033,Vitis
+16,Loreto,1601,Maynas,160101,Iquitos
+16,Loreto,1601,Maynas,160102,Alto Nanay
+16,Loreto,1601,Maynas,160103,Fernando Lores
+16,Loreto,1601,Maynas,160104,Indiana
+16,Loreto,1601,Maynas,160105,Las Amazonas
+16,Loreto,1601,Maynas,160106,Mazan
+16,Loreto,1601,Maynas,160107,Napo
+16,Loreto,1601,Maynas,160108,Punchana
+16,Loreto,1601,Maynas,160110,Torres Causana
+16,Loreto,1601,Maynas,160112,Belen
+16,Loreto,1601,Maynas,160113,San Juan Bautista
+16,Loreto,1602,Alto Amazonas,160201,Yurimaguas
+16,Loreto,1602,Alto Amazonas,160202,Balsapuerto
+16,Loreto,1602,Alto Amazonas,160205,Jeberos
+16,Loreto,1602,Alto Amazonas,160206,Lagunas
+16,Loreto,1602,Alto Amazonas,160210,Santa Cruz
+16,Loreto,1602,Alto Amazonas,160211,Teniente Cesar Lopez Rojas
+16,Loreto,1603,Loreto,160301,Nauta
+16,Loreto,1603,Loreto,160302,Parinari
+16,Loreto,1603,Loreto,160303,Tigre
+16,Loreto,1603,Loreto,160304,Trompeteros
+16,Loreto,1603,Loreto,160305,Urarinas
+16,Loreto,1604,Mariscal Ramon Castilla,160401,Ramon Castilla
+16,Loreto,1604,Mariscal Ramon Castilla,160402,Pebas
+16,Loreto,1604,Mariscal Ramon Castilla,160403,Yavari
+16,Loreto,1604,Mariscal Ramon Castilla,160404,San Pablo
+16,Loreto,1604,Mariscal Ramon Castilla,160405,Santa Rosa de Loreto
+16,Loreto,1605,Requena,160501,Requena
+16,Loreto,1605,Requena,160502,Alto Tapiche
+16,Loreto,1605,Requena,160503,Capelo
+16,Loreto,1605,Requena,160504,Emilio San Martin
+16,Loreto,1605,Requena,160505,Maquia
+16,Loreto,1605,Requena,160506,Puinahua
+16,Loreto,1605,Requena,160507,Saquena
+16,Loreto,1605,Requena,160508,Soplin
+16,Loreto,1605,Requena,160509,Tapiche
+16,Loreto,1605,Requena,160510,Jenaro Herrera
+16,Loreto,1605,Requena,160511,Yaquerana
+16,Loreto,1606,Ucayali,160601,Contamana
+16,Loreto,1606,Ucayali,160602,Inahuaya
+16,Loreto,1606,Ucayali,160603,Padre Marquez
+16,Loreto,1606,Ucayali,160604,Pampa Hermosa
+16,Loreto,1606,Ucayali,160605,Sarayacu
+16,Loreto,1606,Ucayali,160606,Vargas Guerra
+16,Loreto,1607,Datem del Marañon,160701,Barranca
+16,Loreto,1607,Datem del Marañon,160702,Cahuapanas
+16,Loreto,1607,Datem del Marañon,160703,Manseriche
+16,Loreto,1607,Datem del Marañon,160704,Morona
+16,Loreto,1607,Datem del Marañon,160705,Pastaza
+16,Loreto,1607,Datem del Marañon,160706,Andoas
+16,Loreto,1608,Putumayo,160801,Putumayo
+16,Loreto,1608,Putumayo,160802,Rosa Panduro
+16,Loreto,1608,Putumayo,160803,Teniente Manuel Clavero
+16,Loreto,1608,Putumayo,160804,Yaguas
+17,Madre de Dios,1701,Tambopata,170101,Tambopata
+17,Madre de Dios,1701,Tambopata,170102,Inambari
+17,Madre de Dios,1701,Tambopata,170103,Las Piedras
+17,Madre de Dios,1701,Tambopata,170104,Laberinto
+17,Madre de Dios,1702,Manu,170201,Manu
+17,Madre de Dios,1702,Manu,170202,Fitzcarrald
+17,Madre de Dios,1702,Manu,170203,Madre de Dios
+17,Madre de Dios,1702,Manu,170204,Huepetuhe
+17,Madre de Dios,1703,Tahuamanu,170301,Iñapari
+17,Madre de Dios,1703,Tahuamanu,170302,Iberia
+17,Madre de Dios,1703,Tahuamanu,170303,Tahuamanu
+18,Moquegua,1801,Mariscal Nieto,180101,Moquegua
+18,Moquegua,1801,Mariscal Nieto,180102,Carumas
+18,Moquegua,1801,Mariscal Nieto,180103,Cuchumbaya
+18,Moquegua,1801,Mariscal Nieto,180104,Samegua
+18,Moquegua,1801,Mariscal Nieto,180105,San Cristobal
+18,Moquegua,1801,Mariscal Nieto,180106,Torata
+18,Moquegua,1801,Mariscal Nieto,180107,San Antonio
+18,Moquegua,1802,General Sanchez Cerro,180201,Omate
+18,Moquegua,1802,General Sanchez Cerro,180202,Chojata
+18,Moquegua,1802,General Sanchez Cerro,180203,Coalaque
+18,Moquegua,1802,General Sanchez Cerro,180204,Ichuña
+18,Moquegua,1802,General Sanchez Cerro,180205,La Capilla
+18,Moquegua,1802,General Sanchez Cerro,180206,Lloque
+18,Moquegua,1802,General Sanchez Cerro,180207,Matalaque
+18,Moquegua,1802,General Sanchez Cerro,180208,Puquina
+18,Moquegua,1802,General Sanchez Cerro,180209,Quinistaquillas
+18,Moquegua,1802,General Sanchez Cerro,180210,Ubinas
+18,Moquegua,1802,General Sanchez Cerro,180211,Yunga
+18,Moquegua,1803,Ilo,180301,Ilo
+18,Moquegua,1803,Ilo,180302,El Algarrobal
+18,Moquegua,1803,Ilo,180303,Pacocha
+19,Pasco,1901,Pasco,190101,Chaupimarca
+19,Pasco,1901,Pasco,190102,Huachon
+19,Pasco,1901,Pasco,190103,Huariaca
+19,Pasco,1901,Pasco,190104,Huayllay
+19,Pasco,1901,Pasco,190105,Ninacaca
+19,Pasco,1901,Pasco,190106,Pallanchacra
+19,Pasco,1901,Pasco,190107,Paucartambo
+19,Pasco,1901,Pasco,190108,San Francisco de Asis de Yarusyacan
+19,Pasco,1901,Pasco,190109,Simon Bolivar
+19,Pasco,1901,Pasco,190110,Ticlacayan
+19,Pasco,1901,Pasco,190111,Tinyahuarco
+19,Pasco,1901,Pasco,190112,Vicco
+19,Pasco,1901,Pasco,190113,Yanacancha
+19,Pasco,1902,Daniel Alcides Carrión,190201,Yanahuanca
+19,Pasco,1902,Daniel Alcides Carrión,190202,Chacayan
+19,Pasco,1902,Daniel Alcides Carrión,190203,Goyllarisquizga
+19,Pasco,1902,Daniel Alcides Carrión,190204,Paucar
+19,Pasco,1902,Daniel Alcides Carrión,190205,San Pedro de Pillao
+19,Pasco,1902,Daniel Alcides Carrión,190206,Santa Ana de Tusi
+19,Pasco,1902,Daniel Alcides Carrión,190207,Tapuc
+19,Pasco,1902,Daniel Alcides Carrión,190208,Vilcabamba
+19,Pasco,1903,Oxapampa,190301,Oxapampa
+19,Pasco,1903,Oxapampa,190302,Chontabamba
+19,Pasco,1903,Oxapampa,190303,Huancabamba
+19,Pasco,1903,Oxapampa,190304,Palcazu
+19,Pasco,1903,Oxapampa,190305,Pozuzo
+19,Pasco,1903,Oxapampa,190306,Puerto Bermudez
+19,Pasco,1903,Oxapampa,190307,Villa Rica
+19,Pasco,1903,Oxapampa,190308,Constitución
+20,Piura,2001,Piura,200101,Piura
+20,Piura,2001,Piura,200104,Castilla
+20,Piura,2001,Piura,200105,Catacaos
+20,Piura,2001,Piura,200107,Cura Mori
+20,Piura,2001,Piura,200108,El Tallan
+20,Piura,2001,Piura,200109,La Arena
+20,Piura,2001,Piura,200110,La Union
+20,Piura,2001,Piura,200111,Las Lomas
+20,Piura,2001,Piura,200114,Tambo Grande
+20,Piura,2001,Piura,200115,Veintiséis de Octubre
+20,Piura,2002,Ayabaca,200201,Ayabaca
+20,Piura,2002,Ayabaca,200202,Frias
+20,Piura,2002,Ayabaca,200203,Jilili
+20,Piura,2002,Ayabaca,200204,Lagunas
+20,Piura,2002,Ayabaca,200205,Montero
+20,Piura,2002,Ayabaca,200206,Pacaipampa
+20,Piura,2002,Ayabaca,200207,Paimas
+20,Piura,2002,Ayabaca,200208,Sapillica
+20,Piura,2002,Ayabaca,200209,Sicchez
+20,Piura,2002,Ayabaca,200210,Suyo
+20,Piura,2003,Huancabamba,200301,Huancabamba
+20,Piura,2003,Huancabamba,200302,Canchaque
+20,Piura,2003,Huancabamba,200303,El Carmen de La Frontera
+20,Piura,2003,Huancabamba,200304,Huarmaca
+20,Piura,2003,Huancabamba,200305,Lalaquiz
+20,Piura,2003,Huancabamba,200306,San Miguel de El Faique
+20,Piura,2003,Huancabamba,200307,Sondor
+20,Piura,2003,Huancabamba,200308,Sondorillo
+20,Piura,2004,Morropon,200401,Chulucanas
+20,Piura,2004,Morropon,200402,Buenos Aires
+20,Piura,2004,Morropon,200403,Chalaco
+20,Piura,2004,Morropon,200404,La Matanza
+20,Piura,2004,Morropon,200405,Morropon
+20,Piura,2004,Morropon,200406,Salitral
+20,Piura,2004,Morropon,200407,San Juan de Bigote
+20,Piura,2004,Morropon,200408,Santa Catalina de Mossa
+20,Piura,2004,Morropon,200409,Santo Domingo
+20,Piura,2004,Morropon,200410,Yamango
+20,Piura,2005,Paita,200501,Paita
+20,Piura,2005,Paita,200502,Amotape
+20,Piura,2005,Paita,200503,Arenal
+20,Piura,2005,Paita,200504,Colan
+20,Piura,2005,Paita,200505,La Huaca
+20,Piura,2005,Paita,200506,Tamarindo
+20,Piura,2005,Paita,200507,Vichayal
+20,Piura,2006,Sullana,200601,Sullana
+20,Piura,2006,Sullana,200602,Bellavista
+20,Piura,2006,Sullana,200603,Ignacio Escudero
+20,Piura,2006,Sullana,200604,Lancones
+20,Piura,2006,Sullana,200605,Marcavelica
+20,Piura,2006,Sullana,200606,Miguel Checa
+20,Piura,2006,Sullana,200607,Querecotillo
+20,Piura,2006,Sullana,200608,Salitral
+20,Piura,2007,Talara,200701,Pariñas
+20,Piura,2007,Talara,200702,El Alto
+20,Piura,2007,Talara,200703,La Brea
+20,Piura,2007,Talara,200704,Lobitos
+20,Piura,2007,Talara,200705,Los Organos
+20,Piura,2007,Talara,200706,Mancora
+20,Piura,2008,Sechura,200801,Sechura
+20,Piura,2008,Sechura,200802,Bellavista de La Union
+20,Piura,2008,Sechura,200803,Bernal
+20,Piura,2008,Sechura,200804,Cristo Nos Valga
+20,Piura,2008,Sechura,200805,Vice
+20,Piura,2008,Sechura,200806,Rinconada Llicuar
+21,Puno,2101,Puno,210101,Puno
+21,Puno,2101,Puno,210102,Acora
+21,Puno,2101,Puno,210103,Amantani
+21,Puno,2101,Puno,210104,Atuncolla
+21,Puno,2101,Puno,210105,Capachica
+21,Puno,2101,Puno,210106,Chucuito
+21,Puno,2101,Puno,210107,Coata
+21,Puno,2101,Puno,210108,Huata
+21,Puno,2101,Puno,210109,Mañazo
+21,Puno,2101,Puno,210110,Paucarcolla
+21,Puno,2101,Puno,210111,Pichacani
+21,Puno,2101,Puno,210112,Plateria
+21,Puno,2101,Puno,210113,San Antonio
+21,Puno,2101,Puno,210114,Tiquillaca
+21,Puno,2101,Puno,210115,Vilque
+21,Puno,2102,Azangaro,210201,Azangaro
+21,Puno,2102,Azangaro,210202,Achaya
+21,Puno,2102,Azangaro,210203,Arapa
+21,Puno,2102,Azangaro,210204,Asillo
+21,Puno,2102,Azangaro,210205,Caminaca
+21,Puno,2102,Azangaro,210206,Chupa
+21,Puno,2102,Azangaro,210207,Jose Domingo Choquehuanca
+21,Puno,2102,Azangaro,210208,Muñani
+21,Puno,2102,Azangaro,210209,Potoni
+21,Puno,2102,Azangaro,210210,Saman
+21,Puno,2102,Azangaro,210211,San Anton
+21,Puno,2102,Azangaro,210212,San Jose
+21,Puno,2102,Azangaro,210213,San Juan de Salinas
+21,Puno,2102,Azangaro,210214,Santiago de Pupuja
+21,Puno,2102,Azangaro,210215,Tirapata
+21,Puno,2103,Carabaya,210301,Macusani
+21,Puno,2103,Carabaya,210302,Ajoyani
+21,Puno,2103,Carabaya,210303,Ayapata
+21,Puno,2103,Carabaya,210304,Coasa
+21,Puno,2103,Carabaya,210305,Corani
+21,Puno,2103,Carabaya,210306,Crucero
+21,Puno,2103,Carabaya,210307,Ituata
+21,Puno,2103,Carabaya,210308,Ollachea
+21,Puno,2103,Carabaya,210309,San Gaban
+21,Puno,2103,Carabaya,210310,Usicayos
+21,Puno,2104,Chucuito,210401,Juli
+21,Puno,2104,Chucuito,210402,Desaguadero
+21,Puno,2104,Chucuito,210403,Huacullani
+21,Puno,2104,Chucuito,210404,Kelluyo
+21,Puno,2104,Chucuito,210405,Pisacoma
+21,Puno,2104,Chucuito,210406,Pomata
+21,Puno,2104,Chucuito,210407,Zepita
+21,Puno,2105,El Collao,210501,Ilave
+21,Puno,2105,El Collao,210502,Capazo
+21,Puno,2105,El Collao,210503,Pilcuyo
+21,Puno,2105,El Collao,210504,Santa Rosa
+21,Puno,2105,El Collao,210505,Conduriri
+21,Puno,2106,Huancane,210601,Huancane
+21,Puno,2106,Huancane,210602,Cojata
+21,Puno,2106,Huancane,210603,Huatasani
+21,Puno,2106,Huancane,210604,Inchupalla
+21,Puno,2106,Huancane,210605,Pusi
+21,Puno,2106,Huancane,210606,Rosaspata
+21,Puno,2106,Huancane,210607,Taraco
+21,Puno,2106,Huancane,210608,Vilque Chico
+21,Puno,2107,Lampa,210701,Lampa
+21,Puno,2107,Lampa,210702,Cabanilla
+21,Puno,2107,Lampa,210703,Calapuja
+21,Puno,2107,Lampa,210704,Nicasio
+21,Puno,2107,Lampa,210705,Ocuviri
+21,Puno,2107,Lampa,210706,Palca
+21,Puno,2107,Lampa,210707,Paratia
+21,Puno,2107,Lampa,210708,Pucara
+21,Puno,2107,Lampa,210709,Santa Lucia
+21,Puno,2107,Lampa,210710,Vilavila
+21,Puno,2108,Melgar,210801,Ayaviri
+21,Puno,2108,Melgar,210802,Antauta
+21,Puno,2108,Melgar,210803,Cupi
+21,Puno,2108,Melgar,210804,Llalli
+21,Puno,2108,Melgar,210805,Macari
+21,Puno,2108,Melgar,210806,Nuñoa
+21,Puno,2108,Melgar,210807,Orurillo
+21,Puno,2108,Melgar,210808,Santa Rosa
+21,Puno,2108,Melgar,210809,Umachiri
+21,Puno,2109,Moho,210901,Moho
+21,Puno,2109,Moho,210902,Conima
+21,Puno,2109,Moho,210903,Huayrapata
+21,Puno,2109,Moho,210904,Tilali
+21,Puno,2110,San Antonio de Putina,211001,Putina
+21,Puno,2110,San Antonio de Putina,211002,Ananea
+21,Puno,2110,San Antonio de Putina,211003,Pedro Vilca Apaza
+21,Puno,2110,San Antonio de Putina,211004,Quilcapuncu
+21,Puno,2110,San Antonio de Putina,211005,Sina
+21,Puno,2111,San Roman,211101,Juliaca
+21,Puno,2111,San Roman,211102,Cabana
+21,Puno,2111,San Roman,211103,Cabanillas
+21,Puno,2111,San Roman,211104,Caracoto
+21,Puno,2111,San Roman,211105,San Miguel
+21,Puno,2112,Sandia,211201,Sandia
+21,Puno,2112,Sandia,211202,Cuyocuyo
+21,Puno,2112,Sandia,211203,Limbani
+21,Puno,2112,Sandia,211204,Patambuco
+21,Puno,2112,Sandia,211205,Phara
+21,Puno,2112,Sandia,211206,Quiaca
+21,Puno,2112,Sandia,211207,San Juan del Oro
+21,Puno,2112,Sandia,211208,Yanahuaya
+21,Puno,2112,Sandia,211209,Alto Inambari
+21,Puno,2112,Sandia,211210,San Pedro de Putina Punco
+21,Puno,2113,Yunguyo,211301,Yunguyo
+21,Puno,2113,Yunguyo,211302,Anapia
+21,Puno,2113,Yunguyo,211303,Copani
+21,Puno,2113,Yunguyo,211304,Cuturapi
+21,Puno,2113,Yunguyo,211305,Ollaraya
+21,Puno,2113,Yunguyo,211306,Tinicachi
+21,Puno,2113,Yunguyo,211307,Unicachi
+22,San Martín,2201,Moyobamba,220101,Moyobamba
+22,San Martín,2201,Moyobamba,220102,Calzada
+22,San Martín,2201,Moyobamba,220103,Habana
+22,San Martín,2201,Moyobamba,220104,Jepelacio
+22,San Martín,2201,Moyobamba,220105,Soritor
+22,San Martín,2201,Moyobamba,220106,Yantalo
+22,San Martín,2202,Bellavista,220201,Bellavista
+22,San Martín,2202,Bellavista,220202,Alto Biavo
+22,San Martín,2202,Bellavista,220203,Bajo Biavo
+22,San Martín,2202,Bellavista,220204,Huallaga
+22,San Martín,2202,Bellavista,220205,San Pablo
+22,San Martín,2202,Bellavista,220206,San Rafael
+22,San Martín,2203,El Dorado,220301,San Jose de Sisa
+22,San Martín,2203,El Dorado,220302,Agua Blanca
+22,San Martín,2203,El Dorado,220303,San Martin
+22,San Martín,2203,El Dorado,220304,Santa Rosa
+22,San Martín,2203,El Dorado,220305,Shatoja
+22,San Martín,2204,Huallaga,220401,Saposoa
+22,San Martín,2204,Huallaga,220402,Alto Saposoa
+22,San Martín,2204,Huallaga,220403,El Eslabon
+22,San Martín,2204,Huallaga,220404,Piscoyacu
+22,San Martín,2204,Huallaga,220405,Sacanche
+22,San Martín,2204,Huallaga,220406,Tingo de Saposoa
+22,San Martín,2205,Lamas,220501,Lamas
+22,San Martín,2205,Lamas,220502,Alonso de Alvarado
+22,San Martín,2205,Lamas,220503,Barranquita
+22,San Martín,2205,Lamas,220504,Caynarachi
+22,San Martín,2205,Lamas,220505,Cuñumbuqui
+22,San Martín,2205,Lamas,220506,Pinto Recodo
+22,San Martín,2205,Lamas,220507,Rumisapa
+22,San Martín,2205,Lamas,220508,San Roque de Cumbaza
+22,San Martín,2205,Lamas,220509,Shanao
+22,San Martín,2205,Lamas,220510,Tabalosos
+22,San Martín,2205,Lamas,220511,Zapatero
+22,San Martín,2206,Mariscal Caceres,220601,Juanjui
+22,San Martín,2206,Mariscal Caceres,220602,Campanilla
+22,San Martín,2206,Mariscal Caceres,220603,Huicungo
+22,San Martín,2206,Mariscal Caceres,220604,Pachiza
+22,San Martín,2206,Mariscal Caceres,220605,Pajarillo
+22,San Martín,2207,Picota,220701,Picota
+22,San Martín,2207,Picota,220702,Buenos Aires
+22,San Martín,2207,Picota,220703,Caspisapa
+22,San Martín,2207,Picota,220704,Pilluana
+22,San Martín,2207,Picota,220705,Pucacaca
+22,San Martín,2207,Picota,220706,San Cristobal
+22,San Martín,2207,Picota,220707,San Hilarion
+22,San Martín,2207,Picota,220708,Shamboyacu
+22,San Martín,2207,Picota,220709,Tingo de Ponasa
+22,San Martín,2207,Picota,220710,Tres Unidos
+22,San Martín,2208,Rioja,220801,Rioja
+22,San Martín,2208,Rioja,220802,Awajun
+22,San Martín,2208,Rioja,220803,Elias Soplin Vargas
+22,San Martín,2208,Rioja,220804,Nueva Cajamarca
+22,San Martín,2208,Rioja,220805,Pardo Miguel
+22,San Martín,2208,Rioja,220806,Posic
+22,San Martín,2208,Rioja,220807,San Fernando
+22,San Martín,2208,Rioja,220808,Yorongos
+22,San Martín,2208,Rioja,220809,Yuracyacu
+22,San Martín,2209,San Martin,220901,Tarapoto
+22,San Martín,2209,San Martin,220902,Alberto Leveau
+22,San Martín,2209,San Martin,220903,Cacatachi
+22,San Martín,2209,San Martin,220904,Chazuta
+22,San Martín,2209,San Martin,220905,Chipurana
+22,San Martín,2209,San Martin,220906,El Porvenir
+22,San Martín,2209,San Martin,220907,Huimbayoc
+22,San Martín,2209,San Martin,220908,Juan Guerra
+22,San Martín,2209,San Martin,220909,La Banda de Shilcayo
+22,San Martín,2209,San Martin,220910,Morales
+22,San Martín,2209,San Martin,220911,Papaplaya
+22,San Martín,2209,San Martin,220912,San Antonio
+22,San Martín,2209,San Martin,220913,Sauce
+22,San Martín,2209,San Martin,220914,Shapaja
+22,San Martín,2210,Tocache,221001,Tocache
+22,San Martín,2210,Tocache,221002,Nuevo Progreso
+22,San Martín,2210,Tocache,221003,Polvora
+22,San Martín,2210,Tocache,221004,Shunte
+22,San Martín,2210,Tocache,221005,Uchiza
+22,San Martín,2210,Tocache,221006,Santa Lucia
+23,Tacna,2301,Tacna,230101,Tacna
+23,Tacna,2301,Tacna,230102,Alto de La Alianza
+23,Tacna,2301,Tacna,230103,Calana
+23,Tacna,2301,Tacna,230104,Ciudad Nueva
+23,Tacna,2301,Tacna,230105,Inclan
+23,Tacna,2301,Tacna,230106,Pachia
+23,Tacna,2301,Tacna,230107,Palca
+23,Tacna,2301,Tacna,230108,Pocollay
+23,Tacna,2301,Tacna,230109,Sama
+23,Tacna,2301,Tacna,230110,Coronel Gregorio Albarracin Lanchipa
+23,Tacna,2301,Tacna,230111,La Yarada Los Palos
+23,Tacna,2302,Candarave,230201,Candarave
+23,Tacna,2302,Candarave,230202,Cairani
+23,Tacna,2302,Candarave,230203,Camilaca
+23,Tacna,2302,Candarave,230204,Curibaya
+23,Tacna,2302,Candarave,230205,Huanuara
+23,Tacna,2302,Candarave,230206,Quilahuani
+23,Tacna,2303,Jorge Basadre,230301,Locumba
+23,Tacna,2303,Jorge Basadre,230302,Ilabaya
+23,Tacna,2303,Jorge Basadre,230303,Ite
+23,Tacna,2304,Tarata,230401,Tarata
+23,Tacna,2304,Tarata,230402,Héroes Albarracín
+23,Tacna,2304,Tarata,230403,Estique
+23,Tacna,2304,Tarata,230404,Estique-Pampa
+23,Tacna,2304,Tarata,230405,Sitajara
+23,Tacna,2304,Tarata,230406,Susapaya
+23,Tacna,2304,Tarata,230407,Tarucachi
+23,Tacna,2304,Tarata,230408,Ticaco
+24,Tumbes,2401,Tumbes,240101,Tumbes
+24,Tumbes,2401,Tumbes,240102,Corrales
+24,Tumbes,2401,Tumbes,240103,La Cruz
+24,Tumbes,2401,Tumbes,240104,Pampas de Hospital
+24,Tumbes,2401,Tumbes,240105,San Jacinto
+24,Tumbes,2401,Tumbes,240106,San Juan de La Virgen
+24,Tumbes,2402,Contralmirante Villar,240201,Zorritos
+24,Tumbes,2402,Contralmirante Villar,240202,Casitas
+24,Tumbes,2402,Contralmirante Villar,240203,Canoas de Punta Sal
+24,Tumbes,2403,Zarumilla,240301,Zarumilla
+24,Tumbes,2403,Zarumilla,240302,Aguas Verdes
+24,Tumbes,2403,Zarumilla,240303,Matapalo
+24,Tumbes,2403,Zarumilla,240304,Papayal
+25,Ucayali,2501,Coronel Portillo,250101,Calleria
+25,Ucayali,2501,Coronel Portillo,250102,Campoverde
+25,Ucayali,2501,Coronel Portillo,250103,Iparia
+25,Ucayali,2501,Coronel Portillo,250104,Masisea
+25,Ucayali,2501,Coronel Portillo,250105,Yarinacocha
+25,Ucayali,2501,Coronel Portillo,250106,Nueva Requena
+25,Ucayali,2501,Coronel Portillo,250107,Manantay
+25,Ucayali,2502,Atalaya,250201,Raimondi
+25,Ucayali,2502,Atalaya,250202,Sepahua
+25,Ucayali,2502,Atalaya,250203,Tahuania
+25,Ucayali,2502,Atalaya,250204,Yurua
+25,Ucayali,2503,Padre Abad,250301,Padre Abad
+25,Ucayali,2503,Padre Abad,250302,Irazola
+25,Ucayali,2503,Padre Abad,250303,Curimana
+25,Ucayali,2503,Padre Abad,250304,Neshuya
+25,Ucayali,2503,Padre Abad,250305,Alexander Von Humboldt
+25,Ucayali,2503,Padre Abad,250306,Huipoca
+25,Ucayali,2503,Padre Abad,250307,Boqueron
+25,Ucayali,2504,Purús,250401,Purús

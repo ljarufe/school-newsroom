@@ -34,7 +34,7 @@
                 <div><dt>Fecha de publicación</dt><dd><time datetime="{{ featured_news.publication_date|date:'Y-m-d' }}">{{ featured_news.publication_date }}</time></dd></div>
                 {% if featured_news.taxonomy.compact_main_names %}<div><dt>Secciones</dt><dd>{{ featured_news.taxonomy.compact_main_names }}</dd></div>{% endif %}
                 {% if featured_news.school %}<div><dt>Colegio</dt><dd>{{ featured_news.school }}</dd></div>{% endif %}
-                <div><dt>Cobertura</dt><dd>{{ featured_news.coverage_province }}{% if featured_news.coverage_district %}, {{ featured_news.coverage_district }}{% endif %}</dd></div>
+                <div><dt>Cobertura</dt><dd>{{ featured_news.coverage_department.name }}{% if featured_news.coverage_district %}, {{ featured_news.coverage_district.name }}{% endif %}</dd></div>
               </dl>
             </div>
           </div>

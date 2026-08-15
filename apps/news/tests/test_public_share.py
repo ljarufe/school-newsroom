@@ -54,7 +54,7 @@ def create_news_page(home, section, *, live=True):
                 "<h2>Contexto público</h2><p>Contenido ficticio del cuerpo.</p>",
             )
         ],
-        coverage_province="Arequipa",
+        coverage_department_id="04",
     )
     home.add_child(instance=page)
     NewsPageSection.objects.create(page=page, section=section)

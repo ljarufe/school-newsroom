@@ -119,14 +119,20 @@ Para encontrar una noticia:
    noticias asignadas a esa subsección. Al elegir una sección, el selector de
    subsecciones muestra sólo las subsecciones de esa sección. Sin una sección
    elegida, las subsecciones siguen disponibles agrupadas por sección principal.
-4. Desde el detalle de una noticia, selecciona una etiqueta para abrir el
-   listado filtrado por esa etiqueta exacta.
+4. Para limitar por cobertura territorial, elige `Departamento`. `Distrito` se
+   habilita después de elegirlo: escribe al menos tres caracteres y selecciona
+   un resultado compatible. El filtro departamental incluye noticias con o sin
+   distrito; el filtro distrital exige una coincidencia exacta.
+5. Desde el detalle de una noticia, selecciona el departamento, el distrito,
+   una sección, una subsección o una etiqueta para abrir el listado con ese
+   filtro. Los enlaces distritales conservan también el departamento.
 
 Los filtros pueden combinarse. El enlace `Limpiar filtros` vuelve al listado
 completo. Si se cambia la sección y la subsección anterior no pertenece a ella,
 el selector limpia esa subsección. Si la dirección contiene una sección,
-subsección o etiqueta que no existe, o combina filtros incompatibles, el sitio
-explica el problema y ofrece volver a todas las noticias.
+subsección, etiqueta, departamento o distrito que no existe, o combina una
+subsección o un distrito con un nivel superior incompatible, el sitio explica
+el problema y ofrece volver a todas las noticias.
 
 Junto al número de resultados hay un control para alternar entre `Mostrar más
 antiguas primero` y `Mostrar más recientes primero`. Al usarlo se mantienen la
@@ -188,11 +194,18 @@ Un colegio representa una institución educativa que puede asociarse a una
 noticia. Los campos actuales son:
 
 - Nombre
-- Provincia
-- Distrito
+- Departamento, obligatorio
+- Distrito, opcional
 
-Provincia y Distrito son campos de texto libre. Actualmente no existe
-validación contra datos geográficos oficiales.
+La provincia se conserva internamente para validar la jerarquía UBIGEO, pero no
+se solicita ni se muestra como campo editorial. Elige primero el departamento.
+El distrito permanece deshabilitado hasta entonces; escribe al menos tres
+caracteres para consultar sólo distritos de ese departamento. Al cambiar el
+departamento se limpia un distrito incompatible. Puedes guardar el colegio sólo
+con departamento.
+
+La validación del servidor rechaza un distrito que no pertenezca al departamento,
+aunque se intente enviar el formulario fuera de la interacción normal del Admin.
 
 ## Grupos de colaboradores
 
@@ -261,7 +274,14 @@ Campos principales:
 
 La ubicación del colegio describe dónde está la institución educativa asociada.
 La cobertura editorial describe el territorio sobre el que trata la noticia.
-Pueden coincidir, pero no son el mismo dato.
+Pueden coincidir, pero no son el mismo dato y uno nunca completa al otro de forma
+automática.
+
+En `Cobertura`, `Departamento` es obligatorio y `Distrito` es opcional. La
+interacción es la misma que en Colegios: primero el departamento y luego una
+búsqueda de distrito de al menos tres caracteres. No aparece un campo de
+provincia. Cambiar el departamento limpia un distrito incompatible y el servidor
+vuelve a validar la pertenencia al guardar.
 
 `Secciones y subsecciones` muestra un árbol compacto de checkboxes. El control
 de cada rama sólo muestra u oculta sus subsecciones: expandir `Cultura` no la
@@ -275,11 +295,14 @@ subsección. Al reabrir la noticia se conservan exactamente las selecciones
 explícitas y las ramas que las contienen aparecen abiertas.
 
 En el detalle público, una subsección se presenta con un path como `Cultura ›
-Música`. Los paths legibles aparecen una sola vez, en la clasificación roja
+Música`. La sección y la subsección son enlaces al archivo con su contexto
+jerárquico. Los paths legibles aparecen una sola vez, en la clasificación roja
 superior. Si también seleccionaste `Cultura`, el detalle no repite una etiqueta
 redundante de la misma rama ni añade una fila inferior de clasificación. La
-Home, las tarjetas y el listado mantienen su diseño compacto y muestran
-únicamente las secciones principales efectivas.
+cobertura muestra el departamento y, cuando existe, el distrito como enlaces
+territoriales; nunca muestra la provincia. La Home, las tarjetas y el listado
+mantienen su diseño compacto y muestran únicamente las secciones principales
+efectivas.
 
 `Resumen` ya no forma parte del modelo ni del flujo editorial de una noticia.
 La Home, el listado, las tarjetas y el detalle no fabrican una bajada desde

@@ -88,12 +88,10 @@ def test_custom_editor_visible_labels_are_spanish() -> None:
         "Sección o subsección"
     )
     assert NewsPage._meta.get_field("school").verbose_name == "Colegio"
-    assert NewsPage._meta.get_field("coverage_province").verbose_name == (
-        "Provincia de cobertura"
+    assert NewsPage._meta.get_field("coverage_department").verbose_name == (
+        "Departamento"
     )
-    assert NewsPage._meta.get_field("coverage_district").verbose_name == (
-        "Distrito de cobertura"
-    )
+    assert NewsPage._meta.get_field("coverage_district").verbose_name == ("Distrito")
     assert NewsPage._meta.get_field("featured_image").verbose_name == (
         "Imagen destacada"
     )

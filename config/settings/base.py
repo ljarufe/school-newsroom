@@ -41,6 +41,7 @@ if SEO_NLP_MAX_CHARACTERS < 1:
 
 INSTALLED_APPS = [
     "apps.home",
+    "apps.geography",
     "apps.news",
     "wagtail.contrib.forms",
     "wagtail.contrib.redirects",

@@ -78,7 +78,7 @@ def create_news_page(
                 "<p>Contenido público ficticio para la noticia.</p>",
             ),
         ],
-        coverage_province="Arequipa",
+        coverage_department_id="04",
         featured_image=featured_image,
         featured_image_alt_text=featured_image_alt_text,
     )
@@ -481,8 +481,8 @@ def test_json_ld_is_safe_and_uses_only_ordered_public_credits(
     settings.MEDIA_ROOT = tmp_path
     school = School.objects.create(
         name="Fictional School",
-        province="Arequipa",
-        district="Cercado",
+        department_id="04",
+        district_id="040101",
     )
     group = ContributorGroup.objects.create(
         name="Internal Fictional Group",

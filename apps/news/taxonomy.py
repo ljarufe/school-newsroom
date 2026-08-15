@@ -8,6 +8,12 @@ if TYPE_CHECKING:
     from .models import NewsPage, NewsSection
 
 
+@dataclass(frozen=True)
+class TaxonomyNavigationPath:
+    main: NewsSection
+    subsection: NewsSection | None = None
+
+
 def _section_order(section: NewsSection) -> tuple:
     root = section.parent if section.parent_id else section
     return (
@@ -107,6 +113,24 @@ class NewsTaxonomy:
                     paths.append(section.name)
                 continue
             paths.append(f"{section.parent.name} › {section.name}")
+        return tuple(paths)
+
+    @property
+    def navigation_paths(self) -> tuple[TaxonomyNavigationPath, ...]:
+        branches_with_children = {
+            section.parent_id
+            for section in self.explicit_sections
+            if section.parent_id is not None
+        }
+        paths = []
+        for section in self.explicit_sections:
+            if section.parent_id is None:
+                if section.pk not in branches_with_children:
+                    paths.append(TaxonomyNavigationPath(main=section))
+                continue
+            paths.append(
+                TaxonomyNavigationPath(main=section.parent, subsection=section)
+            )
         return tuple(paths)
 
     @property

@@ -8,6 +8,9 @@ from taggit.models import Tag
 from wagtail.models import Site
 from wagtail.search.query import Fuzzy
 
+from apps.geography.models import Department, District
+from apps.geography.widgets import DependentDistrictWidget
+
 from .models import NewsSection
 from .selectors import PUBLIC_NEWS_ORDERING, public_news_pages
 
@@ -22,8 +25,27 @@ class NewsArchiveFilterForm(forms.Form):
     seccion = forms.CharField(required=False)
     subseccion = forms.CharField(required=False)
     etiqueta = forms.CharField(required=False)
+    departamento = forms.CharField(
+        label="Departamento",
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    distrito = forms.CharField(
+        label="Distrito",
+        required=False,
+        widget=DependentDistrictWidget(department_field="departamento"),
+    )
     orden = forms.CharField(required=False)
     pagina = forms.CharField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["departamento"].widget.choices = [
+            ("", "Todos"),
+            *Department.objects.filter(is_active=True)
+            .order_by("name", "code")
+            .values_list("code", "name"),
+        ]
 
     def clean_orden(self) -> str:
         value = self.cleaned_data["orden"].strip().lower()
@@ -36,6 +58,8 @@ class NewsArchiveCriteria:
     section_slug: str = ""
     subsection_slug: str = ""
     tag_slug: str = ""
+    department_code: str = ""
+    district_code: str = ""
     order: str = ""
     page_number: int = 1
 
@@ -54,6 +78,8 @@ class NewsArchiveCriteria:
             section_slug=values["seccion"].strip(),
             subsection_slug=values["subseccion"].strip(),
             tag_slug=values["etiqueta"].strip(),
+            department_code=values["departamento"].strip(),
+            district_code=values["distrito"].strip(),
             order=values["orden"],
             page_number=max(page_number, 1),
         )
@@ -72,6 +98,8 @@ class NewsArchiveCriteria:
             "seccion": self.section_slug,
             "subseccion": self.subsection_slug,
             "etiqueta": self.tag_slug,
+            "departamento": self.department_code,
+            "distrito": self.district_code,
             "orden": self.order,
         }
         if page_number and page_number > 1:
@@ -86,6 +114,8 @@ class NewsArchiveQuery:
     selected_section: NewsSection | None
     selected_subsection: NewsSection | None
     selected_tag: Tag | None
+    selected_department: Department | None
+    selected_district: District | None
     invalid_criterion: str = ""
 
 
@@ -106,6 +136,10 @@ class NewsArchiveQueryService:
 
         selected_section, selected_subsection, invalid = self._resolve_sections()
         selected_tag = self._selected_tag()
+        selected_department, selected_district, geography_invalid = (
+            self._resolve_geography()
+        )
+        invalid = invalid or geography_invalid
         if invalid:
             return NewsArchiveQuery(
                 queryset.none(),
@@ -113,6 +147,8 @@ class NewsArchiveQueryService:
                 selected_section,
                 selected_subsection,
                 selected_tag,
+                selected_department,
+                selected_district,
                 invalid,
             )
         if self.criteria.tag_slug and selected_tag is None:
@@ -122,6 +158,8 @@ class NewsArchiveQueryService:
                 selected_section,
                 selected_subsection,
                 None,
+                selected_department,
+                selected_district,
                 "tag",
             )
 
@@ -130,6 +168,8 @@ class NewsArchiveQueryService:
             selected_section,
             selected_subsection,
             selected_tag,
+            selected_department,
+            selected_district,
         )
         return NewsArchiveQuery(
             results,
@@ -137,7 +177,36 @@ class NewsArchiveQueryService:
             selected_section,
             selected_subsection,
             selected_tag,
+            selected_department,
+            selected_district,
         )
+
+    def _resolve_geography(self):
+        department = None
+        district = None
+        if self.criteria.department_code:
+            department = Department.objects.filter(
+                code=self.criteria.department_code,
+                is_active=True,
+            ).first()
+            if department is None:
+                return None, None, "department"
+        if self.criteria.district_code:
+            district = (
+                District.objects.filter(
+                    code=self.criteria.district_code,
+                    is_active=True,
+                    province__is_active=True,
+                    province__department__is_active=True,
+                )
+                .select_related("province__department")
+                .first()
+            )
+            if district is None:
+                return department, None, "district"
+            if department is None or district.province.department_id != department.code:
+                return department, district, "department_district"
+        return department, district, ""
 
     def _resolve_sections(self):
         section = self.sections_by_slug.get(self.criteria.section_slug)
@@ -172,11 +241,11 @@ class NewsArchiveQueryService:
             ).distinct()
         return queryset
 
-    def _apply_search(self, queryset, section, subsection, tag):
+    def _apply_search(self, queryset, section, subsection, tag, department, district):
         if not self.criteria.has_effective_search:
-            queryset = self._apply_sections(queryset, section, subsection)
-            if tag is not None:
-                queryset = queryset.filter(tags=tag).distinct()
+            queryset = self._apply_structured_filters(
+                queryset, section, subsection, tag, department, district
+            )
             return queryset.order_by(*self.criteria.chronological_ordering)
 
         chronological = bool(self.criteria.order)
@@ -187,7 +256,12 @@ class NewsArchiveQueryService:
             order_by_relevance=not chronological,
         )
         fts_queryset = self._apply_structured_filters(
-            fts_results.get_queryset(), section, subsection, tag
+            fts_results.get_queryset(),
+            section,
+            subsection,
+            tag,
+            department,
+            district,
         )
         if fts_queryset.count():
             return self._order_search_results(fts_queryset, chronological)
@@ -196,15 +270,26 @@ class NewsArchiveQueryService:
             order_by_relevance=not chronological,
         ).get_queryset()
         fuzzy_queryset = self._apply_structured_filters(
-            fuzzy_queryset, section, subsection, tag
+            fuzzy_queryset,
+            section,
+            subsection,
+            tag,
+            department,
+            district,
         )
         return self._order_search_results(fuzzy_queryset, chronological)
 
-    def _apply_structured_filters(self, queryset, section, subsection, tag):
+    def _apply_structured_filters(
+        self, queryset, section, subsection, tag, department, district
+    ):
         """Apply archive-only joins after ModelSearch compiles the text query."""
         queryset = self._apply_sections(queryset, section, subsection)
         if tag is not None:
             queryset = queryset.filter(tags=tag).distinct()
+        if department is not None:
+            queryset = queryset.filter(coverage_department=department)
+        if district is not None:
+            queryset = queryset.filter(coverage_district=district)
         return queryset
 
     def _order_search_results(self, queryset, chronological):

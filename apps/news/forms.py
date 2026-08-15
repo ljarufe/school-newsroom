@@ -2,6 +2,8 @@ from django import forms
 from wagtail.admin.forms import WagtailAdminPageForm
 from wagtail.blocks.stream_block import StreamBlockValidationError
 
+from apps.geography.forms import configure_geography_fields
+
 from .access import (
     FULL_EDITOR_PERMISSION,
     NEWS_SEO_FORMSET_NAMES,
@@ -85,6 +87,11 @@ class NewsPageAdminForm(MvpAccessPageAdminForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        configure_geography_fields(
+            self,
+            department_field="coverage_department",
+            district_field="coverage_district",
+        )
         related_formset = self.formsets.get("related_keyphrases")
         if related_formset is not None:
             related_formset.error_messages["too_many_forms"] = (

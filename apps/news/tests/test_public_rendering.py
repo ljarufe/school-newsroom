@@ -1,4 +1,5 @@
 import datetime as dt
+import re
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -14,11 +15,11 @@ from wagtail.search.models import IndexEntry
 
 from apps.home.models import HomePage
 from apps.news.models import (
+    AuthorProfile,
     ContributorGroup,
     MinorContributor,
     NewsPage,
-    NewsPageContributor,
-    NewsPagePublicCredit,
+    NewsPageAttribution,
     NewsPageSection,
     NewsSection,
     School,
@@ -304,14 +305,20 @@ def test_home_renders_public_credits_without_internal_contributor_data(
         slug="public-credit-news",
         publication_date=dt.date(2026, 7, 1),
     )
-    NewsPageContributor.objects.create(page=page, contributor=contributor)
-    NewsPagePublicCredit.objects.create(
+    NewsPageAttribution.objects.create(
         page=page,
+        kind=NewsPageAttribution.Kind.INTERNAL_CONTRIBUTOR,
+        minor_contributor=contributor,
+    )
+    NewsPageAttribution.objects.create(
+        page=page,
+        kind=NewsPageAttribution.Kind.PUBLIC_CREDIT,
         display_name="Second fictional public credit",
         sort_order=2,
     )
-    NewsPagePublicCredit.objects.create(
+    NewsPageAttribution.objects.create(
         page=page,
+        kind=NewsPageAttribution.Kind.PUBLIC_CREDIT,
         display_name="First fictional public credit",
         sort_order=1,
     )
@@ -487,14 +494,20 @@ def test_news_detail_renders_public_credits_without_internal_privacy_data(
     page.minor_publication_authorizations_verified = True
     page.sensitive_content = True
     page.save()
-    NewsPageContributor.objects.create(page=page, contributor=contributor)
-    NewsPagePublicCredit.objects.create(
+    NewsPageAttribution.objects.create(
         page=page,
+        kind=NewsPageAttribution.Kind.INTERNAL_CONTRIBUTOR,
+        minor_contributor=contributor,
+    )
+    NewsPageAttribution.objects.create(
+        page=page,
+        kind=NewsPageAttribution.Kind.PUBLIC_CREDIT,
         display_name="Second fictional detail credit",
         sort_order=2,
     )
-    NewsPagePublicCredit.objects.create(
+    NewsPageAttribution.objects.create(
         page=page,
+        kind=NewsPageAttribution.Kind.PUBLIC_CREDIT,
         display_name="First fictional detail credit",
         sort_order=1,
     )
@@ -1273,6 +1286,257 @@ def test_news_list_taxonomy_queries_have_constant_growth(public_site, section) -
 
 
 @pytest.mark.django_db
+def test_public_author_attribution_queries_have_constant_growth(
+    public_site,
+    section,
+) -> None:
+    image = create_uploaded_image()
+    first_page = create_news_page(
+        public_site,
+        section,
+        title="One author query budget",
+        slug="one-author-query-budget",
+        publication_date=dt.date(2026, 7, 1),
+    )
+    first_profile = AuthorProfile.objects.create(
+        display_name="First query author",
+        slug="first-query-author",
+        photo=image,
+    )
+    NewsPageAttribution.objects.create(
+        page=first_page,
+        kind=NewsPageAttribution.Kind.AUTHOR,
+        author_profile=first_profile,
+    )
+    client = Client()
+    client.get(first_page.url)
+    with CaptureQueriesContext(connection) as one_author_detail_queries:
+        detail_response = client.get(first_page.url)
+    with CaptureQueriesContext(connection) as one_author_archive_queries:
+        archive_response = client.get("/noticias/")
+    assert detail_response.status_code == 200
+    assert archive_response.status_code == 200
+
+    for index in range(1, 4):
+        profile = AuthorProfile.objects.create(
+            display_name=f"Query author {index}",
+            slug=f"query-author-{index}",
+            photo=image,
+        )
+        NewsPageAttribution.objects.create(
+            page=first_page,
+            kind=NewsPageAttribution.Kind.AUTHOR,
+            author_profile=profile,
+            sort_order=index,
+        )
+    for index in range(1, 4):
+        page = create_news_page(
+            public_site,
+            section,
+            title=f"Archive author query budget {index}",
+            slug=f"archive-author-query-budget-{index}",
+            publication_date=dt.date(2026, 7, index + 1),
+        )
+        NewsPageAttribution.objects.create(
+            page=page,
+            kind=NewsPageAttribution.Kind.AUTHOR,
+            author_profile=AuthorProfile.objects.create(
+                display_name=f"Archive query author {index}",
+                slug=f"archive-query-author-{index}",
+                photo=image,
+            ),
+        )
+    with CaptureQueriesContext(connection) as many_author_detail_queries:
+        detail_response = client.get(first_page.url)
+    with CaptureQueriesContext(connection) as many_author_archive_queries:
+        archive_response = client.get("/noticias/")
+
+    assert detail_response.status_code == 200
+    assert archive_response.status_code == 200
+    assert len(many_author_detail_queries) == len(one_author_detail_queries)
+    assert len(many_author_archive_queries) == len(one_author_archive_queries)
+
+
+@pytest.mark.django_db
+def test_public_author_cards_and_structured_archive_filter_are_privacy_safe(
+    public_site,
+    section,
+) -> None:
+    profile = AuthorProfile.objects.create(
+        display_name="Autora pública ficticia",
+        slug="autora-publica-ficticia",
+        bio="Biografía pública ficticia.",
+        position="Periodista",
+        work_url="https://example.invalid/portafolio",
+    )
+    authored = create_news_page(
+        public_site,
+        section,
+        title="Noticia de autora pública",
+        slug="noticia-de-autora-publica",
+        publication_date=dt.date(2026, 7, 1),
+    )
+    other = create_news_page(
+        public_site,
+        section,
+        title="Noticia de otra firma",
+        slug="noticia-de-otra-firma",
+        publication_date=dt.date(2026, 7, 2),
+    )
+    NewsPageAttribution.objects.create(
+        page=authored,
+        kind=NewsPageAttribution.Kind.AUTHOR,
+        author_profile=profile,
+        sort_order=0,
+    )
+    NewsPageAttribution.objects.create(
+        page=authored,
+        kind=NewsPageAttribution.Kind.PUBLIC_CREDIT,
+        display_name="Redacción ficticia",
+        sort_order=1,
+    )
+    NewsPageAttribution.objects.create(
+        page=other,
+        kind=NewsPageAttribution.Kind.PUBLIC_CREDIT,
+        display_name="Otra firma ficticia",
+    )
+    profile.is_active = False
+    profile.save(update_fields=["is_active"])
+
+    detail = Client().get(authored.url).content.decode()
+    archive = Client().get("/noticias/", {"autor": profile.slug}).content.decode()
+    invalid = Client().get("/noticias/", {"autor": "no-existe"}).content.decode()
+
+    assert detail.index("Autora pública ficticia") < detail.index("Redacción ficticia")
+    assert detail.index("Biografía pública ficticia.") < detail.index(
+        "Compartir esta noticia"
+    )
+    assert 'href="/noticias/?autor=autora-publica-ficticia"' in detail
+    assert "Noticias de Autora pública ficticia" in archive
+    assert authored.title in archive
+    assert other.title not in archive
+    assert 'for="news-author"' not in archive
+    assert "La autora solicitada no existe." not in invalid
+    assert "El autor solicitado no existe." in invalid
+
+
+@pytest.mark.django_db
+def test_author_archive_criterion_intersects_and_preserves_all_public_filters(
+    public_site,
+    section,
+) -> None:
+    """The structured author criterion composes without changing public search."""
+    subsection = NewsSection.objects.get(slug="politica-local")
+    profile = AuthorProfile.objects.create(
+        display_name="Autora histórica de matriz",
+        slug="autora-historica-matriz",
+    )
+    for index in range(11):
+        page = create_news_page(
+            public_site,
+            section,
+            title=f"Festival de archivo con autora {index}",
+            slug=f"matriz-autora-archivada-{index}",
+            publication_date=dt.date(2026, 7, index + 1),
+            tags=["matriz-autora"],
+        )
+        NewsPageSection.objects.create(page=page, section=subsection)
+        NewsPageAttribution.objects.create(
+            page=page,
+            kind=NewsPageAttribution.Kind.AUTHOR,
+            author_profile=profile,
+        )
+    non_matching = create_news_page(
+        public_site,
+        section,
+        title="Festival de archivo sin la firma solicitada",
+        slug="matriz-sin-firma-solicitada",
+        publication_date=dt.date(2026, 7, 20),
+        tags=["matriz-autora"],
+    )
+    NewsPageSection.objects.create(page=non_matching, section=subsection)
+    profile.is_active = False
+    profile.save(update_fields=["is_active"])
+    call_command("update_index", backend_name="default", verbosity=0)
+    client = Client()
+    target_title = "Festival de archivo con autora 0"
+
+    for criterion in (
+        {"buscar": "festival"},
+        {"seccion": section.slug},
+        {"subseccion": subsection.slug},
+        {"etiqueta": "matriz-autora"},
+        {"departamento": "04"},
+        {"departamento": "04", "distrito": "040101"},
+        {"orden": "asc"},
+    ):
+        response = client.get("/noticias/", {"autor": profile.slug, **criterion})
+        content = response.content.decode()
+
+        assert response.status_code == 200
+        assert "Noticias de Autora histórica de matriz" in content
+        assert content.count('class="card news-card') == 10, criterion
+        assert non_matching.title not in content
+
+    paginated = client.get(
+        "/noticias/",
+        {"autor": profile.slug, "orden": "asc", "pagina": "2"},
+    )
+    paginated_content = paginated.content.decode()
+    assert paginated.status_code == 200
+    assert "Festival de archivo con autora 10" in paginated_content
+    assert paginated_content.count('class="card news-card') == 1
+
+    combined = client.get(
+        "/noticias/",
+        {
+            "autor": profile.slug,
+            "buscar": "festival",
+            "seccion": section.slug,
+            "subseccion": subsection.slug,
+            "etiqueta": "matriz-autora",
+            "departamento": "04",
+            "distrito": "040101",
+            "orden": "asc",
+        },
+    )
+    combined_content = combined.content.decode()
+    chip_match = re.search(
+        r'href="([^"]+)" aria-label="Quitar filtro de autor"', combined_content
+    )
+
+    assert combined.status_code == 200
+    assert target_title in combined_content
+    assert combined_content.count(target_title) == 1
+    assert f'name="autor" value="{profile.slug}"' in combined_content
+    assert f"autor={profile.slug}" in combined_content
+    assert "orden=desc" in combined_content
+    assert 'for="news-author"' not in combined_content
+    assert 'id="news-author"' not in combined_content
+    assert chip_match is not None
+    chip_href = chip_match.group(1)
+    assert "autor=" not in chip_href
+    for value in (
+        "buscar=festival",
+        f"seccion={section.slug}",
+        f"subseccion={subsection.slug}",
+        "etiqueta=matriz-autora",
+        "departamento=04",
+        "distrito=040101",
+        "orden=asc",
+    ):
+        assert value in chip_href
+    assert (
+        '<a class="btn btn-outline-secondary" href="/noticias/">Limpiar filtros</a>'
+        in combined_content
+    )
+
+    invalid = client.get("/noticias/", {"autor": "autora-no-existe"})
+    assert invalid.status_code == 200
+    assert "El autor solicitado no existe." in invalid.content.decode()
+
+
+@pytest.mark.django_db
 def test_news_list_renders_empty_state_for_real_section_without_results(
     public_site,
 ) -> None:
@@ -1366,9 +1630,14 @@ def test_news_list_does_not_expose_internal_minor_or_privacy_data(
     page.minor_publication_authorizations_verified = True
     page.sensitive_content = True
     page.save()
-    NewsPageContributor.objects.create(page=page, contributor=contributor)
-    NewsPagePublicCredit.objects.create(
+    NewsPageAttribution.objects.create(
         page=page,
+        kind=NewsPageAttribution.Kind.INTERNAL_CONTRIBUTOR,
+        minor_contributor=contributor,
+    )
+    NewsPageAttribution.objects.create(
+        page=page,
+        kind=NewsPageAttribution.Kind.PUBLIC_CREDIT,
         display_name="Safe fictional public byline",
     )
 

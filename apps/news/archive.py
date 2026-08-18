@@ -11,7 +11,7 @@ from wagtail.search.query import Fuzzy
 from apps.geography.models import Department, District
 from apps.geography.widgets import DependentDistrictWidget
 
-from .models import NewsSection
+from .models import AuthorProfile, NewsPageAttribution, NewsSection
 from .selectors import PUBLIC_NEWS_ORDERING, public_news_pages
 
 ASCENDING_ORDERING = ("publication_date", "first_published_at")
@@ -37,6 +37,7 @@ class NewsArchiveFilterForm(forms.Form):
     )
     orden = forms.CharField(required=False)
     pagina = forms.CharField(required=False)
+    autor = forms.CharField(required=False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -60,6 +61,7 @@ class NewsArchiveCriteria:
     tag_slug: str = ""
     department_code: str = ""
     district_code: str = ""
+    author_slug: str = ""
     order: str = ""
     page_number: int = 1
 
@@ -80,6 +82,7 @@ class NewsArchiveCriteria:
             tag_slug=values["etiqueta"].strip(),
             department_code=values["departamento"].strip(),
             district_code=values["distrito"].strip(),
+            author_slug=values["autor"].strip(),
             order=values["orden"],
             page_number=max(page_number, 1),
         )
@@ -92,7 +95,9 @@ class NewsArchiveCriteria:
     def has_effective_search(self) -> bool:
         return bool(self.search)
 
-    def query_parameters(self, *, page_number: int | None = None) -> dict[str, str]:
+    def query_parameters(
+        self, *, page_number: int | None = None, include_author: bool = True
+    ) -> dict[str, str]:
         values = {
             "buscar": self.search,
             "seccion": self.section_slug,
@@ -102,6 +107,8 @@ class NewsArchiveCriteria:
             "distrito": self.district_code,
             "orden": self.order,
         }
+        if include_author:
+            values["autor"] = self.author_slug
         if page_number and page_number > 1:
             values["pagina"] = str(page_number)
         return {key: value for key, value in values.items() if value}
@@ -116,6 +123,7 @@ class NewsArchiveQuery:
     selected_tag: Tag | None
     selected_department: Department | None
     selected_district: District | None
+    selected_author: AuthorProfile | None
     invalid_criterion: str = ""
 
 
@@ -139,6 +147,7 @@ class NewsArchiveQueryService:
         selected_department, selected_district, geography_invalid = (
             self._resolve_geography()
         )
+        selected_author = self._selected_author()
         invalid = invalid or geography_invalid
         if invalid:
             return NewsArchiveQuery(
@@ -149,7 +158,20 @@ class NewsArchiveQueryService:
                 selected_tag,
                 selected_department,
                 selected_district,
+                selected_author,
                 invalid,
+            )
+        if self.criteria.author_slug and selected_author is None:
+            return NewsArchiveQuery(
+                queryset.none(),
+                self.criteria,
+                selected_section,
+                selected_subsection,
+                selected_tag,
+                selected_department,
+                selected_district,
+                None,
+                "author",
             )
         if self.criteria.tag_slug and selected_tag is None:
             return NewsArchiveQuery(
@@ -160,6 +182,7 @@ class NewsArchiveQueryService:
                 None,
                 selected_department,
                 selected_district,
+                selected_author,
                 "tag",
             )
 
@@ -170,6 +193,7 @@ class NewsArchiveQueryService:
             selected_tag,
             selected_department,
             selected_district,
+            selected_author,
         )
         return NewsArchiveQuery(
             results,
@@ -179,6 +203,7 @@ class NewsArchiveQueryService:
             selected_tag,
             selected_department,
             selected_district,
+            selected_author,
         )
 
     def _resolve_geography(self):
@@ -228,6 +253,15 @@ class NewsArchiveQueryService:
             return None
         return Tag.objects.filter(slug=self.criteria.tag_slug).first()
 
+    def _selected_author(self) -> AuthorProfile | None:
+        if not self.criteria.author_slug:
+            return None
+        return (
+            AuthorProfile.objects.filter(slug=self.criteria.author_slug)
+            .only("id", "display_name", "slug", "is_active")
+            .first()
+        )
+
     @staticmethod
     def _apply_sections(queryset, section, subsection):
         if section is not None:
@@ -241,10 +275,12 @@ class NewsArchiveQueryService:
             ).distinct()
         return queryset
 
-    def _apply_search(self, queryset, section, subsection, tag, department, district):
+    def _apply_search(
+        self, queryset, section, subsection, tag, department, district, author
+    ):
         if not self.criteria.has_effective_search:
             queryset = self._apply_structured_filters(
-                queryset, section, subsection, tag, department, district
+                queryset, section, subsection, tag, department, district, author
             )
             return queryset.order_by(*self.criteria.chronological_ordering)
 
@@ -262,6 +298,7 @@ class NewsArchiveQueryService:
             tag,
             department,
             district,
+            author,
         )
         if fts_queryset.count():
             return self._order_search_results(fts_queryset, chronological)
@@ -270,17 +307,12 @@ class NewsArchiveQueryService:
             order_by_relevance=not chronological,
         ).get_queryset()
         fuzzy_queryset = self._apply_structured_filters(
-            fuzzy_queryset,
-            section,
-            subsection,
-            tag,
-            department,
-            district,
+            fuzzy_queryset, section, subsection, tag, department, district, author
         )
         return self._order_search_results(fuzzy_queryset, chronological)
 
     def _apply_structured_filters(
-        self, queryset, section, subsection, tag, department, district
+        self, queryset, section, subsection, tag, department, district, author
     ):
         """Apply archive-only joins after ModelSearch compiles the text query."""
         queryset = self._apply_sections(queryset, section, subsection)
@@ -290,6 +322,11 @@ class NewsArchiveQueryService:
             queryset = queryset.filter(coverage_department=department)
         if district is not None:
             queryset = queryset.filter(coverage_district=district)
+        if author is not None:
+            queryset = queryset.filter(
+                attributions__kind=NewsPageAttribution.Kind.AUTHOR,
+                attributions__author_profile=author,
+            ).distinct()
         return queryset
 
     def _order_search_results(self, queryset, chronological):

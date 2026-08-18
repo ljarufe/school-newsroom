@@ -7,7 +7,7 @@
   <section class="container py-5" aria-labelledby="news-list-heading">
     <header class="page-header mb-4">
       <p class="eyebrow">Archivo editorial</p>
-      <h1 id="news-list-heading" class="display-4">{% if selected_section %}Noticias de {{ selected_section.name }}{% else %}Noticias{% endif %}</h1>
+      <h1 id="news-list-heading" class="display-4">{% if archive.selected_author %}Noticias de {{ archive.selected_author.display_name }}{% elif selected_section %}Noticias de {{ selected_section.name }}{% else %}Noticias{% endif %}</h1>
       <p class="lead mb-0">Busca y explora las noticias publicadas.</p>
     </header>
 
@@ -49,12 +49,13 @@
       </div>
       <div class="col-md-4 d-flex align-items-end">
         {% if criteria.tag_slug %}<input type="hidden" name="etiqueta" value="{{ criteria.tag_slug }}">{% endif %}
+        {% if criteria.author_slug %}<input type="hidden" name="autor" value="{{ criteria.author_slug }}">{% endif %}
         {% if criteria.order %}<input type="hidden" name="orden" value="{{ criteria.order }}">{% endif %}
         <a class="btn btn-outline-secondary" href="{% url 'news_list' %}">Limpiar filtros</a>
       </div>
     </form>
 
-    {% if criteria.section_slug or criteria.subsection_slug or criteria.tag_slug or criteria.department_code or criteria.district_code %}
+    {% if criteria.section_slug or criteria.subsection_slug or criteria.tag_slug or criteria.department_code or criteria.district_code or criteria.author_slug %}
       <div class="mb-3" aria-label="Filtros activos">
         <span class="visually-hidden">Filtros activos:</span>
         {% if archive.selected_section %}<span class="badge text-bg-light">{{ archive.selected_section.name }}</span>{% endif %}
@@ -62,12 +63,13 @@
         {% if archive.selected_tag %}<span class="badge text-bg-light">#{{ archive.selected_tag.name }}</span>{% endif %}
         {% if archive.selected_department %}<span class="badge text-bg-light">{{ archive.selected_department.name }}</span>{% endif %}
         {% if archive.selected_district %}<span class="badge text-bg-light">{{ archive.selected_district.name }}</span>{% endif %}
+        {% if archive.selected_author %}<a class="badge text-bg-light" href="{% url 'news_list' %}{% if author_filter_remove_query %}?{{ author_filter_remove_query }}{% endif %}" aria-label="Quitar filtro de autor">{{ archive.selected_author.display_name }} ×</a>{% endif %}
       </div>
     {% endif %}
 
     {% if archive.invalid_criterion %}
       <div class="empty-state" role="status">
-        <h2>{% if archive.invalid_criterion == "section" %}La sección solicitada no existe.{% elif archive.invalid_criterion == "subsection" %}La subsección solicitada no existe.{% elif archive.invalid_criterion == "tag" %}La etiqueta solicitada no existe.{% elif archive.invalid_criterion == "department" %}El departamento solicitado no existe.{% elif archive.invalid_criterion == "district" %}El distrito solicitado no existe.{% else %}Los filtros solicitados no son compatibles.{% endif %}</h2>
+        <h2>{% if archive.invalid_criterion == "section" %}La sección solicitada no existe.{% elif archive.invalid_criterion == "subsection" %}La subsección solicitada no existe.{% elif archive.invalid_criterion == "tag" %}La etiqueta solicitada no existe.{% elif archive.invalid_criterion == "author" %}El autor solicitado no existe.{% elif archive.invalid_criterion == "department" %}El departamento solicitado no existe.{% elif archive.invalid_criterion == "district" %}El distrito solicitado no existe.{% else %}Los filtros solicitados no son compatibles.{% endif %}</h2>
         <p>Revisa la dirección o vuelve al listado completo de noticias.</p>
         <a class="btn btn-primary" href="{% url 'news_list' %}">Ver todas las noticias</a>
       </div>

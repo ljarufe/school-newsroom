@@ -9,7 +9,7 @@ from wagtail.models import Page, Site
 from apps.home.models import HomePage
 from apps.news.models import (
     NewsPage,
-    NewsPagePublicCredit,
+    NewsPageAttribution,
     NewsPageSection,
     NewsSection,
 )
@@ -58,8 +58,9 @@ def create_news_page(home, section, *, live=True):
     )
     home.add_child(instance=page)
     NewsPageSection.objects.create(page=page, section=section)
-    NewsPagePublicCredit.objects.create(
+    NewsPageAttribution.objects.create(
         page=page,
+        kind=NewsPageAttribution.Kind.PUBLIC_CREDIT,
         display_name="Redacción ficticia",
         sort_order=0,
     )

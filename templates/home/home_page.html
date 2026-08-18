@@ -21,11 +21,11 @@
             <div class="{% if featured_news.featured_image %}col-lg-5{% else %}col-12{% endif %} p-4 p-lg-5 d-flex flex-column justify-content-center">
               {% if featured_news.taxonomy.compact_main_names %}<p class="eyebrow mb-2">{{ featured_news.taxonomy.compact_main_names }}</p>{% endif %}
               <h2 class="display-6"><a href="{% pageurl featured_news %}">{{ featured_news.title }}</a></h2>
-              {% with public_credits=featured_news.public_credits.all %}
-                {% if public_credits %}
+              {% with attributions=featured_news.public_attributions %}
+                {% if attributions %}
                   <p class="byline">Por
-                    {% for credit in public_credits %}
-                      {{ credit.display_name }}{% if not forloop.last %}; {% endif %}
+                    {% for attribution in attributions %}
+                      {% if attribution.kind == "AUTHOR" %}{{ attribution.author_profile.display_name }}{% else %}{{ attribution.display_name }}{% endif %}{% if not forloop.last %}; {% endif %}
                     {% endfor %}
                   </p>
                 {% endif %}

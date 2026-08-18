@@ -1,6 +1,6 @@
 from django.db.models import Prefetch
 
-from .models import NewsPage, NewsPagePublicCredit, NewsPageSection
+from .models import NewsPage, NewsPageAttribution, NewsPageSection
 
 PUBLIC_NEWS_ORDERING = ("-publication_date", "-first_published_at")
 
@@ -18,8 +18,18 @@ def public_news_pages():
         .prefetch_related(
             "tags",
             Prefetch(
-                "public_credits",
-                queryset=NewsPagePublicCredit.objects.order_by("sort_order"),
+                "attributions",
+                queryset=(
+                    NewsPageAttribution.objects.filter(
+                        kind__in=(
+                            NewsPageAttribution.Kind.AUTHOR,
+                            NewsPageAttribution.Kind.PUBLIC_CREDIT,
+                        )
+                    )
+                    .select_related("author_profile__photo")
+                    .order_by("sort_order")
+                ),
+                to_attr="public_attribution_rows",
             ),
             Prefetch(
                 "section_assignments",

@@ -60,6 +60,8 @@ NEWS_0016 = ("news", "0016_public_news_search_infrastructure")
 NEWS_0017 = ("news", "0017_add_normalized_geography_fields")
 NEWS_0018 = ("news", "0018_backfill_normalized_geography")
 NEWS_0019 = ("news", "0019_finalize_normalized_geography")
+NEWS_0020 = ("news", "0020_unify_authorship_attribution")
+NEWS_0021 = ("news", "0021_authorprofile_minor_email_privacy")
 GEOGRAPHY_0002 = ("geography", "0002_load_ubigeo_2025_12_31")
 HOME_0001 = ("home", "0001_initial")
 BEFORE_NEWS_0002 = [HOME_0001, NEWS_0001]
@@ -545,7 +547,8 @@ def test_epic4_access_migration_fails_before_deleting_an_assigned_group():
             .exists()
         )
     finally:
-        get_user_model().objects.filter(username=username).delete()
+        if "User" in locals():
+            User.objects.using(db_alias).filter(username=username).delete()
         migrate_to_latest()
 
 
@@ -1463,6 +1466,136 @@ def test_epic3_006_migration_preserves_body_and_adds_table_schema() -> None:
 
 
 @pytest.mark.django_db(transaction=True)
+def test_epic3_010_migrates_legacy_attributions_without_rewriting_revisions():
+    home_id = None
+    page_id = None
+    revision_id = None
+    try:
+        apps = migrate_to(NEWS_0019)
+        db_alias = connection.alias
+        ContentType = apps.get_model("contenttypes", "ContentType")
+        HistoricalNewsPage = apps.get_model("news", "NewsPage")
+        HistoricalPage = apps.get_model("wagtailcore", "Page")
+        HistoricalSchool = apps.get_model("news", "School")
+        HistoricalGroup = apps.get_model("news", "ContributorGroup")
+        HistoricalMinor = apps.get_model("news", "MinorContributor")
+        HistoricalCredit = apps.get_model("news", "NewsPagePublicCredit")
+        HistoricalContributor = apps.get_model("news", "NewsPageContributor")
+        HistoricalRevision = apps.get_model("wagtailcore", "Revision")
+
+        RuntimeLocale.objects.get_or_create(language_code="es")
+        root = RuntimePage.get_first_root_node()
+        if root is None:
+            root = RuntimePage.add_root(instance=RuntimePage(title="Root", slug="root"))
+        home = RuntimeHomePage(title="EPIC3-010 home", slug="epic3-010-home")
+        root.add_child(instance=home)
+        home_id = home.pk
+        base_page = RuntimePage(
+            title="EPIC3-010 legacy news", slug="epic3-010-legacy-news", live=False
+        )
+        home.add_child(instance=base_page)
+        page_id = base_page.pk
+        news_content_type = ContentType.objects.using(db_alias).get(
+            app_label="news", model="newspage"
+        )
+        HistoricalPage._base_manager.using(db_alias).filter(pk=page_id).update(
+            content_type_id=news_content_type.pk
+        )
+        HistoricalNewsPage(
+            page_ptr_id=page_id,
+            publication_date=timezone.datetime(2026, 8, 1).date(),
+            body=[
+                {
+                    "type": "paragraph",
+                    "value": "<p>Historical attribution body.</p>",
+                    "id": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+                }
+            ],
+            coverage_department_id="04",
+        ).save_base(raw=True, using=db_alias, force_insert=True)
+        school = HistoricalSchool.objects.using(db_alias).create(
+            name="Historical fictional school", department_id="04"
+        )
+        minor = HistoricalMinor.objects.using(db_alias).create(
+            full_name="Historical private minor",
+            group=HistoricalGroup.objects.using(db_alias).create(
+                name="Historical fictional group", school=school
+            ),
+            age_band="under_14",
+        )
+        HistoricalCredit.objects.using(db_alias).create(
+            page_id=page_id, display_name="First historical credit", sort_order=3
+        )
+        HistoricalCredit.objects.using(db_alias).create(
+            page_id=page_id, display_name="Second historical credit", sort_order=4
+        )
+        HistoricalContributor.objects.using(db_alias).create(
+            page_id=page_id, contributor_id=minor.pk, sort_order=0
+        )
+        revision = HistoricalRevision.objects.using(db_alias).create(
+            content_type_id=news_content_type.pk,
+            base_content_type_id=news_content_type.pk,
+            object_id=str(page_id),
+            created_at=timezone.now(),
+            object_str="EPIC3-010 legacy news",
+            content={"pk": page_id, "title": "EPIC3-010 legacy news"},
+        )
+        revision_id = revision.pk
+
+        apps = migrate_to(NEWS_0020)
+        MigratedAttribution = apps.get_model("news", "NewsPageAttribution")
+        HistoricalAuthorProfile = apps.get_model("news", "AuthorProfile")
+        MigratedRevision = apps.get_model("wagtailcore", "Revision")
+        HistoricalAuthorProfile.objects.using(db_alias).create(
+            display_name="Historical minor author",
+            slug="historical-minor-author",
+            minor_contributor_id=minor.pk,
+            email="historical-minor@example.invalid",
+        )
+        assert list(
+            MigratedAttribution.objects.using(db_alias)
+            .filter(page_id=page_id)
+            .values_list("kind", "display_name", "minor_contributor_id", "sort_order")
+        ) == [
+            ("PUBLIC_CREDIT", "First historical credit", None, 0),
+            ("PUBLIC_CREDIT", "Second historical credit", None, 1),
+            ("INTERNAL_CONTRIBUTOR", "", minor.pk, 2),
+        ]
+        assert (
+            MigratedRevision.objects.using(db_alias).filter(pk=revision_id).count() == 1
+        )
+
+        apps = migrate_to(NEWS_0021)
+        MigratedAuthorProfile = apps.get_model("news", "AuthorProfile")
+        assert (
+            MigratedAuthorProfile.objects.using(db_alias)
+            .get(slug="historical-minor-author")
+            .email
+            == ""
+        )
+
+        migrate_to_latest()
+        legacy_revision = Revision.objects.get(pk=revision_id)
+        assert legacy_revision.as_object().pk == page_id
+        page = RuntimeNewsPage.objects.get(pk=page_id)
+        post_migration_revision = page.save_revision()
+        assert "attributions" in post_migration_revision.content
+        assert post_migration_revision.as_object().attributions.count() == 3
+    finally:
+        migrate_to_latest()
+        if revision_id is not None:
+            Revision.objects.filter(pk=revision_id).delete()
+        if page_id is not None:
+            page = RuntimePage.objects.filter(pk=page_id).first()
+            if page is not None:
+                page.delete()
+        if home_id is not None:
+            home = RuntimePage.objects.filter(pk=home_id).first()
+            if home is not None:
+                home.delete()
+
+
+@pytest.mark.django_db(transaction=True)
 def test_epic3_009_migrates_current_page_and_revision_relation_shape() -> None:
     home_id = None
     page_id = None
@@ -1912,6 +2045,7 @@ def test_geography_migrations_backfill_legacy_rows_and_support_new_revisions():
             field.name == "coverage_province" for field in MigratedNewsPage._meta.fields
         )
 
+        migrate_to_latest()
         runtime_page = RuntimeNewsPage.objects.get(pk=page_id)
         revision = runtime_page.save_revision()
         reopened = revision.as_object()

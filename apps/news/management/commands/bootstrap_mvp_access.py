@@ -150,6 +150,7 @@ class Command(BaseCommand):
                 "school",
                 "contributorgroup",
                 "minorcontributor",
+                "authorprofile",
             ],
             codename__in=[
                 "add_newssection",
@@ -168,9 +169,12 @@ class Command(BaseCommand):
                 "change_minorcontributor",
                 "delete_minorcontributor",
                 "view_minorcontributor",
+                "add_authorprofile",
+                "change_authorprofile",
+                "view_authorprofile",
             ],
         )
-        if snippet_permissions.count() != 16:
+        if snippet_permissions.count() != 19:
             raise CommandError(
                 "The expected editorial snippet permissions are incomplete."
             )

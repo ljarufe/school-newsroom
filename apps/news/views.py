@@ -39,6 +39,7 @@ def news_list(request):
         tag_slug=criteria.tag_slug,
         department_code=criteria.department_code,
         district_code=criteria.district_code,
+        author_slug=criteria.author_slug,
         order=next_order,
     )
     root_sections = [section for section in service.sections if not section.parent_id]
@@ -63,6 +64,9 @@ def news_list(request):
             "selected_section": archive.selected_section,
             "pagination_query": urlencode(criteria.query_parameters()),
             "order_toggle_query": urlencode(order_criteria.query_parameters()),
+            "author_filter_remove_query": urlencode(
+                criteria.query_parameters(include_author=False)
+            ),
             "seo_noindex": environment_noindex() or criteria.has_effective_search,
         },
     )

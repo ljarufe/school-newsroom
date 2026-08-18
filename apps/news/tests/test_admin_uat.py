@@ -9,7 +9,15 @@ from django.urls import reverse
 from wagtail.models import Page, Site
 
 from apps.home.models import HomePage
-from apps.news.models import NewsPage, NewsPageSection, NewsSection
+from apps.news.models import (
+    AuthorProfile,
+    ContributorGroup,
+    MinorContributor,
+    NewsPage,
+    NewsPageSection,
+    NewsSection,
+    School,
+)
 from apps.news.seo.nlp import reset_runtime_cache
 from apps.news.taxonomy_forms import NewsSubsectionAdminForm
 
@@ -98,6 +106,194 @@ def test_wagtail_dashboard_uses_spanish_search_and_editorial_menu(admin_client):
     assert_contains_text(response, "Grupos de colaboradores")
     assert_contains_text(response, "Colaboradores menores")
     assert_not_contains_text(response, "Search all pages")
+
+
+@pytest.mark.django_db
+def test_author_profile_native_chooser_offers_only_active_profiles(admin_client):
+    matching = AuthorProfile.objects.create(
+        display_name="Needle fictional author",
+        slug="needle-fictional-author-chooser",
+    )
+    AuthorProfile.objects.create(
+        display_name="Other active fictional author",
+        slug="other-active-fictional-author-chooser",
+    )
+    AuthorProfile.objects.create(
+        display_name="Inactive fictional author",
+        slug="inactive-fictional-author-chooser",
+        is_active=False,
+    )
+
+    response = admin_client.get(
+        reverse("wagtailsnippetchoosers_news_authorprofile:choose"),
+    )
+
+    assert response.status_code == 200
+    assert_contains_text(response, "Needle fictional author")
+    assert_not_contains_text(response, "Inactive fictional author")
+
+    search_response = admin_client.get(
+        reverse("wagtailsnippetchoosers_news_authorprofile:choose"),
+        {"q": matching.slug},
+    )
+    assert search_response.status_code == 200
+    assert_contains_text(search_response, "Needle fictional author")
+    assert_not_contains_text(search_response, "Other active fictional author")
+
+
+@pytest.mark.django_db
+def test_native_editorial_choosers_create_and_edit_selected_objects(admin_client):
+    author_choose_url = reverse("wagtailsnippetchoosers_news_authorprofile:choose")
+    author_create_url = reverse("wagtailsnippetchoosers_news_authorprofile:create")
+    group_choose_url = reverse("wagtailsnippetchoosers_news_contributorgroup:choose")
+    school = School.objects.create(name="Chooser school", department_id="04")
+
+    choose_response = admin_client.get(author_choose_url)
+    create_response = admin_client.post(
+        author_create_url,
+        {
+            "display_name": "Duplicate safe author",
+            "bio": "",
+            "email": "",
+            "position": "",
+            "work_url": "",
+            "user": "",
+            "minor_contributor": "",
+            "is_active": "on",
+        },
+    )
+    profile = AuthorProfile.objects.get(slug="duplicate-safe-author")
+    edit_response = admin_client.post(
+        reverse("wagtailsnippets_news_authorprofile:edit", args=(profile.pk,)),
+        {
+            "display_name": "Updated safe author",
+            "bio": "",
+            "email": "",
+            "position": "Editor",
+            "work_url": "",
+            "user": "",
+            "minor_contributor": "",
+            "is_active": "on",
+        },
+    )
+
+    assert choose_response.status_code == 200
+    assert "id_display_name" in choose_response.content.decode()
+    assert create_response.status_code == 200
+    assert (
+        "Duplicate safe author (duplicate-safe-author)"
+        in create_response.content.decode()
+    )
+    assert edit_response.status_code == 302, edit_response.context_data["form"].errors
+    assert (
+        AuthorProfile.objects.get(pk=profile.pk).display_name == "Updated safe author"
+    )
+    assert admin_client.get(group_choose_url).status_code == 200
+    assert ContributorGroup.objects.create(name="Chooser group", school=school).pk
+
+
+@pytest.mark.django_db
+def test_author_profile_forms_generate_slugs_and_use_native_user_and_image_choosers(
+    admin_client,
+):
+    user = get_user_model().objects.create_user(
+        username="maria.editorial",
+        first_name="María",
+        last_name="Editorial",
+    )
+    create_url = reverse("wagtailsnippetchoosers_news_authorprofile:create")
+    response = admin_client.get(reverse("wagtailsnippets_news_authorprofile:add"))
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert 'name="slug"' not in content
+    assert "data-chooser-url" in content
+    assert "id_photo-chooser" in content
+    created = admin_client.post(
+        create_url,
+        {
+            "display_name": "María Editorial",
+            "bio": "",
+            "email": "",
+            "position": "",
+            "work_url": "",
+            "user": user.pk,
+            "minor_contributor": "",
+            "is_active": "on",
+        },
+    )
+    profile = AuthorProfile.objects.get(user=user)
+    assert created.status_code == 200
+    assert profile.slug == "maria-editorial"
+
+
+@pytest.mark.django_db
+def test_author_profile_identity_choosers_search_and_reset_without_crud(admin_client):
+    user = get_user_model().objects.create_user(
+        username="luis.reporta",
+        first_name="Luis",
+        last_name="Reporta",
+    )
+    get_user_model().objects.create_user(
+        username="maria.editorial",
+        first_name="María",
+        last_name="Editorial",
+    )
+    school = School.objects.create(name="Chooser search school", department_id="04")
+    group = ContributorGroup.objects.create(name="Chooser search group", school=school)
+    contributor = MinorContributor.objects.create(
+        full_name="Colaborador buscable uno",
+        group=group,
+        age_band=MinorContributor.AgeBand.FROM_14_TO_17,
+    )
+    other_contributor = MinorContributor.objects.create(
+        full_name="Colaborador buscable dos",
+        group=group,
+        age_band=MinorContributor.AgeBand.UNDER_14,
+    )
+    choose_url = reverse("author_profile_user_chooser:choose")
+    results_url = reverse("author_profile_user_chooser:choose_results")
+    chosen_url = reverse("author_profile_user_chooser:chosen", args=(user.pk,))
+    minor_choose_url = reverse("wagtailsnippetchoosers_news_minorcontributor:choose")
+    minor_results_url = reverse(
+        "wagtailsnippetchoosers_news_minorcontributor:choose_results"
+    )
+    response = admin_client.get(choose_url)
+    user_search = admin_client.get(results_url, {"q": "Luis Reporta"})
+    user_reset = admin_client.get(results_url, {"q": ""})
+    minor_response = admin_client.get(minor_choose_url)
+    minor_search = admin_client.get(minor_results_url, {"q": "uno"})
+    minor_reset = admin_client.get(minor_results_url, {"q": ""})
+    chosen = admin_client.get(chosen_url)
+    author_profile_form = admin_client.get(
+        reverse("wagtailsnippets_news_authorprofile:add")
+    )
+
+    assert response.status_code == 200
+    assert "Luis Reporta (@luis.reporta)" in response.json()["html"]
+    assert "María Editorial (@maria.editorial)" in response.json()["html"]
+    assert "tab-label-create" not in response.json()["html"]
+    assert user_search.status_code == 200
+    assert user_search["Content-Type"].startswith("text/html")
+    assert_contains_text(user_search, "Luis Reporta (@luis.reporta)")
+    assert_not_contains_text(user_search, "María Editorial (@maria.editorial)")
+    assert user_reset.status_code == 200
+    assert_contains_text(user_reset, "Luis Reporta (@luis.reporta)")
+    assert_contains_text(user_reset, "María Editorial (@maria.editorial)")
+    assert chosen.status_code == 200
+    assert "Luis Reporta (@luis.reporta)" in chosen.content.decode()
+    assert minor_response.status_code == 200
+    assert_contains_telepath_text(minor_response, "Colaborador buscable uno")
+    assert_contains_telepath_text(minor_response, "Colaborador buscable dos")
+    assert minor_search.status_code == 200
+    assert_contains_text(minor_search, str(contributor))
+    assert_not_contains_text(minor_search, str(other_contributor))
+    assert minor_reset.status_code == 200
+    assert_contains_text(minor_reset, str(contributor))
+    assert_contains_text(minor_reset, str(other_contributor))
+    form_content = author_profile_form.content.decode()
+    assert 'id="id_minor_contributor-chooser"' in form_content
+    assert '<select name="minor_contributor"' not in form_content
 
 
 @pytest.mark.django_db
@@ -339,7 +535,7 @@ def test_protected_taxonomy_delete_paths_redirect_with_spanish_error(
 
 
 @pytest.mark.django_db
-def test_news_page_create_surface_contains_contributor_and_privacy_copy(
+def test_news_page_create_surface_contains_attribution_and_privacy_copy(
     admin_client,
 ):
     home = HomePage.objects.first()
@@ -357,8 +553,7 @@ def test_news_page_create_surface_contains_contributor_and_privacy_copy(
 
     assert response.status_code == 200
     assert NewsPage._meta.verbose_name == "Noticia"
-    assert_contains_text(response, "Firma pública")
-    assert_contains_text(response, "Colaboradores internos")
+    assert_contains_text(response, "Autoría y créditos")
     assert_contains_text(response, "Privacidad de menores")
     assert_contains_text(response, "Contiene menores identificables")
     assert_contains_text(

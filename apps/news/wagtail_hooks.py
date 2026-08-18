@@ -1,20 +1,157 @@
+from django import forms
+from django.contrib.auth import get_user_model
+from django.core.exceptions import PermissionDenied
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from wagtail import hooks
 from wagtail.admin.admin_url_finder import ModelAdminURLFinder
+from wagtail.admin.forms import WagtailAdminModelForm
 from wagtail.admin.panels import FieldPanel
+from wagtail.admin.ui.tables import TitleColumn
 from wagtail.admin.views import generic
+from wagtail.admin.views.generic import chooser as generic_chooser
 from wagtail.admin.views.generic import history, usage
+from wagtail.admin.views.generic.chooser import BaseFilterForm
+from wagtail.admin.viewsets.chooser import ChooserViewSet
 from wagtail.admin.viewsets.model import ModelViewSet
+from wagtail.admin.widgets import BaseChooser
+from wagtail.images.widgets import AdminImageChooser
 from wagtail.permission_policies import ModelPermissionPolicy
 from wagtail.snippets.models import register_snippet
+from wagtail.snippets.views import chooser as snippet_chooser
 from wagtail.snippets.views import snippets as snippet_views
-from wagtail.snippets.views.snippets import SnippetViewSet, SnippetViewSetGroup
+from wagtail.snippets.views.snippets import (
+    SnippetChooserViewSet,
+    SnippetViewSet,
+    SnippetViewSetGroup,
+)
 
 from . import wagtail_hook_handlers
-from .models import ContributorGroup, MinorContributor, NewsSection, School
+from .access import FULL_EDITOR_PERMISSION
+from .models import (
+    AuthorProfile,
+    ContributorGroup,
+    MinorContributor,
+    NewsSection,
+    School,
+)
 from .school_forms import SchoolAdminForm
 from .taxonomy_forms import NewsSubsectionAdminForm
+
+
+def author_profile_user_label(user):
+    full_name = user.get_full_name().strip()
+    if full_name:
+        return f"{full_name} (@{user.get_username()})"
+    return f"@{user.get_username()}"
+
+
+class AuthorProfileUserChooserWidget(BaseChooser):
+    model = get_user_model()
+    icon = "user"
+    show_edit_link = False
+    link_to_chosen_text = ""
+
+    def get_display_title(self, instance):
+        return author_profile_user_label(instance)
+
+
+class AuthorProfileUserChooserFilterForm(BaseFilterForm):
+    q = forms.CharField(label="Buscar", required=False)
+
+    def filter(self, objects):
+        query = self.cleaned_data["q"].strip()
+        self.search_query = query
+        self.is_searching = bool(query)
+        if not query:
+            return objects
+        for term in query.split():
+            objects = objects.filter(
+                Q(first_name__icontains=term)
+                | Q(last_name__icontains=term)
+                | Q(username__icontains=term)
+            )
+        return objects
+
+
+class AuthorProfileUserChooserPermissionMixin:
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.has_perm(FULL_EDITOR_PERMISSION):
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+
+class AuthorProfileUserChooseView(
+    AuthorProfileUserChooserPermissionMixin,
+    generic_chooser.ChooseView,
+):
+    filter_form_class = AuthorProfileUserChooserFilterForm
+
+    def get_object_list(self):
+        return get_user_model().objects.exclude(author_profile__isnull=False)
+
+    @property
+    def title_column(self):
+        return TitleColumn(
+            "title",
+            label="Usuario interno",
+            accessor=author_profile_user_label,
+            get_url=lambda user: self.append_preserved_url_parameters(
+                reverse(self.chosen_url_name, args=(user.pk,))
+            ),
+            link_attrs={"data-chooser-modal-choice": True},
+        )
+
+
+class AuthorProfileUserChooseResultsView(
+    AuthorProfileUserChooserPermissionMixin,
+    generic_chooser.ChooseResultsView,
+):
+    filter_form_class = AuthorProfileUserChooserFilterForm
+
+    def get_object_list(self):
+        return get_user_model().objects.exclude(author_profile__isnull=False)
+
+    @property
+    def title_column(self):
+        return TitleColumn(
+            "title",
+            label="Usuario interno",
+            accessor=author_profile_user_label,
+            get_url=lambda user: self.append_preserved_url_parameters(
+                reverse(self.chosen_url_name, args=(user.pk,))
+            ),
+            link_attrs={"data-chooser-modal-choice": True},
+        )
+
+
+class AuthorProfileUserChosenView(
+    AuthorProfileUserChooserPermissionMixin,
+    generic_chooser.ChosenView,
+):
+    def get_display_title(self, instance):
+        return author_profile_user_label(instance)
+
+    def get_edit_item_url(self, instance):
+        return None
+
+
+class AuthorProfileUserChooserViewSet(ChooserViewSet):
+    model = get_user_model()
+    icon = "user"
+    choose_one_text = "Seleccionar usuario interno"
+    choose_another_text = "Seleccionar otro usuario interno"
+    edit_item_text = ""
+    base_widget_class = AuthorProfileUserChooserWidget
+    choose_view_class = AuthorProfileUserChooseView
+    choose_results_view_class = AuthorProfileUserChooseResultsView
+    chosen_view_class = AuthorProfileUserChosenView
+
+
+author_profile_user_chooser = AuthorProfileUserChooserViewSet(
+    "author_profile_user_chooser"
+)
 
 
 class MainSectionObjectQuerySetMixin:
@@ -247,11 +384,152 @@ class SchoolViewSet(SnippetViewSet):
         return self.form_class
 
 
+class AuthorProfileAdminForm(WagtailAdminModelForm):
+    """Keep public slugs stable while using native Wagtail chooser widgets."""
+
+    class Meta:
+        model = AuthorProfile
+        fields = (
+            "display_name",
+            "photo",
+            "bio",
+            "email",
+            "position",
+            "work_url",
+            "user",
+            "minor_contributor",
+            "is_active",
+        )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["photo"].widget = AdminImageChooser()
+        field = self.fields["user"]
+        field.widget = author_profile_user_chooser.widget_class()
+        queryset = get_user_model().objects.exclude(author_profile__isnull=False)
+        if self.instance.user_id:
+            queryset = queryset | get_user_model().objects.filter(
+                pk=self.instance.user_id
+            )
+        field.queryset = queryset
+        self.fields[
+            "minor_contributor"
+        ].widget = MinorContributorViewSet().chooser_viewset.widget_class
+
+
+class AuthorProfileChooserForm(AuthorProfileAdminForm):
+    class Meta:
+        model = AuthorProfile
+        fields = (
+            "display_name",
+            "photo",
+            "bio",
+            "email",
+            "position",
+            "work_url",
+            "user",
+            "minor_contributor",
+            "is_active",
+        )
+
+
+class AuthorProfileChooserFilterForm(BaseFilterForm):
+    q = forms.CharField(label="Buscar", required=False)
+
+    def filter(self, objects):
+        query = self.cleaned_data["q"].strip()
+        self.search_query = query
+        self.is_searching = bool(query)
+        if not query:
+            return objects
+        return objects.filter(
+            Q(display_name__icontains=query) | Q(slug__icontains=query)
+        )
+
+
+class ViewPermissionChooserMixin:
+    """Require view permission before exposing a contextual chooser response."""
+
+    def dispatch(self, request, *args, **kwargs):
+        permission_policy = getattr(self, "permission_policy", None) or (
+            ModelPermissionPolicy(self.model)
+        )
+        if not permission_policy.user_has_permission(request.user, "view"):
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+
+class ViewPermissionSnippetChooseView(
+    ViewPermissionChooserMixin, snippet_chooser.ChooseView
+):
+    pass
+
+
+class ViewPermissionSnippetChooseResultsView(
+    ViewPermissionChooserMixin, snippet_chooser.ChooseResultsView
+):
+    pass
+
+
+class ViewPermissionSnippetChosenView(
+    ViewPermissionChooserMixin, snippet_chooser.SnippetChosenView
+):
+    pass
+
+
+class ViewPermissionSnippetChosenMultipleView(
+    ViewPermissionChooserMixin, snippet_chooser.SnippetChosenMultipleView
+):
+    pass
+
+
+class ViewPermissionSnippetChooserViewSet(SnippetChooserViewSet):
+    choose_view_class = ViewPermissionSnippetChooseView
+    choose_results_view_class = ViewPermissionSnippetChooseResultsView
+    chosen_view_class = ViewPermissionSnippetChosenView
+    chosen_multiple_view_class = ViewPermissionSnippetChosenMultipleView
+
+
+class SchoolChooserViewSet(ViewPermissionSnippetChooserViewSet):
+    creation_form_class = SchoolAdminForm
+
+
+class ContributorGroupChooserViewSet(ViewPermissionSnippetChooserViewSet):
+    form_fields = ("name", "school")
+
+
+class MinorContributorChooserFilterForm(BaseFilterForm):
+    q = forms.CharField(label="Buscar", required=False)
+
+    def filter(self, objects):
+        query = self.cleaned_data["q"].strip()
+        self.search_query = query
+        self.is_searching = bool(query)
+        if not query:
+            return objects
+        return objects.filter(full_name__icontains=query)
+
+
+class MinorContributorChooseView(ViewPermissionSnippetChooseView):
+    filter_form_class = MinorContributorChooserFilterForm
+
+
+class MinorContributorChooseResultsView(ViewPermissionSnippetChooseResultsView):
+    filter_form_class = MinorContributorChooserFilterForm
+
+
+class MinorContributorChooserViewSet(ViewPermissionSnippetChooserViewSet):
+    form_fields = ("full_name", "group", "age_band")
+    choose_view_class = MinorContributorChooseView
+    choose_results_view_class = MinorContributorChooseResultsView
+
+
 class ContributorGroupViewSet(SnippetViewSet):
     model = ContributorGroup
     menu_label = "Grupos de colaboradores"
     menu_name = "contributor-groups"
     icon = "group"
+    chooser_viewset_class = ContributorGroupChooserViewSet
 
 
 class MinorContributorViewSet(SnippetViewSet):
@@ -259,6 +537,49 @@ class MinorContributorViewSet(SnippetViewSet):
     menu_label = "Colaboradores menores"
     menu_name = "minor-contributors"
     icon = "user"
+    chooser_viewset_class = MinorContributorChooserViewSet
+
+
+class ActiveAuthorProfileChooserMixin:
+    def get_object_list(self):
+        return super().get_object_list().filter(is_active=True)
+
+
+class ActiveAuthorProfileChooseView(
+    ActiveAuthorProfileChooserMixin,
+    ViewPermissionSnippetChooseView,
+):
+    filter_form_class = AuthorProfileChooserFilterForm
+
+
+class ActiveAuthorProfileChooseResultsView(
+    ActiveAuthorProfileChooserMixin,
+    ViewPermissionSnippetChooseResultsView,
+):
+    filter_form_class = AuthorProfileChooserFilterForm
+
+
+class AuthorProfileChooserViewSet(ViewPermissionSnippetChooserViewSet):
+    choose_view_class = ActiveAuthorProfileChooseView
+    choose_results_view_class = ActiveAuthorProfileChooseResultsView
+    creation_form_class = AuthorProfileChooserForm
+
+
+class AuthorProfileViewSet(SnippetViewSet):
+    model = AuthorProfile
+    menu_label = "Perfiles públicos de autor"
+    menu_name = "author-profiles"
+    icon = "user"
+    list_display = ("display_name", "slug", "position", "is_active")
+    search_fields = ("display_name", "slug", "position")
+    form_class = AuthorProfileAdminForm
+    chooser_viewset_class = AuthorProfileChooserViewSet
+
+    def get_form_class(self, for_update=False):
+        return self.form_class
+
+
+SchoolViewSet.chooser_viewset_class = SchoolChooserViewSet
 
 
 class EditorialViewSetGroup(SnippetViewSetGroup):
@@ -268,6 +589,7 @@ class EditorialViewSetGroup(SnippetViewSetGroup):
         SchoolViewSet,
         ContributorGroupViewSet,
         MinorContributorViewSet,
+        AuthorProfileViewSet,
     )
     menu_label = "Editorial"
     menu_icon = "doc-full-inverse"
@@ -275,6 +597,11 @@ class EditorialViewSetGroup(SnippetViewSetGroup):
 
 
 register_snippet(EditorialViewSetGroup)
+
+
+@hooks.register("register_admin_viewset")
+def register_author_profile_user_chooser():
+    return author_profile_user_chooser
 
 
 _news_section_deletion_is_protected = (

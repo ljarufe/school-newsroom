@@ -165,11 +165,23 @@ def build_news_article_data(page, metadata: PublicMetadata) -> dict:
         data["dateModified"] = page.last_published_at.isoformat()
     if metadata.og_image_url:
         data["image"] = metadata.og_image_url
-    authors = [
-        {"name": name.strip()}
-        for name in page.public_credits.values_list("display_name", flat=True)
-        if name.strip()
-    ]
+    from .models import NewsPageAttribution
+
+    authors = []
+    for attribution in page.public_attributions:
+        if attribution.kind == NewsPageAttribution.Kind.AUTHOR:
+            profile = attribution.author_profile
+            if profile is None:
+                continue
+            author = {"@type": "Person", "name": profile.display_name}
+            if profile.work_url:
+                author["url"] = profile.work_url
+            authors.append(author)
+        elif (
+            attribution.kind == NewsPageAttribution.Kind.PUBLIC_CREDIT
+            and attribution.display_name.strip()
+        ):
+            authors.append({"name": attribution.display_name.strip()})
     if authors:
         data["author"] = authors
     article_sections = list(page.taxonomy.article_section_values)

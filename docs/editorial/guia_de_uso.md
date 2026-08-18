@@ -268,8 +268,7 @@ Campos principales:
 - Fecha de publicación
 - Etiquetas
 - Colegio
-- Colaboradores internos
-- Firma pública
+- Autoría y créditos
 - Privacidad de menores
 
 La ubicación del colegio describe dónde está la institución educativa asociada.
@@ -346,29 +345,69 @@ incorporar uno nuevo. En la versión actual abre primero `Búsqueda`; selecciona
 `Subir` cuando necesites cargar un archivo. La pestaña de búsqueda permanece
 disponible en imagen destacada, imágenes del cuerpo e imagen social.
 
-## Colaboradores internos y firma pública
+## Autoría y créditos
 
-En una noticia, `Colaboradores internos` y `Firma pública` son datos distintos.
+En una noticia, `Autoría y créditos` reúne filas ordenables de tres tipos:
+`Autor público`, `Firma pública` y `Colaborador interno`. El orden definido por
+el editor se conserva en la firma pública. Un colaborador interno no aparece en
+la Home, tarjetas, detalle ni metadata pública.
 
-`Colaboradores internos` permite asociar uno o más colaboradores menores ya
-registrados. Esta relación es para trazabilidad editorial interna y no se
-muestra en la Home ni en el detalle público.
+Un `Autor público` usa un `Perfil público de autor` reusable. Desde
+`Editorial -> Perfiles públicos de autor` se puede crear o editar un perfil con
+nombre público, foto opcional, biografía, cargo, URL de trabajo y correo
+público opcional. Un perfil puede relacionarse opcionalmente con un usuario
+adulto, un colaborador menor o ninguna identidad interna. Escribe siempre los
+datos públicos de manera deliberada: el CMS no copia nombres, correos ni otros
+datos desde usuarios o colaboradores menores.
 
-`Firma pública` contiene el texto que el editor decide mostrar como autoría
-pública. Puede haber varias firmas y se muestran en el orden definido por el
-editor. Ejemplos de firmas posibles:
+El slug público se genera automáticamente desde el nombre público al crear el
+perfil. Si ya existe, el CMS añade `-2`, `-3` y así sucesivamente. No se edita
+manualmente ni cambia al corregir luego el nombre: protege el enlace histórico
+del archivo. El usuario interno relacionado usa un selector nativo con búsqueda
+por nombre, apellido, nombre completo o usuario; no permite crear, editar ni
+administrar cuentas desde este flujo. La foto usa el selector nativo de imágenes
+con sus pestañas de búsqueda y carga según los permisos disponibles.
+
+Cada autor, firma o colaborador corresponde a una fila separada. Al elegir el
+tipo, la fila muestra solamente su dato aplicable: perfil para `Autor público`,
+texto para `Firma pública` o colaborador menor para `Colaborador interno`.
+Al añadir una fila de `Autor público`, el selector nativo permite buscar,
+crear y editar perfiles públicos sin salir de la noticia, según los permisos
+del editor. Los nombres repetidos se distinguen por su slug público. Los
+selectores nativos de colegio, grupo y colaborador menor también permiten crear
+o editar los datos editoriales relacionados cuando el editor tiene el permiso
+correspondiente. No hay creación ni edición contextual de usuarios, cuentas,
+departamentos, provincias o distritos. El selector de imágenes mantiene su
+flujo nativo de búsqueda, carga y edición.
+
+Para preservar el historial, desactiva un perfil en lugar de eliminarlo. Un
+perfil inactivo no se ofrece para nuevas autorías, pero continúa mostrándose en
+noticias históricas y sus enlaces siguen funcionando.
+
+`Firma pública` contiene el texto que el editor decide mostrar sin crear un
+perfil. Puede representar una persona, equipo o institución. Ejemplos:
 
 - Grupo de periodismo del taller del 5to A de secundaria del Colegio de prueba
 - A. Prueba U. del 5to A de secundaria, Colegio de prueba
 - Equipo escolar de La Unión
 - Marco Zavalaga, editor responsable
 
-El CMS no deriva una firma pública desde el nombre interno del colaborador, el
-colegio ni el usuario editor.
+Un colaborador menor interno no es un autor público. Para acreditar públicamente
+a un menor, crea o usa un Perfil público de autor enlazado a ese colaborador,
+selecciónalo en una fila `Autor público` y completa las salvaguardas de menores.
+El CMS no deriva un autor ni una firma pública desde el nombre interno del
+colaborador, el colegio ni el usuario editor.
 
-Guardar como borrador permite dejar la firma pública vacía. Para publicar,
-programar o enviar a workflow, la noticia debe tener al menos una firma pública
-efectiva.
+Guardar como borrador permite dejar la lista incompleta. Para publicar,
+programar o enviar a workflow, la noticia debe tener al menos un `Autor público`
+o una `Firma pública` efectiva. Los colaboradores internos por sí solos no
+cumplen este requisito.
+
+Después del cuerpo, el detalle público muestra una tarjeta por cada autor
+público y antes de compartir o etiquetas. El enlace `Ver todas sus noticias`
+abre el archivo filtrado; no existe una página pública independiente de autor.
+El archivo no muestra un selector de autor: conserva este filtro cuando se usan
+la búsqueda, secciones, etiquetas, cobertura, orden o paginación.
 
 ## Privacidad de menores
 
@@ -391,6 +430,13 @@ a workflow. Los documentos de autorización no se almacenan todavía en el CMS.
 internos menores tampoco exige por sí solo marcar la confirmación de
 autorizaciones; el bloqueo depende de declarar que la noticia contiene menores
 identificables.
+
+Si un `Autor público` está relacionado con un colaborador menor, la noticia es
+una exposición pública identificable: antes de publicar marca `Contiene menores
+identificables` y confirma las autorizaciones. Un perfil público de menor nunca
+puede incluir correo. El sitio muestra únicamente los campos deliberadamente
+públicos del perfil, nunca el nombre interno, la franja de edad, el grupo o el
+colegio derivado.
 
 El panel enlaza a la fuente oficial usada como referencia informativa:
 
@@ -1016,14 +1062,12 @@ La página pública de una noticia genera:
 - tarjeta básica para Twitter/X;
 - JSON-LD `NewsArticle`.
 
-Los autores de JSON-LD salen exclusivamente de las firmas públicas, respetando
-su orden y omitiendo valores vacíos. No se usan colaboradores internos, nombres
-internos de menores, franjas de edad ni marcas de privacidad.
-
-Como una firma pública puede representar a una persona o a un equipo y esta
-versión no guarda ese tipo, los autores JSON-LD se publican sólo con su nombre,
-sin inferir `Person` u `Organization`. La herramienta no promete elegibilidad
-para resultados enriquecidos.
+Los autores de JSON-LD respetan el orden editorial. Un `Autor público` se
+publica como `Person` con su nombre público y, cuando existe, URL de trabajo.
+Una `Firma pública` se publica sólo como un nombre genérico, sin asumir que sea
+una persona u organización. No se usa un colaborador interno, nombre interno de
+menor, franja de edad ni una marca de privacidad. El correo público no se
+incluye en JSON-LD.
 
 ### Acciones públicas para compartir
 
@@ -1073,8 +1117,6 @@ para ocultar páginas noindex.
 - No hay cuentas de estudiantes, docentes, monitores ni tutores todavía.
 - No hay responsabilidades individuales por fotografía, investigación,
   redacción u otras labores todavía.
-- No hay perfil público reusable de autor todavía.
-- No hay tipos persistidos de firma pública todavía.
 - No hay carga ni seguimiento individual de documentos de autorización todavía.
 - Provincia y Distrito no se validan todavía contra datos geográficos oficiales.
 - No hay análisis de sinónimos, variantes gramaticales, múltiples frases clave

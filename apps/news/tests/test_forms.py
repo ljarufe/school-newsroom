@@ -13,10 +13,11 @@ from wagtail.models import Page
 from apps.home.models import HomePage
 from apps.news.forms import NewsPageAdminForm
 from apps.news.models import (
+    AuthorProfile,
     ContributorGroup,
     MinorContributor,
     NewsPage,
-    NewsPagePublicCredit,
+    NewsPageAttribution,
     NewsPageSection,
     NewsSection,
     School,
@@ -99,6 +100,7 @@ def admin_form_data(
     public_credits=None,
     deleted_credit_ids=None,
     internal_contributor_ids=None,
+    author_profile_ids=None,
     contains_identifiable_minors=False,
     authorizations_verified=False,
     sensitive_content=False,
@@ -118,6 +120,7 @@ def admin_form_data(
     public_credits = public_credits or []
     deleted_credit_ids = deleted_credit_ids or []
     internal_contributor_ids = internal_contributor_ids or []
+    author_profile_ids = author_profile_ids or []
     related_keyphrases = related_keyphrases or []
     body_block = body_block or {
         "type": "paragraph",
@@ -156,16 +159,15 @@ def admin_form_data(
         "show_in_menus": "",
         "go_live_at": "",
         "expire_at": "",
-        "public_credits-TOTAL_FORMS": str(
-            len(public_credits) + len(deleted_credit_ids),
+        "attributions-TOTAL_FORMS": str(
+            len(public_credits)
+            + len(deleted_credit_ids)
+            + len(internal_contributor_ids)
+            + len(author_profile_ids)
         ),
-        "public_credits-INITIAL_FORMS": str(len(deleted_credit_ids)),
-        "public_credits-MIN_NUM_FORMS": "0",
-        "public_credits-MAX_NUM_FORMS": "1000",
-        "internal_contributors-TOTAL_FORMS": str(len(internal_contributor_ids)),
-        "internal_contributors-INITIAL_FORMS": "0",
-        "internal_contributors-MIN_NUM_FORMS": "0",
-        "internal_contributors-MAX_NUM_FORMS": "1000",
+        "attributions-INITIAL_FORMS": str(len(deleted_credit_ids)),
+        "attributions-MIN_NUM_FORMS": "0",
+        "attributions-MAX_NUM_FORMS": "1000",
         "related_keyphrases-TOTAL_FORMS": str(len(related_keyphrases)),
         "related_keyphrases-INITIAL_FORMS": "0",
         "related_keyphrases-MIN_NUM_FORMS": "0",
@@ -192,21 +194,40 @@ def admin_form_data(
         data["sensitive_content"] = "on"
 
     for index, credit_id in enumerate(deleted_credit_ids):
-        data[f"public_credits-{index}-id"] = str(credit_id)
-        data[f"public_credits-{index}-display_name"] = "Deleted public credit"
-        data[f"public_credits-{index}-ORDER"] = str(index)
-        data[f"public_credits-{index}-DELETE"] = "on"
+        data[f"attributions-{index}-id"] = str(credit_id)
+        data[f"attributions-{index}-kind"] = "PUBLIC_CREDIT"
+        data[f"attributions-{index}-display_name"] = "Deleted public credit"
+        data[f"attributions-{index}-author_profile"] = ""
+        data[f"attributions-{index}-minor_contributor"] = ""
+        data[f"attributions-{index}-ORDER"] = str(index)
+        data[f"attributions-{index}-DELETE"] = "on"
 
     offset = len(deleted_credit_ids)
     for index, display_name in enumerate(public_credits, start=offset):
-        data[f"public_credits-{index}-id"] = ""
-        data[f"public_credits-{index}-display_name"] = display_name
-        data[f"public_credits-{index}-ORDER"] = str(index)
+        data[f"attributions-{index}-id"] = ""
+        data[f"attributions-{index}-kind"] = "PUBLIC_CREDIT"
+        data[f"attributions-{index}-display_name"] = display_name
+        data[f"attributions-{index}-author_profile"] = ""
+        data[f"attributions-{index}-minor_contributor"] = ""
+        data[f"attributions-{index}-ORDER"] = str(index)
 
-    for index, contributor_id in enumerate(internal_contributor_ids):
-        data[f"internal_contributors-{index}-id"] = ""
-        data[f"internal_contributors-{index}-contributor"] = str(contributor_id)
-        data[f"internal_contributors-{index}-ORDER"] = str(index)
+    offset += len(public_credits)
+    for index, contributor_id in enumerate(internal_contributor_ids, start=offset):
+        data[f"attributions-{index}-id"] = ""
+        data[f"attributions-{index}-kind"] = "INTERNAL_CONTRIBUTOR"
+        data[f"attributions-{index}-display_name"] = ""
+        data[f"attributions-{index}-author_profile"] = ""
+        data[f"attributions-{index}-minor_contributor"] = str(contributor_id)
+        data[f"attributions-{index}-ORDER"] = str(index)
+
+    offset += len(internal_contributor_ids)
+    for index, author_profile_id in enumerate(author_profile_ids, start=offset):
+        data[f"attributions-{index}-id"] = ""
+        data[f"attributions-{index}-kind"] = "AUTHOR"
+        data[f"attributions-{index}-display_name"] = ""
+        data[f"attributions-{index}-author_profile"] = str(author_profile_id)
+        data[f"attributions-{index}-minor_contributor"] = ""
+        data[f"attributions-{index}-ORDER"] = str(index)
 
     for index, phrase in enumerate(related_keyphrases):
         data[f"related_keyphrases-{index}-id"] = ""
@@ -692,7 +713,7 @@ def test_full_validation_requires_public_credit(home_page, section) -> None:
     )
 
     assert not form.is_valid()
-    assert NewsPageAdminForm.PUBLIC_CREDIT_REQUIRED_ERROR in str(
+    assert NewsPageAdminForm.PUBLIC_IDENTITY_REQUIRED_ERROR in str(
         form.errors["__all__"],
     )
 
@@ -711,7 +732,7 @@ def test_full_validation_accepts_new_unsaved_inline_public_credit(
 
     assert form.is_valid()
     assert (
-        form.formsets["public_credits"].forms[0].cleaned_data["display_name"]
+        form.formsets["attributions"].forms[0].cleaned_data["display_name"]
         == "Fictional school newsroom team"
     )
 
@@ -719,8 +740,9 @@ def test_full_validation_accepts_new_unsaved_inline_public_credit(
 @pytest.mark.django_db
 def test_full_validation_ignores_deleted_public_credit(home_page, section) -> None:
     page = create_news_page(home_page, section, slug="deleted-credit-page")
-    public_credit = NewsPagePublicCredit.objects.create(
+    public_credit = NewsPageAttribution.objects.create(
         page=page,
+        kind=NewsPageAttribution.Kind.PUBLIC_CREDIT,
         display_name="Existing public credit",
         sort_order=0,
     )
@@ -734,7 +756,7 @@ def test_full_validation_ignores_deleted_public_credit(home_page, section) -> No
     )
 
     assert not form.is_valid()
-    assert NewsPageAdminForm.PUBLIC_CREDIT_REQUIRED_ERROR in str(
+    assert NewsPageAdminForm.PUBLIC_IDENTITY_REQUIRED_ERROR in str(
         form.errors["__all__"],
     )
 
@@ -752,7 +774,7 @@ def test_full_validation_ignores_empty_inline_public_credit(
     )
 
     assert not form.is_valid()
-    assert NewsPageAdminForm.PUBLIC_CREDIT_REQUIRED_ERROR in str(
+    assert NewsPageAdminForm.PUBLIC_IDENTITY_REQUIRED_ERROR in str(
         form.errors["__all__"],
     )
 
@@ -859,6 +881,220 @@ def test_internal_contributor_does_not_require_authorization_by_itself(
 
 
 @pytest.mark.django_db
+def test_minor_author_requires_identifiable_minor_guard(home_page, section) -> None:
+    school = School.objects.create(name="Fictional School", department_id="04")
+    minor = MinorContributor.objects.create(
+        full_name="Private fictional minor",
+        group=ContributorGroup.objects.create(name="Fictional group", school=school),
+        age_band=MinorContributor.AgeBand.UNDER_14,
+    )
+    profile = AuthorProfile.objects.create(
+        display_name="Public fictional minor author",
+        slug="public-fictional-minor-author",
+        minor_contributor=minor,
+    )
+    invalid = make_admin_form(
+        home_page,
+        section,
+        slug="minor-author-without-privacy-guard",
+        author_profile_ids=[profile.pk],
+    )
+    valid = make_admin_form(
+        home_page,
+        section,
+        slug="minor-author-with-privacy-guard",
+        author_profile_ids=[profile.pk],
+        contains_identifiable_minors=True,
+        authorizations_verified=True,
+    )
+
+    assert not invalid.is_valid()
+    assert "autor menor" in str(invalid.errors["contains_identifiable_minors"])
+    assert valid.is_valid(), valid.errors.as_json()
+
+
+@pytest.mark.django_db
+def test_inactive_author_profile_is_retained_but_not_selectable_for_new_or_changed(
+    home_page,
+    section,
+) -> None:
+    page = create_news_page(home_page, section, slug="inactive-author-profile")
+    historical_profile = AuthorProfile.objects.create(
+        display_name="Historical fictional author",
+        slug="historical-fictional-author-form",
+    )
+    another_inactive_profile = AuthorProfile.objects.create(
+        display_name="Another inactive fictional author",
+        slug="another-inactive-fictional-author-form",
+        is_active=False,
+    )
+    attribution = NewsPageAttribution.objects.create(
+        page=page,
+        kind=NewsPageAttribution.Kind.AUTHOR,
+        author_profile=historical_profile,
+    )
+    historical_profile.is_active = False
+    historical_profile.save(update_fields=["is_active"])
+
+    retained_data = admin_form_data(
+        section,
+        title=page.title,
+        slug=page.slug,
+    )
+    retained_data.update(
+        {
+            "attributions-TOTAL_FORMS": "1",
+            "attributions-INITIAL_FORMS": "1",
+            "attributions-0-id": str(attribution.pk),
+            "attributions-0-kind": "AUTHOR",
+            "attributions-0-author_profile": str(historical_profile.pk),
+            "attributions-0-display_name": "",
+            "attributions-0-minor_contributor": "",
+            "attributions-0-ORDER": "0",
+        }
+    )
+    form_class = NewsPage.get_edit_handler().get_form_class()
+    retained_form = form_class(
+        data=retained_data,
+        instance=page,
+        parent_page=home_page,
+    )
+
+    assert retained_form.is_valid(), retained_form.errors.as_json()
+    allowed_ids = set(
+        retained_form.formsets["attributions"]
+        .forms[0]
+        .fields["author_profile"]
+        .queryset.values_list("pk", flat=True)
+    )
+    assert historical_profile.pk in allowed_ids
+    assert another_inactive_profile.pk not in allowed_ids
+    saved_page = retained_form.save()
+    reopened = saved_page.save_revision().as_object()
+    assert (
+        reopened.attributions.get(id=attribution.pk).author_profile_id
+        == historical_profile.pk
+    )
+
+    new_form = make_admin_form(
+        home_page,
+        section,
+        slug="injected-inactive-author-profile",
+        author_profile_ids=[another_inactive_profile.pk],
+    )
+    replacement_data = retained_data.copy()
+    replacement_data["attributions-0-author_profile"] = str(another_inactive_profile.pk)
+    replacement_form = form_class(
+        data=replacement_data,
+        instance=saved_page,
+        parent_page=home_page,
+    )
+
+    assert not new_form.is_valid()
+    assert not replacement_form.is_valid()
+    assert "author_profile" in new_form.formsets["attributions"].errors[0]
+    assert "author_profile" in replacement_form.formsets["attributions"].errors[0]
+
+
+@pytest.mark.django_db
+def test_generated_page_form_rejects_duplicate_and_conflicting_minor_authorship(
+    home_page,
+    section,
+) -> None:
+    school = School.objects.create(name="Fictional School", department_id="04")
+    minor = MinorContributor.objects.create(
+        full_name="Private fictional minor",
+        group=ContributorGroup.objects.create(name="Fictional group", school=school),
+        age_band=MinorContributor.AgeBand.UNDER_14,
+    )
+    profile = AuthorProfile.objects.create(
+        display_name="Public fictional minor author",
+        slug="public-fictional-minor-author-conflict",
+        minor_contributor=minor,
+    )
+    duplicate = make_admin_form(
+        home_page,
+        section,
+        slug="duplicate-public-author",
+        author_profile_ids=[profile.pk, profile.pk],
+        contains_identifiable_minors=True,
+        authorizations_verified=True,
+    )
+    conflicting = make_admin_form(
+        home_page,
+        section,
+        slug="minor-author-and-internal-contributor",
+        author_profile_ids=[profile.pk],
+        internal_contributor_ids=[minor.pk],
+        contains_identifiable_minors=True,
+        authorizations_verified=True,
+    )
+
+    assert not duplicate.is_valid()
+    assert "No repitas el mismo perfil público" in str(
+        duplicate.formsets["attributions"].errors
+    )
+    assert not conflicting.is_valid()
+    assert "no puede repetirse como colaborador interno" in str(
+        conflicting.formsets["attributions"].errors
+    )
+
+
+@pytest.mark.django_db
+def test_generated_page_form_rejects_forged_attribution_shapes_with_editor_errors(
+    home_page,
+    section,
+) -> None:
+    school = School.objects.create(name="Shape School", department_id="04")
+    minor = MinorContributor.objects.create(
+        full_name="Private shape minor",
+        group=ContributorGroup.objects.create(name="Shape group", school=school),
+        age_band=MinorContributor.AgeBand.UNDER_14,
+    )
+    profile = AuthorProfile.objects.create(display_name="Public shape author")
+    data = admin_form_data(section, author_profile_ids=[profile.pk])
+    data["attributions-0-display_name"] = "Forged credit"
+    data["attributions-0-minor_contributor"] = str(minor.pk)
+    form_class = NewsPage.get_edit_handler().get_form_class()
+    form = form_class(data=data, instance=NewsPage(), parent_page=home_page)
+
+    assert not form.is_valid()
+    errors = form.formsets["attributions"].forms[0].errors.as_text()
+    assert "firma pública" in errors
+    assert "colaborador interno" in errors
+    assert "news_page_attribution_fields_match_kind" not in errors
+
+
+@pytest.mark.django_db
+def test_generated_page_form_requires_payload_for_each_attribution_kind(
+    home_page,
+    section,
+) -> None:
+    form_class = NewsPage.get_edit_handler().get_form_class()
+    for kind, field, message in (
+        ("AUTHOR", "author_profile", "Selecciona un perfil público"),
+        ("PUBLIC_CREDIT", "display_name", "Escribe una firma pública"),
+        ("INTERNAL_CONTRIBUTOR", "minor_contributor", "Selecciona un colaborador"),
+    ):
+        data = admin_form_data(section)
+        data.update(
+            {
+                "attributions-TOTAL_FORMS": "1",
+                "attributions-INITIAL_FORMS": "0",
+                "attributions-0-id": "",
+                "attributions-0-kind": kind,
+                "attributions-0-author_profile": "",
+                "attributions-0-display_name": "",
+                "attributions-0-minor_contributor": "",
+                "attributions-0-ORDER": "0",
+            }
+        )
+        form = form_class(data=data, instance=NewsPage(), parent_page=home_page)
+        assert not form.is_valid()
+        assert message in str(form.formsets["attributions"].forms[0].errors[field])
+
+
+@pytest.mark.django_db
 def test_generated_page_form_rejects_duplicate_internal_contributors(
     home_page,
     section,
@@ -887,17 +1123,5 @@ def test_generated_page_form_rejects_duplicate_internal_contributors(
 
     assert not form.is_valid()
 
-    formset = form.formsets["internal_contributors"]
+    formset = form.formsets["attributions"]
     assert not formset.is_valid()
-    non_form_messages = [
-        message
-        for error in formset.non_form_errors().as_data()
-        for message in error.messages
-    ]
-
-    assert any(
-        "duplicado" in message and "page" in message and "contributor" in message
-        for message in non_form_messages
-    )
-    assert formset.forms[0].errors.as_data() == {}
-    assert formset.forms[1].non_field_errors()

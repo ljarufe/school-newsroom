@@ -29,11 +29,11 @@
         <p class="eyebrow">{% for path in page.taxonomy.navigation_paths %}<a href="{% url 'news_list' %}?seccion={{ path.main.slug|urlencode }}">{{ path.main.name }}</a>{% if path.subsection %} › <a href="{% url 'news_list' %}?seccion={{ path.main.slug|urlencode }}&amp;subseccion={{ path.subsection.slug|urlencode }}">{{ path.subsection.name }}</a>{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}</p>
       {% endif %}
       <h1 class="display-3">{{ page.title }}</h1>
-      {% with public_credits=page.public_credits.all %}
-        {% if public_credits %}
+      {% with attributions=page.public_attributions %}
+        {% if attributions %}
           <p class="byline">Por
-            {% for credit in public_credits %}
-              {{ credit.display_name }}{% if not forloop.last %}; {% endif %}
+            {% for attribution in attributions %}
+              {% if attribution.kind == "AUTHOR" %}{{ attribution.author_profile.display_name }}{% else %}{{ attribution.display_name }}{% endif %}{% if not forloop.last %}; {% endif %}
             {% endfor %}
           </p>
         {% endif %}
@@ -63,6 +63,29 @@
     <div class="article-body content-width mx-auto">
       {% include_block page.body %}
     </div>
+
+    {% with attributions=page.author_attributions %}
+      {% if attributions %}
+        <section class="author-cards content-width mx-auto mt-5 pt-4" aria-labelledby="author-cards-heading">
+          <h2 id="author-cards-heading" class="h4 mb-4">Autor{{ attributions|pluralize:"es" }}</h2>
+      {% for attribution in attributions %}
+          <article class="author-card d-sm-flex gap-4 align-items-start mb-4 p-4">
+            {% if attribution.author_profile.photo %}{% image attribution.author_profile.photo fill-160x160 as author_photo %}<img class="author-card__photo rounded-circle flex-shrink-0 mb-3 mb-sm-0" src="{{ author_photo.url }}" width="{{ author_photo.width }}" height="{{ author_photo.height }}" alt="{{ attribution.author_profile.display_name }}">{% endif %}
+            <div class="author-card__content">
+              <h3 class="h4 mb-1">{{ attribution.author_profile.display_name }}</h3>
+              {% if attribution.author_profile.position %}<p class="author-card__position mb-3">{{ attribution.author_profile.position }}</p>{% endif %}
+              {% if attribution.author_profile.bio %}<p class="author-card__bio mb-3">{{ attribution.author_profile.bio }}</p>{% endif %}
+              <p class="author-card__actions mb-0">
+                <a href="{% url 'news_list' %}?autor={{ attribution.author_profile.slug|urlencode }}">Ver todas sus noticias</a>
+                {% if attribution.author_profile.email %}<a href="mailto:{{ attribution.author_profile.email }}">Correo</a>{% endif %}
+                {% if attribution.author_profile.work_url %}<a href="{{ attribution.author_profile.work_url }}" target="_blank" rel="noopener noreferrer">Sitio web</a>{% endif %}
+              </p>
+            </div>
+          </article>
+      {% endfor %}
+        </section>
+      {% endif %}
+    {% endwith %}
 
     {% if public_share %}
       <section

@@ -1,6 +1,7 @@
 import importlib
 import sys
 from collections.abc import Iterator
+from pathlib import Path
 from types import ModuleType
 
 import environ
@@ -11,7 +12,13 @@ from pytest import MonkeyPatch
 BASE_SETTINGS_MODULE = "config.settings.base"
 PRODUCTION_SETTINGS_MODULE = "config.settings.production"
 TEST_SETTINGS_MODULE = "config.settings.test"
-SETTINGS_MODULES = (PRODUCTION_SETTINGS_MODULE, BASE_SETTINGS_MODULE)
+BROWSER_TEST_SETTINGS_MODULE = "config.settings.browser_test"
+SETTINGS_MODULES = (
+    PRODUCTION_SETTINGS_MODULE,
+    BASE_SETTINGS_MODULE,
+    TEST_SETTINGS_MODULE,
+    BROWSER_TEST_SETTINGS_MODULE,
+)
 TEST_SECRET_KEY = "test-only-production-secret-key"
 TEST_DATABASE_URL = "postgresql://staging:dummy-password@db:5432/staging"
 TEST_HOST = "staging.example.invalid"
@@ -65,6 +72,10 @@ def import_test_settings() -> ModuleType:
     return importlib.import_module(TEST_SETTINGS_MODULE)
 
 
+def import_browser_test_settings() -> ModuleType:
+    return importlib.import_module(BROWSER_TEST_SETTINGS_MODULE)
+
+
 def configure_valid_production_environment(monkeypatch: MonkeyPatch) -> None:
     for name, value in VALID_PRODUCTION_ENVIRONMENT.items():
         monkeypatch.setenv(name, value)
@@ -83,6 +94,18 @@ def test_test_settings_use_staticfiles_storage_without_manifest() -> None:
         test_settings.STORAGES["staticfiles"]["BACKEND"]
         == TEST_STATICFILES_STORAGE_BACKEND
     )
+
+
+@pytest.mark.usefixtures("isolated_settings_modules")
+def test_browser_settings_store_disposable_media_outside_read_only_checkout() -> None:
+    browser_settings = import_browser_test_settings()
+    browser_compose = (
+        Path(__file__).resolve().parents[2] / "docker-compose.browser.yml"
+    ).read_text()
+
+    assert browser_settings.MEDIA_ROOT == Path("/tmp/school-newsroom-browser-media")
+    assert "- .:/app:ro" in browser_compose
+    assert "/app/media" not in browser_compose
 
 
 @pytest.mark.usefixtures("isolated_settings_modules")

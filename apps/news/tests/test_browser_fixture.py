@@ -6,11 +6,12 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.db import connection
 from django.test import override_settings
+from wagtail.images import get_image_model
 from wagtail.models import Collection, Locale, Page
 
 from apps.home.models import HomePage
 from apps.news.access import DIRECTOR_GROUP_NAME, SEO_CURATOR_GROUP_NAME
-from apps.news.models import NewsPage, NewsPagePublicCredit
+from apps.news.models import NewsPage, NewsPageAttribution
 
 pytestmark = pytest.mark.django_db
 
@@ -61,6 +62,10 @@ def test_browser_fixture_command_creates_the_disposable_regression_contract(
         "BROWSER_TEST_PAGE_ID": str(expected_editor_page_id),
         "BROWSER_TEST_SEO_PAGE_ID": str(expected_seo_page_id),
         "BROWSER_TEST_PUBLIC_SHARE_PAGE_ID": str(expected_public_share_page_id),
+        "BROWSER_TEST_AUTHOR_ONLY_PAGE_ID": str(expected_public_share_page_id + 1),
+        "BROWSER_TEST_CREDIT_ONLY_PAGE_ID": str(expected_public_share_page_id + 2),
+        "BROWSER_TEST_INTERNAL_ONLY_PAGE_ID": str(expected_public_share_page_id + 3),
+        "BROWSER_TEST_MINOR_AUTHOR_PAGE_ID": str(expected_public_share_page_id + 4),
     }
     for name, value in fixture_environment.items():
         monkeypatch.setenv(name, value)
@@ -108,8 +113,32 @@ def test_browser_fixture_command_creates_the_disposable_regression_contract(
             slug="archivo-browser-epic6-002-0"
         ).section_assignments.values_list("section__slug", flat=True)
     ) == {"cultura", "musica"}
-    assert NewsPagePublicCredit.objects.filter(
+    assert NewsPageAttribution.objects.filter(
         page=public_share_page,
+        kind=NewsPageAttribution.Kind.PUBLIC_CREDIT,
         display_name="Redacción pública ficticia",
     ).exists()
+    assert (
+        NewsPageAttribution.objects.filter(
+            page=public_share_page,
+            kind=NewsPageAttribution.Kind.AUTHOR,
+        ).count()
+        == 2
+    )
+    assert get_image_model().objects.filter(title="Imagen browser ficticia").exists()
+    assert NewsPageAttribution.objects.filter(
+        page=public_share_page,
+        kind=NewsPageAttribution.Kind.INTERNAL_CONTRIBUTOR,
+    ).exists()
+    assert (
+        NewsPage.objects.filter(
+            slug__in=(
+                "nota-browser-solo-autor",
+                "nota-browser-solo-firma",
+                "nota-browser-solo-interno",
+                "nota-browser-autor-menor",
+            )
+        ).count()
+        == 4
+    )
     assert "Disposable browser fixtures ready" in output.getvalue()

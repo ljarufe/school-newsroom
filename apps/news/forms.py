@@ -61,11 +61,15 @@ class NewsPageAdminForm(MvpAccessPageAdminForm):
     )
 
     class Media:
-        js = ["news/js/caption_alt_sync.js"]
+        js = [
+            "news/js/caption_alt_sync.js",
+            "news/js/attribution_rows.js",
+            "news/js/nested_chooser_modal.js",
+        ]
 
     BODY_BLOCK_ERROR = "Revisa los bloques marcados con errores."
-    PUBLIC_CREDIT_REQUIRED_ERROR = (
-        "Añade al menos una firma pública antes de publicar la noticia."
+    PUBLIC_IDENTITY_REQUIRED_ERROR = (
+        "Añade al menos un autor o una firma pública antes de publicar la noticia."
     )
     MINOR_AUTHORIZATION_REQUIRED_ERROR = (
         "Confirma que se verificaron las autorizaciones requeridas para los "
@@ -87,6 +91,7 @@ class NewsPageAdminForm(MvpAccessPageAdminForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._configure_attribution_author_profile_fields()
         configure_geography_fields(
             self,
             department_field="coverage_department",
@@ -126,6 +131,29 @@ class NewsPageAdminForm(MvpAccessPageAdminForm):
                 )
             ]
 
+    def _configure_attribution_author_profile_fields(self) -> None:
+        from .models import AuthorProfile
+
+        attribution_formset = self.formsets.get("attributions")
+        if attribution_formset is None:
+            return
+
+        for attribution_form in attribution_formset.forms:
+            # The model constraint remains database defense-in-depth. The inline
+            # form supplies clearer Spanish shape errors before database-style
+            # constraint validation can leak an implementation identifier.
+            attribution_form.instance.validate_constraints = lambda exclude=None: None
+            field = attribution_form.fields.get("author_profile")
+            if field is None:
+                continue
+            current_profile_id = attribution_form.instance.author_profile_id
+            queryset = AuthorProfile.objects.filter(is_active=True)
+            if current_profile_id:
+                queryset = queryset | AuthorProfile.objects.filter(
+                    pk=current_profile_id
+                )
+            field.queryset = queryset
+
     @staticmethod
     def _mark_blank_related_keyphrases_for_deletion(formset) -> None:
         if not formset.is_bound:
@@ -151,6 +179,8 @@ class NewsPageAdminForm(MvpAccessPageAdminForm):
         cleaned_data = super().clean()
 
         self._validate_related_keyphrases(cleaned_data)
+        self._validate_attribution_shapes()
+        self._validate_attribution_conflicts()
 
         if (
             "taxonomy_sections" in self.fields
@@ -173,14 +203,16 @@ class NewsPageAdminForm(MvpAccessPageAdminForm):
                 ),
             )
 
-        if not self._has_effective_public_credit():
+        if not self._has_effective_public_identity():
             self.add_error(
                 None,
                 forms.ValidationError(
-                    self.PUBLIC_CREDIT_REQUIRED_ERROR,
-                    code="missing_public_credit",
+                    self.PUBLIC_IDENTITY_REQUIRED_ERROR,
+                    code="missing_public_identity",
                 ),
             )
+
+        self._validate_minor_author_privacy(cleaned_data)
 
         self._validate_contextual_image_metadata(cleaned_data)
 
@@ -260,22 +292,182 @@ class NewsPageAdminForm(MvpAccessPageAdminForm):
                     ),
                 )
 
-    def _has_effective_public_credit(self) -> bool:
-        formset = self.formsets.get("public_credits")
+    def _effective_attributions(self):
+        from .models import NewsPageAttribution
+
+        formset = self.formsets.get("attributions")
         if formset is None:
-            return self.instance.public_credits.filter(display_name__gt="").exists()
+            return list(self.instance.attributions.all())
 
         if formset.is_bound:
             formset.is_valid()
+            effective = []
             for form in formset.forms:
                 if formset.can_delete and formset._should_delete_form(form):
                     continue
-                display_name = form.cleaned_data.get("display_name", "")
-                if display_name.strip():
-                    return True
-            return False
+                kind = form.cleaned_data.get("kind")
+                if not kind:
+                    continue
+                effective.append(
+                    NewsPageAttribution(
+                        kind=kind,
+                        author_profile=form.cleaned_data.get("author_profile"),
+                        display_name=form.cleaned_data.get("display_name", ""),
+                        minor_contributor=form.cleaned_data.get("minor_contributor"),
+                    )
+                )
+            return effective
+
+        return list(self.instance.attributions.all())
+
+    def _has_effective_public_identity(self) -> bool:
+        from .models import NewsPageAttribution
 
         return any(
-            public_credit.display_name.strip()
-            for public_credit in self.instance.public_credits.all()
+            attribution.kind == NewsPageAttribution.Kind.AUTHOR
+            or (
+                attribution.kind == NewsPageAttribution.Kind.PUBLIC_CREDIT
+                and attribution.display_name.strip()
+            )
+            for attribution in self._effective_attributions()
         )
+
+    def _validate_minor_author_privacy(self, cleaned_data) -> None:
+        from .models import NewsPageAttribution
+
+        minor_author = next(
+            (
+                attribution
+                for attribution in self._effective_attributions()
+                if attribution.kind == NewsPageAttribution.Kind.AUTHOR
+                and attribution.author_profile is not None
+                and attribution.author_profile.minor_contributor_id
+            ),
+            None,
+        )
+        if minor_author is None:
+            return
+        if not cleaned_data.get("contains_identifiable_minors"):
+            self.add_error(
+                "contains_identifiable_minors",
+                forms.ValidationError(
+                    "Un autor menor es una exposición pública identificable; "
+                    "marca esta noticia como con menores identificables.",
+                    code="minor_author_requires_identifiable_minors",
+                ),
+            )
+
+    def _validate_attribution_conflicts(self) -> None:
+        from .models import NewsPageAttribution
+
+        formset = self.formsets.get("attributions")
+        if formset is None or not formset.is_bound:
+            return
+        formset.is_valid()
+        author_profile_ids = set()
+        internal_minor_ids = set()
+        minor_author_ids = set()
+        for form in formset.forms:
+            if formset.can_delete and formset._should_delete_form(form):
+                continue
+            kind = form.cleaned_data.get("kind")
+            author_profile = form.cleaned_data.get("author_profile")
+            minor_contributor = form.cleaned_data.get("minor_contributor")
+            if kind == NewsPageAttribution.Kind.AUTHOR and author_profile:
+                if author_profile.pk in author_profile_ids:
+                    form.add_error(
+                        "author_profile",
+                        "No repitas el mismo perfil público de autor en esta noticia.",
+                    )
+                author_profile_ids.add(author_profile.pk)
+                if author_profile.minor_contributor_id:
+                    minor_author_ids.add(author_profile.minor_contributor_id)
+            if (
+                kind == NewsPageAttribution.Kind.INTERNAL_CONTRIBUTOR
+                and minor_contributor
+            ):
+                if minor_contributor.pk in internal_minor_ids:
+                    form.add_error(
+                        "minor_contributor",
+                        "No repitas el mismo colaborador interno en esta noticia.",
+                    )
+                internal_minor_ids.add(minor_contributor.pk)
+        conflicting_ids = minor_author_ids & internal_minor_ids
+        if not conflicting_ids:
+            return
+        for form in formset.forms:
+            if formset.can_delete and formset._should_delete_form(form):
+                continue
+            author_profile = form.cleaned_data.get("author_profile")
+            minor_contributor = form.cleaned_data.get("minor_contributor")
+            if (
+                author_profile
+                and author_profile.minor_contributor_id in conflicting_ids
+            ):
+                form.add_error(
+                    "author_profile",
+                    "Un menor autor no puede repetirse como colaborador interno.",
+                )
+            if minor_contributor and minor_contributor.pk in conflicting_ids:
+                form.add_error(
+                    "minor_contributor",
+                    "Un menor autor no puede repetirse como colaborador interno.",
+                )
+
+    def _validate_attribution_shapes(self) -> None:
+        from .models import NewsPageAttribution
+
+        formset = self.formsets.get("attributions")
+        if formset is None or not formset.is_bound:
+            return
+        formset.is_valid()
+        for form in formset.forms:
+            if formset.can_delete and formset._should_delete_form(form):
+                continue
+            kind = form.cleaned_data.get("kind")
+            if not kind:
+                continue
+            author_profile = form.cleaned_data.get("author_profile")
+            display_name = form.cleaned_data.get("display_name", "").strip()
+            minor_contributor = form.cleaned_data.get("minor_contributor")
+            if kind == NewsPageAttribution.Kind.AUTHOR:
+                if author_profile is None:
+                    form.add_error(
+                        "author_profile", "Selecciona un perfil público de autor."
+                    )  # noqa: E501
+                if display_name:
+                    form.add_error(
+                        "display_name", "La firma pública solo se usa para ese tipo."
+                    )  # noqa: E501
+                if minor_contributor is not None:
+                    form.add_error(
+                        "minor_contributor",
+                        "El colaborador interno solo se usa para ese tipo.",
+                    )  # noqa: E501
+            elif kind == NewsPageAttribution.Kind.PUBLIC_CREDIT:
+                if not display_name:
+                    form.add_error("display_name", "Escribe una firma pública.")
+                if author_profile is not None:
+                    form.add_error(
+                        "author_profile",
+                        "El perfil público de autor solo se usa para ese tipo.",
+                    )  # noqa: E501
+                if minor_contributor is not None:
+                    form.add_error(
+                        "minor_contributor",
+                        "El colaborador interno solo se usa para ese tipo.",
+                    )  # noqa: E501
+            elif kind == NewsPageAttribution.Kind.INTERNAL_CONTRIBUTOR:
+                if minor_contributor is None:
+                    form.add_error(
+                        "minor_contributor", "Selecciona un colaborador interno."
+                    )  # noqa: E501
+                if author_profile is not None:
+                    form.add_error(
+                        "author_profile",
+                        "El perfil público de autor solo se usa para ese tipo.",
+                    )  # noqa: E501
+                if display_name:
+                    form.add_error(
+                        "display_name", "La firma pública solo se usa para ese tipo."
+                    )  # noqa: E501

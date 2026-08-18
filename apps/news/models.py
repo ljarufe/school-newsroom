@@ -1,8 +1,10 @@
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import ProtectedError
 from django.utils.functional import cached_property
+from django.utils.text import slugify
 from modelcluster.contrib.taggit import ClusterTaggableManager
 from modelcluster.fields import ParentalKey
 from taggit.models import TaggedItemBase
@@ -71,8 +73,9 @@ CONTENT_AUTHORING_HELP = (
     'Usa "/" para insertar o dividir bloques.'
 )
 
-PUBLIC_CREDIT_HELP = (
-    "Obligatoria para publicar. Puedes dejarla vacía mientras trabajas en un borrador."
+ATTRIBUTION_HELP = (
+    "Añade autores públicos, firmas públicas o colaboradores internos. "
+    "Puedes dejar la lista incompleta mientras trabajas en un borrador."
 )
 
 
@@ -307,6 +310,114 @@ class MinorContributor(models.Model):
         return self.group.school
 
 
+class AuthorProfile(models.Model):
+    """A deliberately editorial public identity, never an account projection."""
+
+    display_name = models.CharField("Nombre público", max_length=160)
+    slug = models.SlugField("Slug", max_length=160, unique=True)
+    photo = models.ForeignKey(
+        "wagtailimages.Image",
+        verbose_name="Foto",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="author_profiles",
+    )
+    bio = models.TextField("Biografía", blank=True)
+    email = models.EmailField("Correo público", blank=True)
+    position = models.CharField("Cargo", max_length=160, blank=True)
+    work_url = models.URLField("URL de trabajo", blank=True)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        verbose_name="Usuario interno relacionado",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="author_profile",
+    )
+    minor_contributor = models.OneToOneField(
+        MinorContributor,
+        verbose_name="Colaborador menor relacionado",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="author_profile",
+    )
+    is_active = models.BooleanField(
+        "Activo para nuevas autorías",
+        default=True,
+        help_text=(
+            "Desactiva el perfil para conservar su historial sin ofrecerlo en "
+            "nuevas autorías."
+        ),
+    )
+
+    panels = [
+        FieldPanel("display_name"),
+        FieldPanel("slug"),
+        FieldPanel("photo"),
+        FieldPanel("bio"),
+        FieldPanel("email"),
+        FieldPanel("position"),
+        FieldPanel("work_url"),
+        FieldPanel("user"),
+        FieldPanel("minor_contributor"),
+        FieldPanel("is_active"),
+    ]
+
+    class Meta:
+        ordering = ["display_name", "pk"]
+        verbose_name = "Perfil público de autor"
+        verbose_name_plural = "Perfiles públicos de autor"
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    ~(
+                        models.Q(user__isnull=False)
+                        & models.Q(minor_contributor__isnull=False)
+                    )
+                ),
+                name="author_profile_internal_identity_is_exclusive",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(minor_contributor__isnull=True) | models.Q(email=""),
+                name="author_profile_minor_email_is_empty",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.display_name} ({self.slug})"
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            max_length = self._meta.get_field("slug").max_length
+            base_slug = (slugify(self.display_name) or "autor")[:max_length]
+            candidate = base_slug
+            suffix = 2
+            while (
+                type(self)
+                ._default_manager.exclude(pk=self.pk)
+                .filter(slug=candidate)
+                .exists()
+            ):
+                suffix_text = f"-{suffix}"
+                candidate = f"{base_slug[: max_length - len(suffix_text)]}{suffix_text}"
+                suffix += 1
+            self.slug = candidate
+        return super().save(*args, **kwargs)
+
+    def clean(self) -> None:
+        super().clean()
+        if self.user_id and self.minor_contributor_id:
+            raise ValidationError(
+                "Un perfil público solo puede relacionarse con una identidad interna."
+            )
+        if self.minor_contributor_id and self.email.strip():
+            raise ValidationError(
+                {"email": "Un perfil público de menor no puede incluir correo."}
+            )
+
+
 class NewsPageTag(TaggedItemBase):
     content_object = ParentalKey(
         "news.NewsPage",
@@ -496,11 +607,10 @@ class NewsPage(Page):
         FieldPanel("publication_date"),
         FieldPanel("tags"),
         FieldPanel("school"),
-        InlinePanel("internal_contributors", label="Colaboradores internos"),
         InlinePanel(
-            "public_credits",
-            label="Firma pública",
-            help_text=PUBLIC_CREDIT_HELP,
+            "attributions",
+            label="Autoría y créditos",
+            help_text=ATTRIBUTION_HELP,
         ),
         MultiFieldPanel(
             [
@@ -627,6 +737,32 @@ class NewsPage(Page):
         return super().get_sitemap_urls(request=request)
 
     @property
+    def public_attributions(self):
+        return self._public_attribution_rows()
+
+    @property
+    def author_attributions(self):
+        return [
+            attribution
+            for attribution in self._public_attribution_rows()
+            if attribution.kind == NewsPageAttribution.Kind.AUTHOR
+        ]
+
+    def _public_attribution_rows(self):
+        if hasattr(self, "public_attribution_rows"):
+            return self.public_attribution_rows
+        return list(
+            self.attributions.filter(
+                kind__in=(
+                    NewsPageAttribution.Kind.AUTHOR,
+                    NewsPageAttribution.Kind.PUBLIC_CREDIT,
+                )
+            )
+            .select_related("author_profile__photo")
+            .order_by("sort_order")
+        )
+
+    @property
     def effective_featured_image_caption(self) -> str:
         return effective_text(self.featured_image_caption)
 
@@ -671,32 +807,6 @@ class NewsPageRelatedKeyphrase(Orderable):
         return self.phrase
 
 
-class NewsPageContributor(Orderable):
-    page = ParentalKey(
-        NewsPage,
-        related_name="internal_contributors",
-        on_delete=models.CASCADE,
-    )
-    contributor = models.ForeignKey(
-        MinorContributor,
-        verbose_name="Colaborador menor",
-        on_delete=models.PROTECT,
-        related_name="news_page_contributions",
-    )
-
-    panels = [
-        FieldPanel("contributor"),
-    ]
-
-    class Meta(Orderable.Meta):
-        unique_together = [("page", "contributor")]
-        verbose_name = "Colaborador interno de noticia"
-        verbose_name_plural = "Colaboradores internos de noticia"
-
-    def __str__(self) -> str:
-        return str(self.contributor)
-
-
 class NewsPageSection(models.Model):
     page = ParentalKey(
         NewsPage,
@@ -715,7 +825,7 @@ class NewsPageSection(models.Model):
             models.UniqueConstraint(
                 fields=("page", "section"),
                 name="unique_news_page_section",
-            )
+            ),
         ]
         verbose_name = "Clasificación de noticia"
         verbose_name_plural = "Clasificaciones de noticia"
@@ -724,28 +834,161 @@ class NewsPageSection(models.Model):
         return str(self.section)
 
 
-class NewsPagePublicCredit(Orderable):
+class NewsPageAttribution(Orderable):
+    class Kind(models.TextChoices):
+        AUTHOR = "AUTHOR", "Autor público"
+        PUBLIC_CREDIT = "PUBLIC_CREDIT", "Firma pública"
+        INTERNAL_CONTRIBUTOR = "INTERNAL_CONTRIBUTOR", "Colaborador interno"
+
     page = ParentalKey(
         NewsPage,
-        related_name="public_credits",
+        related_name="attributions",
         on_delete=models.CASCADE,
+    )
+    kind = models.CharField("Tipo", max_length=24, choices=Kind.choices)
+    author_profile = models.ForeignKey(
+        AuthorProfile,
+        verbose_name="Perfil público de autor",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="news_attributions",
     )
     display_name = models.CharField(
         "Firma pública",
         max_length=255,
+        blank=True,
         help_text=(
             "Texto público elegido por el editor. No se deriva automáticamente "
             "de colaboradores internos, colegios ni usuarios."
         ),
     )
+    minor_contributor = models.ForeignKey(
+        MinorContributor,
+        verbose_name="Colaborador menor",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="news_attributions",
+    )
 
     panels = [
+        FieldPanel("kind"),
+        HelpPanel(
+            content=(
+                "<p><strong>Autor público:</strong> visible públicamente y respaldado "
+                "por un perfil público de autor.</p>"
+                "<p><strong>Firma pública:</strong> texto público libre sin perfil.</p>"
+                "<p><strong>Colaborador interno:</strong> solo para uso interno, nunca "
+                "público; por sí solo no permite publicar.</p>"
+                "<p>Cada autor, firma o colaborador corresponde a una fila "
+                "separada.</p>"
+            )
+        ),
+        FieldPanel("author_profile"),
         FieldPanel("display_name"),
+        FieldPanel("minor_contributor"),
     ]
 
     class Meta(Orderable.Meta):
-        verbose_name = "Firma pública"
-        verbose_name_plural = "Firmas públicas"
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        kind="AUTHOR",
+                        author_profile__isnull=False,
+                        display_name="",
+                        minor_contributor__isnull=True,
+                    )
+                    | models.Q(
+                        kind="PUBLIC_CREDIT",
+                        author_profile__isnull=True,
+                        display_name__gt="",
+                        minor_contributor__isnull=True,
+                    )
+                    | models.Q(
+                        kind="INTERNAL_CONTRIBUTOR",
+                        author_profile__isnull=True,
+                        display_name="",
+                        minor_contributor__isnull=False,
+                    )
+                ),
+                name="news_page_attribution_fields_match_kind",
+            ),
+            models.UniqueConstraint(
+                fields=("page", "author_profile"),
+                condition=models.Q(author_profile__isnull=False),
+                name="unique_news_page_author_profile",
+            ),
+            models.UniqueConstraint(
+                fields=("page", "minor_contributor"),
+                condition=models.Q(minor_contributor__isnull=False),
+                name="unique_news_page_minor_contributor",
+            ),
+        ]
+        verbose_name = "Autoría o crédito de noticia"
+        verbose_name_plural = "Autorías y créditos de noticia"
 
     def __str__(self) -> str:
+        if self.kind == self.Kind.AUTHOR and self.author_profile_id:
+            return str(self.author_profile)
+        if self.kind == self.Kind.INTERNAL_CONTRIBUTOR and self.minor_contributor_id:
+            return str(self.minor_contributor)
         return self.display_name
+
+    def clean(self) -> None:
+        super().clean()
+        errors = {}
+        if self.kind == self.Kind.AUTHOR:
+            if not self.author_profile_id:
+                errors["author_profile"] = "Selecciona un perfil público de autor."
+            if self.display_name.strip():
+                errors["display_name"] = "La firma pública solo se usa para ese tipo."
+            if self.minor_contributor_id:
+                errors["minor_contributor"] = (
+                    "El colaborador interno solo se usa para ese tipo."  # noqa: E501
+                )
+        elif self.kind == self.Kind.PUBLIC_CREDIT:
+            if not self.display_name.strip():
+                errors["display_name"] = "Escribe una firma pública."
+            if self.author_profile_id:
+                errors["author_profile"] = (
+                    "El perfil público de autor solo se usa para ese tipo."  # noqa: E501
+                )
+            if self.minor_contributor_id:
+                errors["minor_contributor"] = (
+                    "El colaborador interno solo se usa para ese tipo."  # noqa: E501
+                )
+        elif self.kind == self.Kind.INTERNAL_CONTRIBUTOR:
+            if not self.minor_contributor_id:
+                errors["minor_contributor"] = "Selecciona un colaborador interno."
+            if self.author_profile_id:
+                errors["author_profile"] = (
+                    "El perfil público de autor solo se usa para ese tipo."  # noqa: E501
+                )
+            if self.display_name.strip():
+                errors["display_name"] = "La firma pública solo se usa para ese tipo."
+        if errors:
+            raise ValidationError(errors)
+        if (
+            self.kind == self.Kind.AUTHOR
+            and self.author_profile is not None
+            and not self.author_profile.is_active
+        ):
+            original_profile_id = None
+            if self.pk:
+                original_profile_id = (
+                    type(self)
+                    ._base_manager.using(self._state.db or "default")
+                    .filter(pk=self.pk)
+                    .values_list("author_profile_id", flat=True)
+                    .first()
+                )
+            if original_profile_id != self.author_profile_id:
+                raise ValidationError(
+                    {
+                        "author_profile": (
+                            "Solo puedes asignar perfiles públicos de autor activos."
+                        )
+                    }
+                )

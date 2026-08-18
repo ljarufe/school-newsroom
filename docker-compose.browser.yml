@@ -44,6 +44,10 @@ services:
       BROWSER_TEST_SEO_PASSWORD: browser-test-password
       BROWSER_TEST_SEO_PAGE_ID: "4"
       BROWSER_TEST_PUBLIC_SHARE_PAGE_ID: "5"
+      BROWSER_TEST_AUTHOR_ONLY_PAGE_ID: "6"
+      BROWSER_TEST_CREDIT_ONLY_PAGE_ID: "7"
+      BROWSER_TEST_INTERNAL_ONLY_PAGE_ID: "8"
+      BROWSER_TEST_MINOR_AUTHOR_PAGE_ID: "9"
       SEO_DEFAULT_NOINDEX: "true"
     depends_on:
       browser-db:
@@ -77,6 +81,10 @@ services:
       BROWSER_TEST_SEO_PASSWORD: browser-test-password
       BROWSER_TEST_SEO_PAGE_ID: "4"
       BROWSER_TEST_PUBLIC_SHARE_PAGE_ID: "5"
+      BROWSER_TEST_AUTHOR_ONLY_PAGE_ID: "6"
+      BROWSER_TEST_CREDIT_ONLY_PAGE_ID: "7"
+      BROWSER_TEST_INTERNAL_ONLY_PAGE_ID: "8"
+      BROWSER_TEST_MINOR_AUTHOR_PAGE_ID: "9"
       PLAYWRIGHT_BASE_URL: http://browser-web:8000
     depends_on:
       browser-web:

@@ -2,20 +2,21 @@ import datetime as dt
 import importlib.metadata
 
 import pytest
+from django.contrib.auth import get_user_model
 from django.core.checks import run_checks
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models import ProtectedError
 from wagtail.images import get_image_model
 from wagtail.models import Collection, Page
 
 from apps.home.models import HomePage
 from apps.news.models import (
+    AuthorProfile,
     ContributorGroup,
     MinorContributor,
     NewsPage,
-    NewsPageContributor,
-    NewsPagePublicCredit,
+    NewsPageAttribution,
     NewsPageSection,
     NewsSection,
     School,
@@ -413,20 +414,22 @@ def test_news_page_accepts_multiple_internal_contributors(home_page, section) ->
     )
     news_page = create_news_page(home_page, section)
 
-    NewsPageContributor.objects.create(
+    NewsPageAttribution.objects.create(
         page=news_page,
-        contributor=first_contributor,
+        kind=NewsPageAttribution.Kind.INTERNAL_CONTRIBUTOR,
+        minor_contributor=first_contributor,
         sort_order=0,
     )
-    NewsPageContributor.objects.create(
+    NewsPageAttribution.objects.create(
         page=news_page,
-        contributor=second_contributor,
+        kind=NewsPageAttribution.Kind.INTERNAL_CONTRIBUTOR,
+        minor_contributor=second_contributor,
         sort_order=1,
     )
 
     assert list(
-        news_page.internal_contributors.values_list(
-            "contributor__full_name",
+        news_page.attributions.values_list(
+            "minor_contributor__full_name",
             flat=True,
         ),
     ) == ["Fictional Contributor One", "Fictional Contributor Two"]
@@ -450,30 +453,220 @@ def test_news_page_rejects_duplicate_internal_contributor(home_page, section) ->
     )
     news_page = create_news_page(home_page, section)
 
-    NewsPageContributor.objects.create(page=news_page, contributor=contributor)
+    NewsPageAttribution.objects.create(
+        page=news_page,
+        kind=NewsPageAttribution.Kind.INTERNAL_CONTRIBUTOR,
+        minor_contributor=contributor,
+    )
 
     with pytest.raises(IntegrityError):
-        NewsPageContributor.objects.create(page=news_page, contributor=contributor)
+        NewsPageAttribution.objects.create(
+            page=news_page,
+            kind=NewsPageAttribution.Kind.INTERNAL_CONTRIBUTOR,
+            minor_contributor=contributor,
+        )
 
 
 @pytest.mark.django_db
 def test_public_credits_keep_editorial_order(home_page, section) -> None:
     news_page = create_news_page(home_page, section)
-    NewsPagePublicCredit.objects.create(
+    NewsPageAttribution.objects.create(
         page=news_page,
+        kind=NewsPageAttribution.Kind.PUBLIC_CREDIT,
         display_name="Second public credit",
         sort_order=2,
     )
-    NewsPagePublicCredit.objects.create(
+    NewsPageAttribution.objects.create(
         page=news_page,
+        kind=NewsPageAttribution.Kind.PUBLIC_CREDIT,
         display_name="First public credit",
         sort_order=1,
     )
 
-    assert list(news_page.public_credits.values_list("display_name", flat=True)) == [
+    assert list(news_page.public_attributions) == list(news_page.attributions.all())
+    assert list(news_page.attributions.values_list("display_name", flat=True)) == [
         "First public credit",
         "Second public credit",
     ]
+
+
+@pytest.mark.django_db
+def test_author_profile_enforces_private_identity_and_minor_email_boundaries():
+    school = School.objects.create(name="Fictional School", department_id="04")
+    contributor = MinorContributor.objects.create(
+        full_name="Private fictional minor",
+        group=ContributorGroup.objects.create(name="Fictional group", school=school),
+        age_band=MinorContributor.AgeBand.UNDER_14,
+    )
+    profile = AuthorProfile(
+        display_name="Public fictional author",
+        slug="public-fictional-author",
+        minor_contributor=contributor,
+        email="private@example.invalid",
+    )
+
+    with pytest.raises(ValidationError, match="no puede incluir correo"):
+        profile.full_clean()
+
+
+@pytest.mark.django_db
+def test_author_profile_and_attribution_string_representations(home_page, section):
+    school = School.objects.create(name="Fictional School", department_id="04")
+    contributor = MinorContributor.objects.create(
+        full_name="Private fictional minor",
+        group=ContributorGroup.objects.create(name="Fictional group", school=school),
+        age_band=MinorContributor.AgeBand.UNDER_14,
+    )
+    profile = AuthorProfile.objects.create(
+        display_name="Public fictional author",
+        slug="public-fictional-author-for-strings",
+    )
+    page = create_news_page(home_page, section)
+    author = NewsPageAttribution.objects.create(
+        page=page,
+        kind=NewsPageAttribution.Kind.AUTHOR,
+        author_profile=profile,
+    )
+    credit = NewsPageAttribution.objects.create(
+        page=page,
+        kind=NewsPageAttribution.Kind.PUBLIC_CREDIT,
+        display_name="Fictional newsroom",
+    )
+    internal = NewsPageAttribution.objects.create(
+        page=page,
+        kind=NewsPageAttribution.Kind.INTERNAL_CONTRIBUTOR,
+        minor_contributor=contributor,
+    )
+
+    expected_author_label = (
+        "Public fictional author (public-fictional-author-for-strings)"
+    )
+    assert str(profile) == expected_author_label
+    assert str(author) == expected_author_label
+    assert str(credit) == "Fictional newsroom"
+    assert str(internal) == "Private fictional minor"
+    assert list(page.author_attributions) == [author]
+    assert list(page.public_attributions) == [author, credit]
+
+    conflicting_profile = AuthorProfile(
+        display_name="Invalid fictional profile",
+        slug="invalid-fictional-profile",
+        user=get_user_model().objects.create_user(username="profile-user"),
+        minor_contributor=contributor,
+    )
+    with pytest.raises(ValidationError, match="solo puede relacionarse"):
+        conflicting_profile.full_clean()
+
+
+@pytest.mark.django_db
+def test_author_profile_generates_stable_spanish_slugs_and_suffixes() -> None:
+    first = AuthorProfile.objects.create(display_name="María del Águila")
+    second = AuthorProfile.objects.create(display_name="María del Águila")
+    third = AuthorProfile.objects.create(display_name="María del Águila")
+
+    assert [first.slug, second.slug, third.slug] == [
+        "maria-del-aguila",
+        "maria-del-aguila-2",
+        "maria-del-aguila-3",
+    ]
+    first.display_name = "Nombre editorial posterior"
+    first.save()
+    first.refresh_from_db()
+    assert first.slug == "maria-del-aguila"
+
+
+@pytest.mark.django_db
+def test_author_profile_generated_slug_reserves_space_for_collision_suffixes() -> None:
+    max_length = AuthorProfile._meta.get_field("slug").max_length
+    display_name = "a" * max_length
+    profiles = [
+        AuthorProfile.objects.create(display_name=display_name) for _ in range(10)
+    ]
+
+    assert profiles[0].slug == "a" * max_length
+    assert profiles[1].slug == f"{'a' * (max_length - 2)}-2"
+    assert profiles[-1].slug == f"{'a' * (max_length - 3)}-10"
+    assert all(len(profile.slug) <= max_length for profile in profiles)
+
+    profiles[0].display_name = "Nombre editorial posterior"
+    profiles[0].save()
+    profiles[0].refresh_from_db()
+
+    assert profiles[0].slug == "a" * max_length
+
+
+@pytest.mark.django_db
+def test_author_profile_minor_email_constraint_rejects_bypass_writes() -> None:
+    school = School.objects.create(name="Privacy constraint school", department_id="04")
+    contributor = MinorContributor.objects.create(
+        full_name="Privacy constraint minor",
+        group=ContributorGroup.objects.create(
+            name="Privacy constraint group", school=school
+        ),
+        age_band=MinorContributor.AgeBand.UNDER_14,
+    )
+
+    with transaction.atomic(), pytest.raises(IntegrityError):
+        AuthorProfile.objects.create(
+            display_name="Invalid direct-write profile",
+            minor_contributor=contributor,
+            email="minor@example.invalid",
+        )
+
+    minor_profile = AuthorProfile.objects.create(
+        display_name="Valid minor profile", minor_contributor=contributor
+    )
+    adult_profile = AuthorProfile.objects.create(
+        display_name="Valid adult profile", email="adult@example.invalid"
+    )
+
+    with transaction.atomic(), pytest.raises(IntegrityError):
+        AuthorProfile.objects.filter(pk=minor_profile.pk).update(
+            email="minor@example.invalid"
+        )
+
+    minor_profile.refresh_from_db()
+    adult_profile.refresh_from_db()
+    assert minor_profile.email == ""
+    assert adult_profile.email == "adult@example.invalid"
+
+
+@pytest.mark.django_db
+def test_inactive_author_profile_is_only_valid_for_its_existing_attribution(
+    home_page,
+    section,
+):
+    page = create_news_page(home_page, section)
+    historical_profile = AuthorProfile.objects.create(
+        display_name="Historical fictional author",
+        slug="historical-fictional-author",
+    )
+    another_inactive_profile = AuthorProfile.objects.create(
+        display_name="Another inactive fictional author",
+        slug="another-inactive-fictional-author",
+        is_active=False,
+    )
+    attribution = NewsPageAttribution.objects.create(
+        page=page,
+        kind=NewsPageAttribution.Kind.AUTHOR,
+        author_profile=historical_profile,
+    )
+    historical_profile.is_active = False
+    historical_profile.save(update_fields=["is_active"])
+
+    attribution.full_clean()
+    replacement = NewsPageAttribution.objects.get(pk=attribution.pk)
+    replacement.author_profile = another_inactive_profile
+    new_attribution = NewsPageAttribution(
+        page=page,
+        kind=NewsPageAttribution.Kind.AUTHOR,
+        author_profile=another_inactive_profile,
+    )
+
+    with pytest.raises(ValidationError, match="perfiles públicos de autor activos"):
+        replacement.full_clean()
+    with pytest.raises(ValidationError, match="perfiles públicos de autor activos"):
+        new_attribution.full_clean()
 
 
 @pytest.mark.django_db

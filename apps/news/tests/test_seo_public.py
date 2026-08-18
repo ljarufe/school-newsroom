@@ -10,11 +10,11 @@ from wagtail.models import Page, PageViewRestriction, Site
 
 from apps.home.models import HomePage
 from apps.news.models import (
+    AuthorProfile,
     ContributorGroup,
     MinorContributor,
     NewsPage,
-    NewsPageContributor,
-    NewsPagePublicCredit,
+    NewsPageAttribution,
     NewsPageSection,
     NewsSection,
     School,
@@ -510,18 +510,29 @@ def test_json_ld_is_safe_and_uses_only_ordered_public_credits(
             "minor_publication_authorizations_verified",
         ],
     )
-    NewsPageContributor.objects.create(page=page, contributor=contributor)
-    NewsPagePublicCredit.objects.create(
+    NewsPageAttribution.objects.create(
         page=page,
+        kind=NewsPageAttribution.Kind.INTERNAL_CONTRIBUTOR,
+        minor_contributor=contributor,
+    )
+    NewsPageAttribution.objects.create(
+        page=page,
+        kind=NewsPageAttribution.Kind.PUBLIC_CREDIT,
         display_name="Segunda firma pública",
         sort_order=2,
     )
-    NewsPagePublicCredit.objects.create(
+    NewsPageAttribution.objects.create(
         page=page,
+        kind=NewsPageAttribution.Kind.PUBLIC_CREDIT,
         display_name="Primera firma pública",
         sort_order=1,
     )
-    NewsPagePublicCredit.objects.create(page=page, display_name="   ", sort_order=3)
+    NewsPageAttribution.objects.create(
+        page=page,
+        kind=NewsPageAttribution.Kind.PUBLIC_CREDIT,
+        display_name="   ",
+        sort_order=3,
+    )
 
     response = site_client().get(page.url)
     data = json_ld_from_response(response)
@@ -534,7 +545,6 @@ def test_json_ld_is_safe_and_uses_only_ordered_public_credits(
         {"name": "Primera firma pública"},
         {"name": "Segunda firma pública"},
     ]
-    assert all("@type" not in author for author in data["author"])
     assert "Private Fictional Minor" not in content
     assert "under_14" not in content
     assert "contains_identifiable_minors" not in content
@@ -544,6 +554,41 @@ def test_json_ld_is_safe_and_uses_only_ordered_public_credits(
     )
     assert "</script><script>alert('x')</script>" not in content
     assert "\\u003C/script\\u003E" in content
+
+
+@pytest.mark.django_db
+def test_json_ld_serializes_author_profiles_as_persons_without_email(
+    public_site, section
+) -> None:
+    page = create_news_page(
+        public_site,
+        section,
+        title="Noticia con autora pública",
+        slug="noticia-con-autora-publica",
+    )
+    profile = AuthorProfile.objects.create(
+        display_name="Autora JSON-LD ficticia",
+        slug="autora-json-ld-ficticia",
+        email="public@example.invalid",
+        work_url="https://example.invalid/autora-json-ld",
+    )
+    NewsPageAttribution.objects.create(
+        page=page,
+        kind=NewsPageAttribution.Kind.AUTHOR,
+        author_profile=profile,
+    )
+
+    response = site_client().get(page.url)
+    data = json_ld_from_response(response)
+
+    assert data["author"] == [
+        {
+            "@type": "Person",
+            "name": "Autora JSON-LD ficticia",
+            "url": "https://example.invalid/autora-json-ld",
+        }
+    ]
+    assert "public@example.invalid" not in json.dumps(data)
 
 
 @pytest.mark.django_db

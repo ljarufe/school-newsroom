@@ -4,7 +4,7 @@ import re
 
 import pytest
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.test import Client, RequestFactory
@@ -39,11 +39,11 @@ from apps.news.access import (
     WORKFLOW_NAME,
 )
 from apps.news.models import (
+    AuthorProfile,
     ContributorGroup,
     MinorContributor,
     NewsPage,
-    NewsPageContributor,
-    NewsPagePublicCredit,
+    NewsPageAttribution,
     NewsPageSection,
     NewsSection,
     School,
@@ -83,7 +83,11 @@ def create_news_page(*, slug: str = "noticia-workflow") -> NewsPage:
         page=page,
         section=NewsSection.objects.get(slug="politica"),
     )
-    NewsPagePublicCredit.objects.create(page=page, display_name="Redacción escolar")
+    NewsPageAttribution.objects.create(
+        page=page,
+        kind=NewsPageAttribution.Kind.PUBLIC_CREDIT,
+        display_name="Redacción escolar",
+    )
     page.save_revision()
     return page
 
@@ -233,6 +237,9 @@ def test_bootstrap_configures_exact_group_permission_boundaries() -> None:
     )
     assert "access_seo_editorial_surface" in director_global_permissions
     assert "change_minorcontributor" in director_global_permissions
+    assert {"add_authorprofile", "change_authorprofile", "view_authorprofile"} <= (
+        director_global_permissions
+    )
     assert seo_global_permissions == {
         "access_admin",
         "access_seo_editorial_surface",
@@ -290,6 +297,7 @@ def test_director_and_seo_curator_real_permission_matrix() -> None:
     assert not page.permissions_for_user(curator).can_edit()
     assert not page.permissions_for_user(curator).can_publish()
     assert not curator.has_perm("news.view_minorcontributor")
+    assert not curator.has_perm("news.view_authorprofile")
     assert not curator.has_perm("news.change_newssection")
     assert not curator.has_perm("auth.change_user")
     assert not curator.has_perm("auth.change_group")
@@ -324,6 +332,18 @@ def test_director_and_seo_curator_real_permission_matrix() -> None:
         != 200
     )
     assert curator_client.get(reverse("news_subsections:index")).status_code != 200
+    assert (
+        director_client.get(
+            reverse("wagtailsnippets_news_authorprofile:list")
+        ).status_code
+        == 200
+    )
+    assert (
+        curator_client.get(
+            reverse("wagtailsnippets_news_authorprofile:list")
+        ).status_code
+        != 200
+    )
 
     root_section = NewsSection.objects.get(slug="cultura")
     subsection = NewsSection.objects.get(slug="musica")
@@ -353,6 +373,156 @@ def test_director_and_seo_curator_real_permission_matrix() -> None:
     assert curator_client.get("/admin/users/").status_code != 200
 
 
+def test_contextual_chooser_permissions_follow_model_permissions() -> None:
+    """Native chooser controls and endpoints respect each model permission."""
+    bootstrap_access()
+    profile = AuthorProfile.objects.create(
+        display_name="Perfil seleccionado",
+        slug="perfil-seleccionado",
+    )
+    viewer = create_user("author-profile-viewer")
+    viewer.user_permissions.add(
+        Permission.objects.get(
+            content_type__app_label="wagtailadmin",
+            codename="access_admin",
+        ),
+        Permission.objects.get(
+            content_type__app_label="news",
+            codename="view_authorprofile",
+        ),
+        Permission.objects.get(
+            content_type__app_label="news",
+            codename="view_contributorgroup",
+        ),
+    )
+    client = Client()
+    client.force_login(viewer)
+
+    author_choose_url = reverse("wagtailsnippetchoosers_news_authorprofile:choose")
+    author_create_url = reverse("wagtailsnippetchoosers_news_authorprofile:create")
+    author_chosen_url = reverse(
+        "wagtailsnippetchoosers_news_authorprofile:chosen",
+        args=(profile.pk,),
+    )
+    author_edit_url = reverse(
+        "wagtailsnippets_news_authorprofile:edit",
+        args=(profile.pk,),
+    )
+    author_choose = client.get(author_choose_url)
+    author_chosen = client.get(author_chosen_url)
+
+    assert author_choose.status_code == 200
+    assert profile.display_name in author_choose.content.decode()
+    assert author_create_url not in author_choose.content.decode()
+    assert author_chosen.status_code == 200
+    assert author_edit_url not in author_chosen.content.decode()
+    author_count = AuthorProfile.objects.count()
+    assert client.get(author_create_url).status_code == 302
+    assert (
+        client.post(
+            author_create_url,
+            {"display_name": "Perfil no autorizado", "slug": "no-autorizado"},
+        ).status_code
+        == 302
+    )
+    assert AuthorProfile.objects.count() == author_count
+    assert client.get(author_edit_url).status_code == 302
+    assert (
+        client.post(
+            author_edit_url,
+            {"display_name": "Perfil alterado", "slug": profile.slug},
+        ).status_code
+        == 302
+    )
+    profile.refresh_from_db()
+    assert profile.display_name == "Perfil seleccionado"
+
+    group_choose_url = reverse("wagtailsnippetchoosers_news_contributorgroup:choose")
+    group_create_url = reverse("wagtailsnippetchoosers_news_contributorgroup:create")
+    group_choose = client.get(group_choose_url)
+
+    assert group_choose.status_code == 200
+    assert group_create_url not in group_choose.content.decode()
+    assert client.get(group_create_url).status_code == 302
+    assert (
+        client.post(group_create_url, {"name": "Grupo no autorizado"}).status_code
+        == 302
+    )
+
+
+def test_seo_curator_cannot_bypass_epic3_editorial_chooser_boundaries() -> None:
+    bootstrap_access()
+    page = create_news_page(slug="noticia-chooser-privada")
+    profile = AuthorProfile.objects.create(
+        display_name="Perfil privado",
+        slug="perfil-privado",
+    )
+    school = School.objects.create(
+        name="Colegio protegido",
+        department_id="04",
+        district_id="040101",
+    )
+    group = ContributorGroup.objects.create(
+        name="Grupo protegido",
+        school=school,
+    )
+    curator = create_user("curator-chooser", SEO_CURATOR_GROUP_NAME)
+    client = Client()
+    client.force_login(curator)
+
+    protected_urls = (
+        reverse("wagtailsnippetchoosers_news_authorprofile:choose"),
+        reverse("wagtailsnippetchoosers_news_authorprofile:create"),
+        reverse(
+            "wagtailsnippetchoosers_news_authorprofile:chosen",
+            args=(profile.pk,),
+        ),
+        reverse("wagtailsnippets_news_authorprofile:edit", args=(profile.pk,)),
+        reverse("wagtailsnippetchoosers_news_minorcontributor:choose"),
+        reverse("wagtailsnippetchoosers_news_minorcontributor:create"),
+        reverse("wagtailsnippetchoosers_news_school:choose"),
+        reverse("wagtailsnippetchoosers_news_school:create"),
+        reverse("wagtailadmin_pages:edit", args=(page.pk,)),
+    )
+    for url in protected_urls:
+        assert client.get(url).status_code != 200
+        assert client.post(url, {}).status_code != 200
+
+    counts_before = {
+        "authors": AuthorProfile.objects.count(),
+        "minors": MinorContributor.objects.count(),
+        "schools": School.objects.count(),
+    }
+    denied_creations = (
+        (
+            reverse("wagtailsnippetchoosers_news_authorprofile:create"),
+            {"display_name": "Perfil inyectado", "slug": "perfil-inyectado"},
+        ),
+        (
+            reverse("wagtailsnippetchoosers_news_minorcontributor:create"),
+            {
+                "full_name": "Menor inyectado",
+                "group": str(group.pk),
+                "age_band": MinorContributor.AgeBand.UNDER_14,
+            },
+        ),
+        (
+            reverse("wagtailsnippetchoosers_news_school:create"),
+            {
+                "name": "Colegio inyectado",
+                "department": "04",
+                "district": "040101",
+            },
+        ),
+    )
+    for url, payload in denied_creations:
+        assert client.post(url, payload).status_code != 200
+
+    assert AuthorProfile.objects.count() == counts_before["authors"]
+    assert MinorContributor.objects.count() == counts_before["minors"]
+    assert School.objects.count() == counts_before["schools"]
+
+
 def test_role_bound_forms_expose_only_authorized_fields_and_relations() -> None:
     bootstrap_access()
     page = create_news_page()
@@ -378,8 +548,7 @@ def test_role_bound_forms_expose_only_authorized_fields_and_relations() -> None:
     assert "taxonomy_sections" in director_form.fields
     assert {
         "comments",
-        "internal_contributors",
-        "public_credits",
+        "attributions",
         "related_keyphrases",
     } == set(director_form.formsets)
     assert set(curator_form.fields) == NEWS_SEO_FIELD_NAMES
@@ -418,9 +587,10 @@ def test_seo_curator_edit_surface_hides_content_properties_and_minor_data() -> N
         group=contributor_group,
         age_band=MinorContributor.AgeBand.UNDER_14,
     )
-    NewsPageContributor.objects.create(
+    NewsPageAttribution.objects.create(
         page=page,
-        contributor=internal_contributor,
+        kind=NewsPageAttribution.Kind.INTERNAL_CONTRIBUTOR,
+        minor_contributor=internal_contributor,
     )
     director = create_user("director-surface", DIRECTOR_GROUP_NAME)
     curator = create_user("curator-surface", SEO_CURATOR_GROUP_NAME)
@@ -453,8 +623,8 @@ def test_seo_curator_edit_surface_hides_content_properties_and_minor_data() -> N
     assert 'name="show_in_menus"' not in content
     assert 'name="contains_identifiable_minors"' not in content
     assert 'name="taxonomy_sections"' not in content
-    assert "Colaboradores internos" not in content
-    assert 'name="public_credits-TOTAL_FORMS"' not in content
+    assert "Autoría y créditos" not in content
+    assert 'name="attributions-TOTAL_FORMS"' not in content
     assert "Propiedades" not in visible_tab_labels(response)
     assert "Publicar" not in content
     assert "Contenido editorial ficticio y seguro." not in content
@@ -481,7 +651,11 @@ def test_seo_curator_manipulated_post_cannot_change_non_seo_fields() -> None:
         group=contributor_group,
         age_band=MinorContributor.AgeBand.UNDER_14,
     )
-    NewsPageContributor.objects.create(page=page, contributor=contributor)
+    NewsPageAttribution.objects.create(
+        page=page,
+        kind=NewsPageAttribution.Kind.INTERNAL_CONTRIBUTOR,
+        minor_contributor=contributor,
+    )
     director = create_user("director-post", DIRECTOR_GROUP_NAME)
     curator = create_user("curator-post", SEO_CURATOR_GROUP_NAME)
     start_workflow(page, director)
@@ -504,10 +678,8 @@ def test_seo_curator_manipulated_post_cannot_change_non_seo_fields() -> None:
             "show_in_menus": "on",
             "contains_identifiable_minors": "on",
             "taxonomy_sections": str(NewsSection.objects.get(slug="musica").pk),
-            "internal_contributors-TOTAL_FORMS": "0",
-            "internal_contributors-INITIAL_FORMS": "0",
-            "public_credits-TOTAL_FORMS": "0",
-            "public_credits-INITIAL_FORMS": "0",
+            "attributions-TOTAL_FORMS": "0",
+            "attributions-INITIAL_FORMS": "0",
             "related_keyphrases-TOTAL_FORMS": "1",
             "related_keyphrases-INITIAL_FORMS": "0",
             "related_keyphrases-MIN_NUM_FORMS": "0",
@@ -529,17 +701,21 @@ def test_seo_curator_manipulated_post_cannot_change_non_seo_fields() -> None:
     assert list(
         saved_page.section_assignments.values_list("section__slug", flat=True)
     ) == ["politica"]
-    saved_contributor_ids = saved_page.internal_contributors.values_list(
-        "contributor_id",
+    saved_contributor_ids = saved_page.attributions.filter(
+        kind=NewsPageAttribution.Kind.INTERNAL_CONTRIBUTOR
+    ).values_list(
+        "minor_contributor_id",
         flat=True,
     )
     assert list(saved_contributor_ids) == [contributor.pk]
     assert list(saved_page.related_keyphrases.values_list("phrase", flat=True)) == [
         "investigación escolar"
     ]
-    assert list(saved_page.public_credits.values_list("display_name", flat=True)) == [
-        "Redacción escolar"
-    ]
+    assert list(
+        saved_page.attributions.filter(
+            kind=NewsPageAttribution.Kind.PUBLIC_CREDIT
+        ).values_list("display_name", flat=True)
+    ) == ["Redacción escolar"]
 
 
 def test_native_workflow_order_final_publication_and_request_changes() -> None:
